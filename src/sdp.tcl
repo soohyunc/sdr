@@ -66,9 +66,7 @@ proc parse_sdp {msg} {
 		} else {
 		    set ldata($aid,$mn,addr) [lindex $tmp 0]
 		    set ldata($aid,$mn,ttl) [lindex $tmp 1]
-		    puts a
 		    if {[llength $tmp] > 2} {
-			puts b
 			set ldata($aid,$mn,layers) [lindex $tmp 2]
 		    } else {
 			set ldata($aid,$mn,layers) 1
