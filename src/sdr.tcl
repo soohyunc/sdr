@@ -470,13 +470,19 @@ all this lot is obsolete...
 proc quit {w} {
   global log
   setcw $w
-  give_status_msg "Writing cache files..."
-  update idletasks
-  write_cache
-  log "Sdr exiting (Quit button pressed) at [getreadabletime]"
-  savelog
-  ui_quit
-  destroy .
+# if quitting the main SDR window clean up and die
+# if quitting a directory window just close that window
+  if { $w == ".w0" } {
+    give_status_msg "Writing cache files..."
+    update idletasks
+    write_cache
+    log "Sdr exiting (Quit button pressed) at [getreadabletime]"
+    savelog
+    ui_quit
+    destroy .
+  } else {
+    destroy $w 
+  }
 }
 
 proc handleWindowClose {w} {
