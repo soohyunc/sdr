@@ -414,7 +414,9 @@ proc new_wiz_panel_accept {panelnum panels aid} {
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state disabled
-    .new.f.b.accept configure -state normal -command "create"
+    .new.f.b.accept configure -state normal -command \
+	"if {\[create\]==1} \
+	  {destroy .new}"
     .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
 }
 
