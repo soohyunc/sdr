@@ -141,6 +141,22 @@ int get_sdr_home(char str[])
   return 0;
 }
 
+int find_keyname_by_key(char *key, char *keyname)
+{  
+  struct keydata *tmpkey=keylist;
+ 
+  while(tmpkey!=NULL)
+    {
+      if (strncmp(tmpkey->key,key, MAXKEYLEN)==0)
+        {
+          strncpy(keyname, tmpkey->keyname, MAXKEYLEN);
+          return 0;
+        }
+      tmpkey=tmpkey->next;
+    }
+  return -1;
+}
+
 int find_key_by_name(char *keyname, char *key)
 {
   struct keydata *tmpkey=keylist;
