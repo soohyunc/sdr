@@ -216,7 +216,8 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
         i = i & ((1 << (128 - netmask)) - 1);
 
         /* in6_word(newaddr, 3) |= (i);*/
-        newaddr->s6_words[7] |= (i);
+        /* newaddr->s6_words[7] |= (i);*/
+		newaddr->_S6_un._S6_u32[3] |= (i << 16); 
         if (check_address(newaddr, IPv6)==TRUE) {
             return(newaddr);
         }
