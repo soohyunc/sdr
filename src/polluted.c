@@ -307,6 +307,11 @@ int ui_save_keys()
   return(save_keys());
 }
 
+int ui_make_random_key()
+{
+  return(make_random_key());
+}
+
 int ui_find_key_by_name(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
     Tcl_Interp *interp;                 /* Current interpreter. */
