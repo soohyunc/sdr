@@ -47,7 +47,7 @@ proc pgpstate { } {
 # Return: 0 if succeeded; 1 if failed                                #
 #--------------------------------------------------------------------#
 proc enc_pgp_get_key_list {win aid} {
-  global no_of_keys user_id key_id sig_id ldata env
+  global no_of_keys e_user_id e_key_id e_sig_id ldata env
 
   if { [ get_pgppath ] == 1 } {
     return 1
@@ -71,9 +71,9 @@ proc enc_pgp_get_key_list {win aid} {
   foreach line $keylist {
     if [regexp {^(pub) +[0-9]+/([0-9A-F]+) [0-9/]+ (.*)$} \
         $line {} sigid keyid userid] {
-      set user_id(pgp,$i) $userid
-      set  key_id(pgp,$i) $keyid
-      set  sig_id(pgp,$i) $sigid
+      set e_user_id(pgp,$i) $userid
+      set e_key_id(pgp,$i) $keyid
+      set e_sig_id(pgp,$i) $sigid
       if { [string length $userid] > 60 } {
         set dotdot "..."
       } else {
@@ -92,19 +92,19 @@ proc enc_pgp_get_key_list {win aid} {
      %W selection set \[%W nearest %y\];\
      [ format { 
        global no_of_keys
-       global  user_id key_id
+       global  e_user_id e_key_id
        set selkey [%s.enc.keys.lb curselection]
        %s.enc.keys.lb  get [lindex $selkey 0]
        set pgpkey [lindex $selkey 0]
-       set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$pgpkey)
-       set key_id(pgp,enc_cur_key_sel) $key_id(pgp,$pgpkey)
+       set user_id(pgp,enc_cur_key_sel) $e_user_id(pgp,$pgpkey)
+       set key_id(pgp,enc_cur_key_sel) $e_key_id(pgp,$pgpkey)
      } $win $win $win $win] "
  
   if {([string compare $aid "new"]!=0)&&($ldata($aid,enc_asym_keyid)!="")} {
     for {set i 0} {$i < $no_of_keys} {incr i} {
-      if {[string compare $ldata($aid,enc_asym_keyid) $key_id(pgp,$i)] == 0} {
+      if {[string compare $ldata($aid,enc_asym_keyid) $e_key_id(pgp,$i)] == 0} {
         $win.enc.keys.lb  selection set $i
-        set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$i)
+        set user_id(pgp,enc_cur_key_sel) $e_user_id(pgp,$i)
         break
       }
     }
