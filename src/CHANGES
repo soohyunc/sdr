@@ -1,6 +1,9 @@
 <H1>Sdr changes log</H1>
 <B><pre>
-2.7.0 K.Hasler 15 July 1999
+2.7e K.Hasler 15 July 1999
+  - enabled pgp
+
+2.7 K.Hasler 15 July 1999
   - Removed calls to splat_tcl_characters, since we're not eval'ing the 
     parameters anymore.
   - Fixed sip code, so we don't eval the packet buffer.

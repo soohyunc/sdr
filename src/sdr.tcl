@@ -5,7 +5,7 @@
 #and for a DISCLAIMER OF ALL WARRANTIES.
 
 # set the following to 1 to disable enc/auth and 0 to enable it
-set pgpdisable  1
+set pgpdisable  0
 set x509disable 1
 
 set initWait 400
@@ -89,7 +89,7 @@ proc getreadabletime {} {
     return [clock format [clock seconds] -format {%H:%M, %d/%m/%Y}]
 }
 
-set sdrversion "v2.7"
+set sdrversion "v2.7e"
 set titlestr "Multicast Session Directory $sdrversion"
 
 proc initialise_resources {} {
