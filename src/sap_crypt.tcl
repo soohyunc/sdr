@@ -290,6 +290,66 @@ proc submit_key {} {
     }
 }
 
+proc query_passphrase { win } {
+  catch {destroy .qpass}
+  toplevel .qpass
+  global querypass
+  wm title .qpass "Sdr: Enter the pass phrase for your key file"
+
+  frame .qpass.f -relief groove -borderwidth 2
+  pack  .qpass.f -side top
+
+  message .qpass.f.m -text "You must enter your passphrase to be able to load your encryption keys." -aspect 600
+  pack .qpass.f.m -side top
+ 
+  frame    .qpass.f.f
+  pack     .qpass.f.f -side top -fill x -expand true
+  label    .qpass.f.f.l -text "Password:"
+  pack     .qpass.f.f.l -side left -anchor e -fill x -expand true
+  password .qpass.f.f.e -width 40 -variable querypass \
+                        -background [option get . entryBackground Sdr]
+  pack  .qpass.f.f.e -side left
+  bind  .qpass.f.f.e <Key-Return> "submit_qpass .qpass $win .qpass.f.msg \"\""
+
+  label .qpass.f.msg -borderwidth 1 -relief raised
+  pack  .qpass.f.msg -side top -fill x -expand true
+ 
+  frame  .qpass.f.f2
+  pack   .qpass.f.f2        -side top -fill x -expand true
+  button .qpass.f.f2.ok     -text "OK" \
+        -command "submit_qpass .qpass $win .qpass.f.msg \"\""
+  pack   .qpass.f.f2.ok     -side left -fill x -expand true
+  button .qpass.f.f2.cancel -text "Cancel" -command "destroy_query .qpass"
+  pack   .qpass.f.f2.cancel -side left -fill x -expand true
+}
+
+proc destroy_query { win } {
+  global security
+  set security public
+  catch {destroy $win}
+}
+
+proc submit_qpass { qwin createwin msgwin str } {
+  global querypass
+  set_passphrase $querypass
+  $msgwin configure -text "Checking passphrase"
+  update
+  if {[load_keys]==1} {
+    show_keys $createwin.f.lb
+    $msgwin configure -text "Loading cached sessions"
+    load_from_cache_crypt
+    $msgwin configure -text "$str"
+   } else {
+    bell
+    $msgwin configure -text "Pass phrase incorrect"
+    set querypass ""
+    after 3000 "catch {$msgwin configure -text \"$str\"}"
+    return
+   }
+   catch {destroy $qwin}
+   catch {destroy .f5}
+}
+
 proc enter_passphrase {} {
     global ifstyle
     if {$ifstyle(labels)=="long"} {
@@ -455,10 +515,16 @@ proc new_mk_session_security {win aid} {
     }
 
     tixAddBalloon $win.b1 Button [tt "Select \"Encryption\" to announce your session to a private group of people who share one of your encryption keys."]
+
     if {$keylist==""} {
-	$win.b1 configure -state disabled
 	set security public
     }
+
+    set keyfile "[resource sdrHome]/keys"
+    if {([file exists $keyfile] == 0)} {
+        $win.b1 configure -state disabled
+    }
+
     hlfocus $win.b1
     pack $win.b1 -side top -anchor nw
 
@@ -500,9 +566,13 @@ proc get_new_session_key { } {
 proc toggle_security {win} {
     global security
     if {$security=="public"} {
-	clear_keys $win.f.lb
+      clear_keys $win.f.lb
     } else {
-	show_keys $win.f.lb
+      if {[get_passphrase]==""} {
+        query_passphrase $win
+      } else {
+        show_keys $win.f.lb
+      }
     }
 }
 
