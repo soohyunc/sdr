@@ -490,7 +490,7 @@ int load_keys(void)
   return 0;
 }
 #ifdef AUTH
-unsigned long hostaddr;
+extern unsigned long hostaddr;
 
 int write_crypted_file(char *afilename, char *data, int len, char *key,
                        char *auth_type, char *advertid)

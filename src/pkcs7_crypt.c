@@ -45,8 +45,8 @@
 #endif
 
 
-struct keydata* keylist;
-char passphrase[MAXKEYLEN];
+extern struct keydata* keylist;
+extern char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
 /*#define DEBUG*/
 #ifdef AUTH
@@ -140,12 +140,12 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
  char fulltxt[MAXFILENAMELEN]="", fullsig[MAXFILENAMELEN]="", fullbdy[MAXFILENAMELEN]="";
 
   char irandstr[10]="";
-//  printf("data= %s\n", data);
+/*  printf("data= %s\n", data); */
   AUTHDEB(printf("This packet contains authentication information\n");)
    sig_len= auth_p->siglen * 4;
  
   sig_len=auth_len  - 2;
-  // remove padding, if necessary
+  /* remove padding, if necessary */
   if ( auth_p->padding )
   {
     pad_len = *(authinfo+(auth_len-2)-1);
@@ -155,8 +155,8 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
  
   AUTHDEB(printf("Key Certificate=%d bytes\n", key_len);)
  
-  // Extract the signature and key certificate from the packet and
-  // store in files.
+  /* Extract the signature and key certificate from the packet and
+     store in files. */
 
   homedir=(char *)getenv("HOME");
 #ifdef WIN32
@@ -201,8 +201,8 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
 
  AUTHDEB( printf(" check AUTH_p->auth_type %d\n",auth_p->auth_type);
 )
-  // REMINDER: need to store end_time and keyid too if encrypted session
-  /* Refer to SAP specification for encrypted announcements with
+  /* REMINDER: need to store end_time and keyid too if encrypted session
+     Refer to SAP specification for encrypted announcements with
      authentication! */
   if ( fwrite(data, 1, data_len, auth_fd) < data_len )
   {
@@ -290,7 +290,7 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
         free(encsig);
         
    }
-//    printf(" Signature data %s \n", encsig);
+/*    printf(" Signature data %s \n", encsig); */
     sapauth_p->sig_len = sbuf.st_size;
         sapauth_p->signature = malloc(sapauth_p->sig_len);
         memcpy (sapauth_p->signature, encsig,sapauth_p->sig_len);
@@ -378,7 +378,7 @@ sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
         return 0;
     }
 
-//    printf("\nReturn Code= %d\n", code);
+/*    printf("\nReturn Code= %d\n", code); */
       enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if(enc_message !=NULL)
    {
@@ -432,9 +432,9 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   sprintf(irandstr, "%d", irand);
  
  
-//  printf("data= %s\n", data);
+/*  printf("data= %s\n", data); */
  
-  // remove padding, if necessary
+  /* remove padding, if necessary */
   if ( enc_p->padding )
   {
     AUTHDEB(printf("Padding Length=%d\n", *(encinfo+hdr_len-2));)
@@ -444,8 +444,8 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   }
  
  
-  // Extract the signature and key certificate from the packet and
-  // store in files.
+  /* Extract the signature and key certificate from the packet and
+     store in files. */
  
  
   enc_fd=fopen(sx509fullenc, "w");
@@ -573,7 +573,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
     }
  
    sapenc_p->txt_len= sbufd.st_size;
-  (char *)sapenc_p->txt_data=(char *)malloc(sapenc_p->txt_len);
+  sapenc_p->txt_data = (char *)malloc(sapenc_p->txt_len);
   memcpy(sapenc_p->txt_data, decrypt, sapenc_p->txt_len);
 
   fclose(txt_fd);

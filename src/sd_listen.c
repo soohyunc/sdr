@@ -753,7 +753,7 @@ if (strcmp(argv[2], "crypt")==0) {
                          memset(encstatus,0,sizeof(encstatus));
 		        strcpy(encstatus, encstatus_p);
                         sprintf(nrandstr, "%d", irand);
-			// printf("something is wrong the data is crupted\n");
+			/* printf("something is wrong the data is crupted\n"); */
                         Tcl_VarEval(interp, "enc_pgp_cleanup  ", &nrandstr, NULL);
                         Tcl_VarEval(interp, "enc_pkcs7_cleanup  ", &nrandstr, NULL);
 			return -1;
@@ -1194,8 +1194,7 @@ char *argv[];
     if (cli) {
       init_cli();
       inChannel = fileno(stdin);
-      Tcl_CreateFileHandler(inChannel, TCL_READABLE, (Tcl_FileProc*)do_cli,
-                            (ClientData) inChannel);
+      Tcl_CreateFileHandler(inChannel, TCL_READABLE, (Tcl_FileProc*)do_cli, (ClientData) inChannel);
     }
 #endif
 
@@ -1469,7 +1468,7 @@ void recv_packets(ClientData fd)
                          sprintf(nrandstr, "%d", irand);
                         Tcl_VarEval(interp, "enc_pgp_cleanup  ", &nrandstr, NULL);
                         Tcl_VarEval(interp, "enc_pkcs7_cleanup  ", &nrandstr, NULL);
-                        //printf(" Encryption failed \n");
+                        /* printf(" Encryption failed \n"); */
  			
 			return;
                         }
@@ -1532,7 +1531,7 @@ void recv_packets(ClientData fd)
 	memcpy(encmessage, "none",4);
 	}
 
-// Check for authentication header
+/* Check for authentication header */
 /* Need to do something about non-conforming (old versions of SDR)
        packets - otherwise some packets may be interpreted with
        authentication info when they have none!*/
@@ -1628,8 +1627,8 @@ void recv_packets(ClientData fd)
             enc_asym_keyid,encmessage,authmessage);
 	}
 
-// Store received authentication data (overwrite existing data if
-// this is a repeated/modified announcement)
+/* Store received authentication data (overwrite existing data if
+   this is a repeated/modified announcement) */
 
 	if (hfrom !=hostaddr && (has_security==1 )) {
 		if (first_ad!=NULL) {
@@ -3143,8 +3142,8 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 			auth_p->auth_type=sapauth_p->auth_type;
 			auth_p->siglen=sapauth_p->siglen;
 
-	// The authentication length is the number of 32-bit words after
-			    // the SAP header.
+	/* The authentication length is the number of 32-bit words after
+			     the SAP header. */
 			    bp->authlen=auth_len / 4;
 
 			ap=(char *)auth_p + 2;
@@ -3157,7 +3156,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 				 ap += sapauth_p->key_len;
 			}
 
-			// Add padding, if necessary.
+			/* Add padding, if necessary. */
 	
 			    if (sapauth_p->pad_len != 0)
 			       {
@@ -3186,7 +3185,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 		if (auth_len != 0)
 		{
 			auth_p=malloc(2);
-			//auth_p=(struct auth_header *)(buf+sizeof(struct sap_header));
+			/* auth_p=(struct auth_header *)(buf+sizeof(struct sap_header)); */
 			auth_p->version=sapauth_p->version;
 			auth_p->padding=sapauth_p->padding;
 			auth_p->auth_type=sapauth_p->auth_type;
@@ -3194,8 +3193,8 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 			memcpy((buf+sizeof(struct sap_header)), auth_p, 2);
 			free(auth_p);
 
-			// The authentication length is the number of 32-bit words after
-			    // the SAP header.
+			/* The authentication length is the number of 32-bit words after
+			     the SAP header. */
 			    bp->authlen=auth_len / 4;
 
 			ap=(char *)(buf+sizeof(struct sap_header)) + 2;
@@ -3207,7 +3206,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 				ap += sapauth_p->key_len;
 			}
 
-			// Add padding, if necessary.
+			/* Add padding, if necessary. */
 			    if (sapauth_p->pad_len != 0)
 			{
 				for (i=0; i<((sapauth_p->pad_len)-1); ++i)
@@ -3237,7 +3236,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 		{
                       *(u_int*)(buf+sizeof(struct sap_header)+auth_len)=0;
 			enc_p=malloc(2);
-			//enc_p=(struct priv_header *)(buf+sizeof(struct sap_header);
+			/* enc_p=(struct priv_header *)(buf+sizeof(struct sap_header); */
 			    enc_p->version=sapenc_p->version;
 			    enc_p->padding=sapenc_p->padding;
 			    enc_p->enc_type=sapenc_p->enc_type;

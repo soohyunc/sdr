@@ -136,12 +136,11 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
         }
 	sockproc[fd] = callback;
 #else
-        Tcl_CreateFileHandler((ClientData)fd,
-                              mask, callback, (ClientData)fd);
+        Tcl_CreateFileHandler(fd, mask, callback, (ClientData)fd);
 #endif
 }
 
-void unlinksocket(fd)
+void unlinksocket(int fd)
 {
 #ifdef WIN32
 	if (fd >= 0 && fd < MAX_FD && sockproc[fd] != 0) {
@@ -149,6 +148,6 @@ void unlinksocket(fd)
 		(void) WSAAsyncSelect(fd, sockwin, 0, 0);
 	}
 #else
-        Tcl_DeleteFileHandler((ClientData)fd);
+        Tcl_DeleteFileHandler(fd);
 #endif
 }

@@ -1,15 +1,12 @@
-CC=/cs/research/mice/starship/common/solaris/bin/gcc -g -O 
-INCLUDES=-I/usr/openwin/include -I/usr/local/include -I/usr/local/include
-LIB_DIR=/usr/local/lib
-LIBS=	$(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a \
-	-R/usr/openwin/lib -L/usr/openwin/lib -lX11 \
-	-lm -lnsl -ldl -lsocket -lresolv 
-
-SIP_SERVER_LIBS=-lm -lnsl -ldl -lsocket -lresolv
-
+CC          = gcc 
+INCLUDES    = -I/usr/openwin/include -I/usr/local/include -I/usr/local/include
+LIB_DIR     = /usr/local/lib
+LIBS        = $(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a \
+             -L/usr/openwin/lib -lX11 -lm -lnsl -ldl -lsocket -lresolv 
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
-LIBRARY_TK = $(LIB_DIR)/tk8.0
-CFLAGS=$(INCLUDES) -DSOLARIS -DCANT_MCAST_BIND -Wall -DNORANDPROTO -DAUTH -DSYSV
+LIBRARY_TK  = $(LIB_DIR)/tk8.0
+CFLAGS      = -g -O -Wall $(INCLUDES) -DSOLARIS -DCANT_MCAST_BIND -DNORANDPROTO -DAUTH -DSYSV
+
 all::	sdr 
 install:
 	rm /usr/local/bin/sdr

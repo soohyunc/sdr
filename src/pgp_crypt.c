@@ -46,8 +46,8 @@
 #endif
 
 
-struct keydata* keylist;
-char passphrase[MAXKEYLEN];
+extern struct keydata* keylist;
+extern char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
 /*#define DEBUG*/
 #ifdef AUTH
@@ -105,7 +105,7 @@ int generate_authentication_info(char *data,int len, char *authstatus, int irand
     /* Executes the TCL script that calls PGP */
     Tcl_VarEval(interp, "pgp_create_signature ",  &irandstr, NULL);
     code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY); 
-//    printf("\nReturn Code= %d\n", code);
+/*    printf("\nReturn Code= %d\n", code); */
     if (strcmp(code,"1") != 0 )
     {
         printf("INCORRECT PASSWORD OR File not created\n");
@@ -146,7 +146,7 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
    sig_len= auth_p->siglen * 4;
  
   key_len=auth_len - sig_len - 2;
-  // remove padding, if necessary
+  /* remove padding, if necessary */
   if ( auth_p->padding )
   {
     pad_len = *(authinfo+(auth_len-2)-1);
@@ -156,8 +156,8 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
  
   AUTHDEB(printf("Key Certificate=%d bytes\n", key_len);)
  
-  // Extract the signature and key certificate from the packet and
-  // store in files.
+  /* Extract the signature and key certificate from the packet and
+     store in files. */
 
   homedir=(char *)getenv("HOME");
 #ifdef WIN32
@@ -214,8 +214,8 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
   }
   fclose(key_fd);
  
-  // REMINDER: need to store end_time and keyid too if encrypted session
-  /* Refer to SAP specification for encrypted announcements with
+  /* REMINDER: need to store end_time and keyid too if encrypted session
+     Refer to SAP specification for encrypted announcements with
      authentication! */
   auth_fd=fopen(fulltxt, "w");
   if (auth_fd == NULL)
@@ -338,7 +338,7 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
  /* sapauth_p->sig_len=fread(&signature_, 1, MAXSIGSIZE, sig_fd);
   (char *)sapauth_p->signature=(char *)malloc(sapauth_p->sig_len);
   memcpy(sapauth_p->signature, &signature_, sapauth_p->sig_len); */
-//  printf("%d chars read of signature\n", sapauth_p->sig_len);
+ /*  printf("%d chars read of signature\n", sapauth_p->sig_len); */
   fclose(sig_fd);
 
    free(encsig);
@@ -368,7 +368,7 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
       printf("Sorry, Key Certificate is too large...\n");
       sapauth_p->key_len = 0;
   }
-//  printf("%d chars read of key certificate\n\r", sapauth_p->key_len);
+/*  printf("%d chars read of key certificate\n\r", sapauth_p->key_len); */
   fclose(key_fd);
     free(keycert);
   }
@@ -465,7 +465,7 @@ int generate_encryption_info(char *data, char *encstatus, int irand,char *encmes
     /* Executes the TCL script that calls PGP */
     Tcl_VarEval(interp, "pgp_create_encryption ", &irandstr, NULL);
      code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY);
-//    printf("\nReturn Code= %d\n", code);
+/*    printf("\nReturn Code= %d\n", code); */
      if (strcmp(interp->result,"1") != 0 )
     {
         printf("File has not been created\n");
@@ -522,9 +522,9 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   sprintf(irandstr, "%d", irand);
  
  
-//  printf("data= %s\n", data);
+/*  printf("data= %s\n", data); */
  
-  // remove padding, if necessary
+  /* remove padding, if necessary */
   if ( enc_p->padding )
   {
     AUTHDEB(printf("Padding Length=%d\n", *(encinfo+hdr_len-2));)
@@ -534,8 +534,8 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   }
  
  
-  // Extract the signature and key certificate from the packet and
-  // store in files.
+  /* Extract the signature and key certificate from the packet and
+     store in files. */
  
  
   enc_fd=fopen(encfullenc, "w");
@@ -655,7 +655,7 @@ int store_encryption_in_memory(struct advert_data *addata, char *enc_type, int i
     }
 
    sapenc_p->txt_len= sbufd.st_size;
-  (char *)sapenc_p->txt_data=(char *)malloc(sapenc_p->txt_len);
+  sapenc_p->txt_data=(char *)malloc(sapenc_p->txt_len);
   memcpy(sapenc_p->txt_data, decrypt, sapenc_p->txt_len);
   fclose(enc_fd);
   fclose(auth_fd);

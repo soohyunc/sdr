@@ -15,8 +15,8 @@ extern int doexit;
 
 /* #define DEBUG */
 
-struct keydata* keylist;
-char passphrase[MAXKEYLEN];
+extern struct keydata* keylist;
+extern char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
 extern unsigned long hostaddr;
 extern int debug1;
@@ -197,7 +197,7 @@ int store_data_to_announce(struct advert_data *addata,
     if (find_key_by_name(keyname, key)!=0)
       return -1;
     addata->length= strlen(adstr);
-    encrypt_announcement(adstr, &encdata, &(addata->length), key);
+    encrypt_announcement(adstr, &encdata, (int *)addata->length, key);
     addata->data=malloc(addata->length);
     memcpy(addata->data, encdata, addata->length);
     addata->encrypt=1;

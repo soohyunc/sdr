@@ -2,7 +2,7 @@
 <B><pre>
 
 2.5.6 
-  - 
+  - Fixes for Irix 6.3 from Michael Kaschel (M.Kaschel@sf.hs-wismar.de)
   - Rewrite of the new session UI (wizard style interface)
   - Change order of scope zone initialisation
 

@@ -76,11 +76,11 @@ void init_bitmaps()
   Tk_DefineBitmap(interp, Tk_GetUid("phone3"), phone3_bits, phone3_width, phone3_height);
   Tk_DefineBitmap(interp, Tk_GetUid("phone4"), phone4_bits, phone4_width, phone4_height);
   Tk_DefineBitmap(interp, Tk_GetUid("mail"), mail_bits, mail_width, mail_height);
-  Tk_DefineBitmap(interp, Tk_GetUid("eye"), eye_bits, eye_width, eye_height);
-  Tk_DefineBitmap(interp, Tk_GetUid("audio"), audio_bits, audio_width, audio_height);
-  Tk_DefineBitmap(interp, Tk_GetUid("wb"), wb_bits, wb_width, wb_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("eye"), (char *)eye_bits, eye_width, eye_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("audio"), (char *)audio_bits, audio_width, audio_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("wb"), (char *)wb_bits, wb_width, wb_height);
   Tk_DefineBitmap(interp, Tk_GetUid("www"), www_bits, www_width, www_height);
-  Tk_DefineBitmap(interp, Tk_GetUid("text"), text_bits, text_width, text_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("text"), (char *)text_bits, text_width, text_height);
   Tk_DefineBitmap(interp, Tk_GetUid("unknown"), unknown_bits, unknown_width, unknown_height);
   Tk_DefineBitmap(interp, Tk_GetUid("clock"), clock_bits, clock_width, clock_height);
   Tk_DefineBitmap(interp, Tk_GetUid("ucl"), ucl_bits, ucl_width, ucl_height);

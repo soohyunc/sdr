@@ -231,7 +231,7 @@ struct in_addr look_up_address(char *hostname)
 #ifndef WIN32
 	{
 	  char buf[200];
-	  int ans[500];
+	  char ans[1000];
 	  int ctr;
 	  char *tstr, *resstr;
 	  struct dnshdr *dnsa;
@@ -762,7 +762,7 @@ int parse_sip_url(char *url, char* user, char *passwd, char *host,
   while (ptr1!=NULL)
   {
 #else
-  while (ptr1!=NULL+1)
+  while (*ptr1 != (NULL+1))
   {
 #endif
     ptr2=strchr(ptr1, ';');

@@ -93,9 +93,7 @@ static Tk_ArgvInfo argTable[] = {
  */
 
 int
-ui_init(argc, argv)
-    int *argc;				/* Number of arguments. */
-    char **argv;			/* Array of argument strings. */
+ui_init(int *argc, char **argv)
 {
     char buf[MAXCLINE];
     int i;
@@ -163,7 +161,7 @@ ui_init(argc, argv)
      * interpreter.
      */
     for(i=0;i<MAX_UI_FN;i++)
-      Tcl_CreateCommand(interp, ui_fn_name[i], ui_fn[i],
+      Tcl_CreateCommand(interp, (char *)ui_fn_name[i], (Tcl_CmdProc *)ui_fn[i],
                       (ClientData) mainWindow, 0);
     return 1;
 
@@ -196,7 +194,7 @@ int ui_create_interface()
 
   for(i=0;i<MAX_TCL_MODULE;i++)
     {
-      announce_error(Tcl_VarEval(interp, modvar[i], 0), modname[i]);
+      announce_error(Tcl_VarEval(interp, modvar[i], 0), (char *)modname[i]);
     }
 
     return 0;
