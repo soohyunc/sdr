@@ -1634,6 +1634,7 @@ void recv_packets(ClientData fd)
         case PGP:
 
           strcpy(enctype,"pgp");
+          strcpy(recvkey,"");
           if (check_encryption(enc_p,data,length,enc_asym_keyid,encmessage,ENCMESSAGELEN,addata, enctype) != 0) {
             strcpy(encstatus_p,"failed");
             writelog(printf("recv_pkts: PGP decryption failed\n");)
@@ -1650,6 +1651,7 @@ void recv_packets(ClientData fd)
 /* This is X.509 code and hasn't been checked */
 
           memcpy(enctype,"x509",4);
+          strcpy(recvkey,"");
           Tcl_Eval(interp, "x509state");
           if (strcmp(interp->result,"1") == 0) {
             encstatus_p=check_x509_encryption(enc_p,
@@ -1731,7 +1733,7 @@ void recv_packets(ClientData fd)
 
 /* set the encryption variables to appropriate values */
 
-        memset(recvkey,0,MAXKEYLEN);
+        strcpy(recvkey,"");
         strcpy(enctype,"none" );
         strcpy(encstatus_p,"noenc");
         strcpy(encmessage,"none" );
