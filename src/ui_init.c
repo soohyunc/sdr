@@ -123,12 +123,14 @@ ui_init(int *argc, char **argv)
 	Tcl_SetVar2(interp, "env", "DISPLAY", display, TCL_GLOBAL_ONLY);
     }
 
+    Tcl_SetVar(interp, "argv0", argv[0], TCL_GLOBAL_ONLY);
     strcpy(buf, "-name sdr");
     for(i=1;i<*argc;i++)
       {
         strncat(buf, " ", MAXCLINE-strlen(buf));
         strncat(buf, argv[i], MAXCLINE-strlen(buf));
       }
+    buf[MAXCLINE-1] = '\0';
     Tcl_SetVar(interp, "argv", buf, TCL_GLOBAL_ONLY);
 
     if (gui==GUI) {
