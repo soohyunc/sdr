@@ -61,8 +61,8 @@
 #define ASYMKEYIDLEN 9
 #define AUTHTYPELEN 6
 #define ENCTYPELEN 6
-#define AUTHSTATUSLEN 14
-#define ENCSTATUSLEN 14
+#define AUTHSTATUSLEN 18
+#define ENCSTATUSLEN 18
 #define AUTHMESSAGELEN 800
 #define ENCMESSAGELEN 800
 #define NRANDSTRLEN 10
@@ -242,7 +242,6 @@ struct auth_info {
   u_int sig_len;
   u_int key_len;
   char *signature;
-  char *keycertificate;
 };
 
 /*this is the actual header that goes in the packets*/
