@@ -670,8 +670,10 @@ proc sip_session_status {id status} {
 }
 
 set sip_invites {}
-proc sip_user_alert {fd msg} {
+proc sip_user_alert {fd} {
     global sip_invites sip_invite_status sip_invite_tag
+	global sip_advert
+	set msg $sip_advert
     #debug " $fd  TESTing $msg"
     set lines [split $msg "\n"]
     set cur-to [lindex [lindex $lines 0] 1]
@@ -985,8 +987,14 @@ proc sip_send_refuse_invite {fd id srcuser dstuser path cseq} {
     sip_send_reply $fd $id $path $msg INVITE 0
 }
 
-proc sip_send_method_unsupported {fd id srcuser dstuser path cseq method} {
+proc sip_send_method_unsupported {fd method} {
     global sip_invite_tag
+	global sip_id sip_srcuser sip_dstuser sip_path sip_cseq
+	set id $sip_id
+	set srcuser $sip_srcuser
+	set dstuser $sip_dstuser
+	set path $sip_path
+	set cseq $sip_cseq
     set tag ""
     if {[info exists sip_invite_tag($id)]} {
 	set tag ";tag=$sip_invite_tag($id)"
@@ -1023,8 +1031,14 @@ proc sip_send_invalid_callid {fd id srcuser dstuser path cseq method} {
 }
 
 
-proc sip_send_unknown_user {fd id srcuser dstuser path cseq method} {
+proc sip_send_unknown_user {fd method} {
     global sip_invite_tag
+	global sip_id sip_srcuser sip_dstuser sip_path sip_cseq
+	set id $sip_id
+	set srcuser $sip_srcuser
+	set dstuser $sip_dstuser
+	set path $sip_path
+	set cseq $sip_cseq
     set tag ""
     if {[info exists sip_invite_tag($id)]} {
 	set tag ";tag=$sip_invite_tag($id)"
@@ -1040,7 +1054,9 @@ proc sip_send_unknown_user {fd id srcuser dstuser path cseq method} {
     sip_send_reply $fd $id $path $msg $method 0
 }
 
-proc sip_unknown_user_ack {callid} {
+proc sip_unknown_user_ack {} {
+	global sip_callid
+	set callid $sip_callid
     #we got an ACK containing an unknown user.
     #either something bizarre happened, or we previously sent 404 Not Found
     #or something similar, so we need to stop resending this response.

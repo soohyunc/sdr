@@ -76,7 +76,6 @@ int sip_recv_udp()
 	perror("sip recv error");
 	return 0;
     }
-	splat_tcl_special_chars(buf);
     strcpy(pktsrc, inet_ntoa(from.sin_addr));
     if (length==MAXADSIZE) {
 	/*some sneaky bastard is trying to splat the stack?*/
@@ -132,8 +131,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    Tcl_SetVar(interp, "sip_advert", buf, TCL_GLOBAL_ONLY);
 	    sprintf(sipfdstr, "%d", sipfd);
 	    Tcl_SetVar(interp, "sip_fd", sipfdstr, TCL_GLOBAL_ONLY);
-	    if (Tcl_VarEval(interp, 
-		     "sip_user_alert  $sip_fd  $sip_advert ", NULL)!=TCL_OK) {
+	    if (Tcl_VarEval(interp, "sip_user_alert $sip_fd", NULL)!=TCL_OK) {
 		Tcl_AddErrorInfo(interp, "\n");
 		/*	    fprintf(stderr, "%s\n", interp->result);       */
 		/*	    Tcl_VarEval(interp, "puts $errorInfo", NULL);  */
@@ -154,12 +152,15 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    extract_field(buf, cseq, 80, "Cseq");
 	    fprintf(stderr,"path: >%s<\n", path);
 	    fprintf(stderr,"cseq: >%s<\n", cseq);
+		Tcl_SetVar(interp, "sip_callid", callid, TCL_GLOBAL_ONLY);
+		Tcl_SetVar(interp, "sip_srcuser", srcuser, TCL_GLOBAL_ONLY);
+		Tcl_SetVar(interp, "sip_dstuser", dstuser, TCL_GLOBAL_ONLY);
+		Tcl_SetVar(interp, "sip_path", path, TCL_GLOBAL_ONLY);
+		Tcl_SetVar(interp, "sip_cseq", cseq, TCL_GLOBAL_ONLY);
 	    switch(method) {
 		case INVITE:
 		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", 
-				    sipfdstr ," ", callid, " {", srcuser, 
-				    "} {", dstuser, "} {", path, "} {", 
-				    cseq, "} INVITE", NULL)!=TCL_OK) {
+				    sipfdstr ," INVITE", NULL)!=TCL_OK) {
 			Tcl_AddErrorInfo(interp, "\n");
 			fprintf(stderr, "%s\n", interp->result);
 			Tcl_VarEval(interp, "puts $errorInfo", NULL);
@@ -167,28 +168,22 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 		    break;
 		case OPTIONS:
 		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", 
-				    sipfdstr ," ", 
-				    callid, " {", srcuser, "} {", dstuser, 
-				    "} {", path, 
-				    "} {", cseq, "} OPTIONS", NULL)!=TCL_OK) {
+				    sipfdstr ," OPTIONS", NULL)!=TCL_OK) {
 			Tcl_AddErrorInfo(interp, "\n");
 			fprintf(stderr, "%s\n", interp->result);
 			Tcl_VarEval(interp, "puts $errorInfo", NULL);
 		    };
 		    break;
 		case BYE:
-		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr,
-				    " ", callid, " {", srcuser, "} {", dstuser,
-				    "} {", path, "} {", cseq, "} BYE", 
-				    NULL)!=TCL_OK) {
+		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", 
+				    sipfdstr, " BYE", NULL)!=TCL_OK) {
 			Tcl_AddErrorInfo(interp, "\n");
 			fprintf(stderr, "%s\n", interp->result);
 			Tcl_VarEval(interp, "puts $errorInfo", NULL);
 		    };
 		    break;
 		case ACK:
-		    if (Tcl_VarEval(interp, "sip_unknown_user_ack ", 
-				    callid, NULL)!=TCL_OK) {
+		    if (Tcl_VarEval(interp, "sip_unknown_user_ack ", NULL)!=TCL_OK) {
 			Tcl_AddErrorInfo(interp, "\n");
 			fprintf(stderr, "%s\n", interp->result);
 			Tcl_VarEval(interp, "puts $errorInfo", NULL);
@@ -199,10 +194,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 		    break;
 		case REGISTER:
 		    if (Tcl_VarEval(interp, "sip_send_method_unsupported ", 
-				    sipfdstr ," ", 
-				    callid, " {", srcuser, "} {", 
-				    dstuser, "} {",  path, "} {", cseq, 
-				    "} REGISTER", NULL)!=TCL_OK) {
+				    sipfdstr ," REGISTER", NULL)!=TCL_OK) {
 			Tcl_AddErrorInfo(interp, "\n");
 			fprintf(stderr, "%s\n", interp->result);
 			Tcl_VarEval(interp, "puts $errorInfo", NULL);
@@ -333,7 +325,6 @@ int parse_sip_success(int sipfd, char *msg, char *addr)
 {
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
-	splat_tcl_special_chars(msg);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
     if (Tcl_VarEval(interp, "sip_success ", sipfdstr, " ", 
 		    addr, NULL)!=TCL_OK) {
@@ -348,7 +339,6 @@ int parse_sip_fail(int sipfd, char *msg, char *addr)
 {
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
-	splat_tcl_special_chars(msg);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
     if (Tcl_VarEval(interp, "sip_failure ", sipfdstr, " ",
 		    addr, NULL)!=TCL_OK) {
@@ -364,7 +354,6 @@ int parse_sip_redirect(int sipfd, char *msg, char *addr)
     char sipfdstr[10];
 
     sprintf(sipfdstr, "%d", sipfd);
-	splat_tcl_special_chars(msg);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
     if (Tcl_VarEval(interp, "sip_moved ", sipfdstr, " ",
 		    addr, NULL)!=TCL_OK) {
@@ -387,7 +376,6 @@ int parse_sip_progress(int sipfd, char *msg, char *addr)
     sprintf(sipfdstr, "%d", sipfd);
 
    MDEBUG(SIP, ("parse_sip_ringing\n"));
-   splat_tcl_special_chars(msg);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
    if (Tcl_VarEval(interp, "sip_status ", sipfdstr, " ",
 		   addr, NULL)!=TCL_OK) {
