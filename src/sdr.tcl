@@ -76,60 +76,48 @@ proc initialise_resources {} {
     global gui
     if {$gui=="NO_GUI"} { return }
     #Tk4.0 standard bg
-    option add *background gray85 widgetDefault
+    option add *background gray85 
     #Use same colours as vat
-    option add *foreground black widgetDefault
-    option add *activeBackground gray95 widgetDefault
-    option add *activeForeground black widgetDefault
-    option add *hotForeground blue widgetDefault
-    option add *activehotForeground red widgetDefault
-    option add *selectBackground gray95 widgetDefault
-    option add *scrollbarBackground gray50 widgetDefault
-    option add *scrollbarForeground gray80 widgetDefault
-    option add *scrollbarActiveForeground gray95 widgetDefault
-    option add *canvasBackground gray95 widgetDefault
-    option add *prefsBackground gray50 widgetDefault
-    option add *balloonBg gray50 widgetDefault
-    option add *balloonFg white widgetDefault
+    option add *foreground black 
+    option add *activeBackground gray95 
+    option add *activeForeground black 
+    option add *hotForeground blue 
+    option add *activehotForeground red 
+    option add *selectBackground gray95 
+    option add *scrollbarBackground gray50 
+    option add *scrollbarForeground gray80 
+    option add *scrollbarActiveForeground gray95 
+    option add *canvasBackground gray95 
+    option add *prefsBackground gray50 
+    option add *balloonBg gray50 
+    option add *balloonFg white 
     #test
-    option add *disabledBackground gray80 widgetDefault
-    option add *disabledForeground gray50 widgetDefault
-    option add *entryBackground lightsteelblue widgetDefault
+    option add *disabledBackground gray80 
+    option add *disabledForeground gray50 
+    option add *entryBackground lightsteelblue 
     if { [winfo depth .] == 1 } {
 	# make mono look better
-	option add *background white widgetDefault
-	option add *selectBackground black widgetDefault
-	option add *selectForeground white widgetDefault
-	option add *activeBackground white widgetDefault
-	option add *activeForeground black widgetDefault
-	option add *activehotForeground black widgetDefault
-	option add *balloonBg black widgetDefault
-	option add *balloonFg white widgetDefault
-	option add *scrollbarBackground white widgetDefault
-	option add *scrollbarForeground black widgetDefault
-	option add *scrollbarActiveForeground black widgetDefault
-	option add *entryBackground white widgetDefault
+	option add *background white 
+	option add *selectBackground black 
+	option add *selectForeground white 
+	option add *activeBackground white 
+	option add *activeForeground black 
+	option add *activehotForeground black 
+	option add *balloonBg black 
+	option add *balloonFg white 
+	option add *scrollbarBackground white 
+	option add *scrollbarForeground black 
+	option add *scrollbarActiveForeground black 
+	option add *entryBackground white 
     }
 
 
-    option add *infoFont \
-	-*-helvetica-medium-r-normal--10-*-iso8859-1 \
-	widgetDefault
-    option add *headerFont \
-	-*-helvetica-bold-r-normal--14-*-iso8859-1 \
-	widgetDefault
-    option add *largeFont \
-	-*-helvetica-bold-r-normal--24-*-iso8859-1 \
-	widgetDefault
-    option add *mediumFont \
-	-*-helvetica-medium-r-normal--12-*-iso8859-1 \
-	widgetDefault
-    option add *font \
-	-*-helvetica-bold-r-normal--12-*-iso8859-1 \
-	widgetDefault
-    option add *italfont \
-	-*-helvetica-bold-o-normal--12-*-iso8859-1 \
-	widgetDefault
+    option add *infoFont   -*-helvetica-medium-r-normal--10-*-iso8859-1 
+    option add *headerFont -*-helvetica-bold-r-normal--14-*-iso8859-1 
+    option add *largeFont  -*-helvetica-bold-r-normal--24-*-iso8859-1 
+    option add *mediumFont -*-helvetica-medium-r-normal--12-*-iso8859-1 
+    option add *font       -*-helvetica-bold-r-normal--12-*-iso8859-1 
+    option add *italfont   -*-helvetica-bold-o-normal--12-*-iso8859-1 
     set tmp 0
     catch {set tmp [label .test -font [option get . font Sdr]];destroy .test}
     if {$tmp==0} {
@@ -3835,7 +3823,7 @@ proc user_hook {} {
 
 #set where to read config files from
 if {$tcl_platform(platform) == "windows"} {
-    option add *sdrHome ~/sdr widgetDefault
+    option add *sdrHome ~/sdr 
 } else {
     set_resource Sdr.sdrHome [glob ~]/.sdr
 }
