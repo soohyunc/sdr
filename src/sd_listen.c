@@ -4151,6 +4151,10 @@ int run_program(char *args) {
   pid = fork();
   if (pid>0)
     return pid;
+  if (pid<0) {
+    perror("fork");
+    return -1;
+  }
   /*if we're here, we're the child*/
   /*we need to clear up all the files the parent had open - if we don't 
     do this we might have problems restarting sdr unless all the apps
@@ -4196,6 +4200,7 @@ int run_program(char *args) {
   for(i=0;nargv[i]!=NULL;i++)
     fprintf(stderr, "%s ", nargv[i]);
   fprintf(stderr, "\n");
+  perror(nargv[0]);
   exit(0);
 }
 

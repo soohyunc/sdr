@@ -800,6 +800,10 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     } else {
 	set pid [run_program $rule]
     }
+    if {$pid == -1} {
+	# fork failed...
+	return 0
+    }
 
     #keep track of the pid so we can see if the tools are still running...
     for {set i 0} {$i<$ldata($aid,medianum)} {incr i} {
