@@ -535,12 +535,15 @@ proc new_mk_session_security {win aid} {
 		-command "set_auth_type $win none"
 	    $win.auth.sel.mauth.menu add command -label "PGP"\
 		-command "set_auth_type $win pgp"
-	    $win.auth.sel.mauth.menu add command -label "X509"\
-		-command "set_auth_type $win x509"
-	    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
-		-command "set_auth_type $win cpgp"
-	    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
-		-command "set_auth_type $win cx50"
+
+# comment out the X.509 option until they are added in properly
+#	    $win.auth.sel.mauth.menu add command -label "X509"\
+#		-command "set_auth_type $win x509"
+# comment out these as they won't be used
+#	    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
+#		-command "set_auth_type $win cpgp"
+#	    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
+#		-command "set_auth_type $win cx50"
 	 
 	    frame $win.auth.keys
 	    text $win.auth.keys.lb -width 15 -height 5 -relief flat\
@@ -579,8 +582,10 @@ proc new_mk_session_security {win aid} {
 		-command "set_enc_type $win des $aid"
 	    $win.enc.sel.menc.menu add command -label "PGP"\
 		-command "set_enc_type $win pgp $aid"
-	    $win.enc.sel.menc.menu add command -label "X509"\
-		-command "set_enc_type $win x509 $aid"
+
+# comment out X.509 until it is added properly
+#	    $win.enc.sel.menc.menu add command -label "X509"\
+#		-command "set_enc_type $win x509 $aid"
 	 
 	    frame $win.enc.keys
 	    listbox $win.enc.keys.lb -width 15 -height 5 -yscroll\
@@ -731,7 +736,6 @@ proc create {} {
     global rtp_payload sdrversion security
     global mediaenc security
 
-#AUTH
     global auth_type
     global enc_type
     global sess_auth_status
@@ -749,6 +753,8 @@ proc create {} {
         log "user had entered an illegal scope value"
         return
     }
+#     puts "create: ttl = $ttl"
+
     set sess "v=0"
     set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
     set sess "$sess\ns=[get_new_session_name .new.f.f]"
@@ -871,6 +877,9 @@ proc create {} {
         }
     }
 #    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
+
+# if using DES (symmetric) encryption
+
     if {[info exists security]&&($security == "private")} {
         set keyname [string trim [get_new_session_key] "\n"]
         if {$keyname==0} {return 0};
@@ -879,55 +888,71 @@ proc create {} {
         set keyname ""
         log "new session was not encrypted"
     }
+
 #    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
 
-#AUTH - ensure passphrase entered if auth key selected
-        if { ($auth_type == "pgp" || $auth_type == "cpgp" || $auth_type =="none") } {
-        set aauth "pgp"
+# why is the first if "none" as well ?
+
+    if { ($auth_type=="pgp" || $auth_type=="cpgp" || $auth_type=="none") } {
+      set aauth "pgp"
+    } elseif { ($auth_type == "x509" || $auth_type == "cx50" ) } {
+      set aauth "x509"
     }
-    if { ($auth_type == "x509" || $auth_type == "cx50" ) } {
-        set aauth "x509"
-    }
-if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
+
+    if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
       set asym "pgp"
-        }
-  if { $enc_type == "x509" || $enc_type == "none"} {
+    } elseif { $enc_type == "x509" || $enc_type == "none"} {
       set asym "x509"
-        }
-
-    if { ($user_id(pgp,auth_cur_key_sel)!="") &&\
-         $asympass=="" } {
-                errorpopup "No Passphrase!"\
-                "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
-                 entered before authentication information can be \
-                 constructed for this session announcement."
-                log "User did not enter a passphrase for key certificate"
-                return 0
     }
- set validpassword 0
- set validauth 0
- set validfile 0
-    set validkey 0
-#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $key_id(pgp,auth_cur_key_sel)
 
-#authentication and Encryption
-createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aauth,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
+    if { $auth_type=="none" } {
+      set key_id($aauth,auth_cur_key_sel) 0
+      set user_id(pgp,auth_cur_key_sel) ""
+    }
+
+    if { $enc_type=="none" } {
+      set key_id($asym,enc_cur_key_sel) 0
+    }
+
+# ensure passphrase entered if auth key selected
+
+    if { ($user_id(pgp,auth_cur_key_sel)!="") && $asympass=="" } {
+      errorpopup "No Passphrase!"\
+         "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
+         entered before authentication information can be \
+         constructed for this session announcement."
+      log "User did not enter a passphrase for key certificate"
+      return 0
+    }
+
+    set validpassword 0
+    set validauth     0
+    set validfile     0
+    set validkey      0
+
+# do the work - calls ui_createsession in c code
+
+    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aauth,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
+
+# check PGP password
 
     if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
-        errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect passphrase for key certificate"
-        return 0
+      errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
+        $user_id($aauth,auth_cur_key_sel).  Try again."
+      log "User entered an incorrect passphrase for key certificate"
+      return 0
     }
+
     if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx50"  )} {
-        errorpopup "Secude failed" "The Signed DATA Failed for USER\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect passphrase for key certificate"
-        return 0
+      errorpopup "Secude failed" "The Signed DATA Failed for USER\
+        $user_id($aauth,auth_cur_key_sel).  Try again."
+      log "User entered an incorrect passphrase for key certificate"
+      return 0
     }
+
     if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx50" )} {
-        errorpopup "Length" "Authentication Lenght very big for the Sap session\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        errorpopup "Length" "Authentication Length very big for the Sap session\
+           $user_id($aauth,auth_cur_key_sel).  Try again."
         log "User entered an incorrect ling Cert for key certificate"
         return 0
     }
@@ -961,7 +986,8 @@ proc set_auth_type {win type} {
             clear_asym_keys $win x509
             clear_asym_keys $win pgp
             $win.auth.sel.mauth configure -text PGP
-            show_pgp_keys $win
+            $win.auth.pwd.e configure -state normal
+            pgp_get_key_list $win
         }
         x509 {
             clear_asym_keys $win x509
@@ -974,7 +1000,8 @@ proc set_auth_type {win type} {
             clear_asym_keys $win x509
             clear_asym_keys $win pgp
             $win.auth.sel.mauth configure -text PGP+CERT
-            show_pgp_keys $win
+            $win.auth.pwd.e configure -state normal
+            pgp_get_key_list $win
         }
        cx50 {
             clear_asym_keys $win x509
