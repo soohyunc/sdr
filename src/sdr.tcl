@@ -488,6 +488,7 @@ proc media_changed_warning {aid medianum} {
 proc set_media {} {
     global media vars port proto fmt medianum ldata advertid 
     global mediaaddr mediattl medialayers rtp_payload
+    global mediakey
     set origaddr 0
     set aid $advertid
     catch {
@@ -509,6 +510,8 @@ proc set_media {} {
     set ldata($aid,$medianum,layers) $medialayers
     set ldata($aid,$medianum,ttl) $mediattl
     set ldata($aid,$medianum,pid) 0
+    set ldata($aid,$medianum,mediakey) $mediakey
+
     incr medianum
     set ldata($aid,medianum) $medianum
     debug "medianum=$medianum"
@@ -975,6 +978,7 @@ proc update_displayed_session {aid} {
 		    $ldata($aid,$i,ttl) \
 		    $ldata($aid,$i,addr) \
 		    $ldata($aid,$i,layers) \
+                    $ldata($aid,$i,mediakey) \
 		    $ldata($aid,$i,vars)
 	}
     }
@@ -1495,6 +1499,16 @@ media tools individually."]
 	-width 5 -font $infofont -highlightthickness 0
     $fname.d7 insert 0 [get_proto_name $ldata($aid,$i,proto)]
 
+    label $fname.l8 -text [tt "Key:"] -font $infofont
+    entry $fname.d8  -relief sunken -borderwidth 1\
+        -width 25 -font $infofont -highlightthickness 0
+ 
+    tixAddBalloon $fname.d8 Entry [tt "The $ldata($aid,$i,media) encryption key is shown here.  If it is blank no encryption is being used."]
+ 
+    if { [info exists ldata($aid,$i,mediakey)] && ($ldata($aid,$i,mediakey) != "")} {
+      $fname.d8 insert 0 $ldata($aid,$i,mediakey)
+    }
+
     foreach e "$fname.d4 $fname.d5 $fname.d2 $fname.d3 $fname.d7" {
 	bind $e <KeyPress> {break}
 	bind $e <2> {break}
@@ -1517,6 +1531,8 @@ if {$ifstyle=="norm"} {
     pack $fname.d2 -side left
     pack $fname.l5 -side left
     pack $fname.d5 -side left
+    pack $fname.l8 -side left
+    pack $fname.d8 -side left
     if {$ldata($aid,$i,vars) != ""} {
       label $fname.l6 -text [tt "Vars:"] -font $infofont
       entry $fname.d6  -relief sunken -borderwidth 1\
@@ -1664,7 +1680,7 @@ proc popup_update {aid field value} {
     }
 }
 
-proc popup_update_media {aid medianum fmt proto port ttl addr layers vars} {
+proc popup_update_media {aid medianum fmt proto port ttl addr layers mediakey vars} {
     set fname .desc$aid.f.media.$medianum
     catch {
 	$fname.d3 delete 0 end
@@ -1677,6 +1693,8 @@ proc popup_update_media {aid medianum fmt proto port ttl addr layers vars} {
 	$fname.d5 insert 0 $ttl
 	$fname.d4 delete 0 end
 	$fname.d4 insert 0 $addr
+        $fname.d8 delete 0 end
+        $fname.d8 insert 0 $mediakey
 	if {$layers>1} {
 	    $fname.d4 insert end "/$layers"
 	}
@@ -3695,6 +3713,14 @@ proc make_session {aid {mediavar {}}} {
 	set addr $ldata($aid,$i,addr)
 	set newttl $ldata($aid,$i,ttl)
 	set msg "$msg\nc=IN IP4 $addr/$newttl"
+        if {[info exists ldata($aid,$i,mediakey)]} {
+          set key $ldata($aid,$i,mediakey)
+        } else {
+         set key ""
+        }
+        if { [ string compare $key ""] !=0 } {
+          set msg "$msg\nk=clear:$key"
+        }
 	if {$ldata($aid,$i,layers)>1} {
 	    set msg "$msg/$ldata($aid,$i,layers)"
 	}
