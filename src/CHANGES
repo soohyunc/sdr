@@ -1,10 +1,12 @@
 <H1>Sdr changes log</H1>
 <B><pre>
-2.5a1 C.Perkins 
+2.5a1 c.perkins@cs.ucl.ac.uk
 
 - Fix SIP for encrypting sdr 
 
 2.5a0 
+
+- Rename 'nt' to 'nte'
 
 2.4a8 E.Whelan 4th Feb 98
 
