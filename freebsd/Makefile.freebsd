@@ -6,7 +6,7 @@ LIBRARY_TCL = $(LIB_DIR)/tcl8.0
 LIBRARY_TK  = $(LIB_DIR)/tk8.0
 CFLAGS      = $(INCLUDES) -DDIFF_BYTE_ORDER -DFREEBSD -DNORANDPROTO -DDEFINED_ERRLIST -Wall -DAUTH
 
-all::	sdr sip_server
+all::	sdr 
 install:
 	cp ./sdr /cs/research/mice/speedy/common/freebsd/bin/sdr
 	chmod 755 /cs/research/mice/speedy/common/freebsd/bin/sdr

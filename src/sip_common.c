@@ -1167,16 +1167,6 @@ try_again:
 	    }
   }
   close(fd);
-#ifdef MSG_EOF
-  /*
-   * Some sip servers can't handle T/TCP and just close the connection.
-   * Try again if we hit one of those.
-   */
-  if (sipdatalen == 0 && usettcp) {
-    usettcp = 0;
-    goto try_again;
-  }
-#endif
   sipdata[sipdatalen]='\0';
   interp->result=sipdata;
   return -1;

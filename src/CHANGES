@@ -1,6 +1,12 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.5.7
+  - Fix compilation on FreeBSD
+  - Fix session creation in cases where you have a plugin but no tools for
+    the media
+  - Remove T/TCP code from sip_common.c (Patch from Bill Fenner)
+
 2.5.6 
   - Many bug fixes...
   - Fixes for Irix 6.3 from Michael Kaschel (M.Kaschel@sf.hs-wismar.de)
