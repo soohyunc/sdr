@@ -94,8 +94,8 @@ struct msghdr {
 int uname(struct utsname *);
 int getopt(int, char * const *, const char *);
 int strcasecmp(const char *, const char *);
-int srandom(int);
-int random(void);
+void srandom(unsigned int);
+long random(void);
 int gettimeofday(struct timeval *p, struct timezone *z);
 int gethostid(void);
 int getuid(void);
