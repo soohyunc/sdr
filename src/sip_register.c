@@ -146,18 +146,18 @@ int send_sip_register(char *uridata, char *proxyuri, char *user_data)
     return 0;
 }
 
-int sip_send_mcast_register(char *host, char *maddr, int port, 
-			    int ttl, char *user_data)
+int sip_send_mcast_register(char *host, const char *maddr, int port, 
+			    int ttl, const char *user_data)
 {
     return -1;
 }
 
-int sip_send_udp_register(char *host, int port, char *user_data)
+int sip_send_udp_register(const char *host, int port, char *user_data)
 {
     return -1;
 }
 
-int sip_send_tcp_register(char *host, int port, char *user_data)
+int sip_send_tcp_register(const char *host, int port, char *user_data)
 {
     return(sip_send_tcp_request(0, host, port, user_data, 
 				1 /*wait for reply*/ ));

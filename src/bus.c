@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 #include "sdr.h"
+#include "sip.h"
 #include "prototypes.h"
 
 extern int busrxsock;

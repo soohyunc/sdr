@@ -35,9 +35,7 @@
 #include "prototypes.h"
 #include "ipv6_macros.h"
 
-#define IPV6_ADDR_LEN 16
-
-int generate_port(char *media)
+int generate_port(const char *media)
 {
   int base=49152;
   int mask=0x3fff;
@@ -220,7 +218,7 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
 		newaddr->s6_addr[14] |= (i>>8);
 		newaddr->s6_addr[15] |= (i);
 
-        if (check_address(newaddr, IPv6)==TRUE) {
+        if (check_address((struct in_addr *)newaddr, IPv6)==TRUE) {
             return(newaddr);
         }
     }

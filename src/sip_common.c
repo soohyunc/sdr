@@ -222,7 +222,7 @@ int sip_send(char *msg, int len, struct sockaddr_in *dst, unsigned char ttl)
     return(0);
 }
 
-struct in_addr look_up_address(char *hostname)
+struct in_addr look_up_address(const char *hostname)
 {
     static struct in_addr addr;
     struct hostent *hostaddr;
@@ -341,7 +341,7 @@ struct in_addr look_up_address(char *hostname)
     return(addr);
 }
 
-char *sip_get_dstname(char *msg)
+char *sip_get_dstname(const char *msg)
 {
     char *line, *cr, *url;
     static char *res=NULL;
@@ -377,7 +377,7 @@ char *sip_get_dstname(char *msg)
     return res;
 }
 
-int sip_get_method(char *msg)
+int sip_get_method(const char *msg)
 {
     char method[20];
 
@@ -399,7 +399,7 @@ int sip_get_method(char *msg)
     return METHOD_UNKNOWN;
 }
 
-int is_a_sip_request(char *msg)
+int is_a_sip_request(const char *msg)
 {
     return((strncmp(msg, "INVITE ", 7)==0) || 
 	   (strncmp(msg, "ACK ", 4)==0) || 
@@ -409,7 +409,7 @@ int is_a_sip_request(char *msg)
 	   (strncmp(msg, "OPTIONS ", 8)==0));
 }
 
-int is_a_sip_reply(char *msg)
+int is_a_sip_reply(const char *msg)
 {
     return(strncmp(msg, "SIP/2.0 ", 8)==0);
 }
@@ -439,7 +439,7 @@ int parse_sip_reply(int fd, char *msg, char *addr)
     return 0;
 }
 
-int sip_udp_listen(char *address, int port) 
+int sip_udp_listen(const char *address, int port) 
 {    
     int rxsock;
     struct sockaddr_in name;
@@ -690,7 +690,7 @@ int extract_parts(char *buf, char *method, char *url, char *via, char *rest)
     return 0;
 }
 
-int is_a_sip_url(char *url) {
+int is_a_sip_url(const char *url) {
     if (strncmp(url, "sip:", 4)==0) 
 	return 1;
     else
@@ -707,7 +707,7 @@ int is_a_sip_url(char *url) {
  * parameters of their own as a single semi-colon separated string.
  */
 
-int parse_sip_url(char *url, char* user, char *passwd, char *host,
+int parse_sip_url(const char *url, char* user, char *passwd, char *host,
 		  int *port, int *transport, int *ttl, char *maddr, 
 		  char *tag, char *others)
 {
@@ -948,7 +948,7 @@ invalid_path:
     return -1;
 }
 
-int sip_send_tcp_request(int origfd, char *host, int port, char *user_data, 
+int sip_send_tcp_request(int origfd, char *host, int port, const char *user_data, 
 			 int wait)
 {
     /*
@@ -1189,7 +1189,7 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
     return -1;
 }
 
-int sip_send_tcp_reply(int fd, char *callid, char *addr, int port, char *msg)
+int sip_send_tcp_reply(int fd, const char *callid, char *addr, int port, char *msg)
 {
     /*
      * The fd should be the file descriptor that the request came in on.
@@ -1202,7 +1202,7 @@ int sip_send_tcp_reply(int fd, char *callid, char *addr, int port, char *msg)
     debug_tcp_conns();
     for(i=0;i<MAX_CONNECTIONS; i++) {
 	if ((sip_tcp_conns[i].used==1)) {
-	    printf (stderr,"Used conn %d has callid >>%s<<\n", 
+	    fprintf (stderr,"Used conn %d has callid >>%s<<\n", 
 		   i, sip_tcp_conns[i].callid);
 	}
 	if ((sip_tcp_conns[i].used==1) && 

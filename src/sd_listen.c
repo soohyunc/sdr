@@ -523,7 +523,7 @@ int load_cache_entry(
     int sap_hdr_len=SAPV4_HDR_LEN;
 	int addr_len = IPV4_ADDR_LEN;
     int do_it=0;
-    time_t t;
+    unsigned long t;
 
     FILE* enc_fd=NULL;
     struct timeval tv;
@@ -797,7 +797,7 @@ int load_cache_entry(
       writelog(printf(" advertid=%s length=%d, origsrc=%s, src=%s\n",
          aid,strlen(p),origsrc,src);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
-         sap_addr,sap_port,(int)t,key);)
+         sap_addr,sap_port,t,key);)
       writelog(printf(" auth type=%s, status=%s, data_len=%d, keyid=%s\n",
          authtype,authstatus,data_len,asym_keyid);)
       writelog(printf(" enc  type=%s, status=%s, data_len=%d, keyid=%s\n",
@@ -816,7 +816,7 @@ int load_cache_entry(
       writelog(printf(" advertid=%s length=%d, origsrc=%s, src=%s\n",
          aid,strlen(p),origsrc,src);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
-         sap_addr,sap_port,(int)t,key);)
+         sap_addr,sap_port,t,key);)
       writelog(printf(" auth type=%s, status=%s, data_len=%d, keyid=%s\n",
          authtype,authstatus,data_len,asym_keyid);)
       writelog(printf(" enc  type=%s, status=%s, data_len=%d, keyid=%s\n",
@@ -1347,7 +1347,6 @@ char *argv[];
     struct in_addr in;
     struct hostent *hstent;
 #ifdef HAVE_IPv6
-    struct hostent *thstent;
     struct addrinfo hints;
     struct addrinfo *result;
 #endif
@@ -1748,7 +1747,7 @@ void recv_packets(ClientData fd)
     struct advert_data *advert=NULL, *addata=NULL;
     struct sap_header *bp=NULL;
 #ifdef HAVE_IPv6
-    struct sapv6_header *bp6;
+    struct sapv6_header *bp6 = NULL;
 #endif
     struct sapv4_header *bp4 = NULL;
     struct sockaddr_in from;
@@ -1784,7 +1783,7 @@ void recv_packets(ClientData fd)
     struct in_addr in;
 #ifdef HAVE_IPv6
     struct sockaddr_in6 from6;
-    struct in6_addr *src6, *hfrom6;
+    struct in6_addr *src6 = NULL, *hfrom6 = NULL;
 #endif
     char source[128], heardfrom[128];
     int addr_fam = IPv4;
@@ -2573,12 +2572,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     char *p;
     int ttl, mediattl, medialayers, code, port, origlen, nports;
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
-    struct in_addr source;
     struct in_addr maddr;
-#ifdef HAVE_IPv6
-    struct in6_addr maddr6;
-#endif
-
     struct timeval tv;
 
     writelog(printf("parse_entry: > entered parse_entry\n");)

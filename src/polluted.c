@@ -68,44 +68,6 @@ int aux_load_file(char *buf, char *name, char *flag)
 
 }
 
-int parse_announcement(int enc, char *data, int length, 
-		       unsigned long src, unsigned long hfrom,
-		       char *addr, int port, int sec)
-{
-  char recvkey[MAXKEYLEN]="";
-  
-/* Decrypt the announcement, and skip the encryption fields */
-
-  if (enc==1) {
-    /*note - encrypted data includes timeout*/
-    printf("received encrypted announcement...\n");
-    if (decrypt_announcement(data, &length, recvkey)!=0) {
-      printf("      ... cannot decrypt announcement!\n");
-      return 1;
-    }
-    /*data now has encryption fields removed*/
-  } else {
-    strcpy(recvkey, "");
-  }
-
-  /* if someone else is repeating our announcements, be careful
-     not to re-announce their modified version ourselves */
-
-/* 
- * REVIEW -- this entire funtion not called? If so the 'if' statement
- * below, won't work with IPv6. -- MM 
-*/
- if (src == hfrom || src != hostaddr) {
-    parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"trusted",recvkey ,
-                NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
-
-  } else {
-    parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"untrusted",recvkey,
-                NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
-  }
-  return 0;
-}
-
 /*----------------------------------------------------------------------*/
 /* build_packet - build the packet prior to sending it                  */
 /* add - sap header, timeout, auth_hdr and enc_hdr                      */

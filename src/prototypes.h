@@ -3,6 +3,7 @@
 #include "crypt_random.h"
 #include "generic_prototypes.h"
 #include "www_prototypes.h"
+#include "generate_ids.h"
 
 /*cli.c*/
 int init_cli();
@@ -31,47 +32,47 @@ int bus_send_new_app();
 #ifdef SIP_MODULE
 /*sip_register.c*/
 int sip_register();
-int sip_send_mcast_register(char *host, char *maddr, int port,
-                            int ttl, char *user_data);
-int sip_send_udp_register(char *host, int port, char *user_data);
+int sip_send_mcast_register(const char *host, const char *maddr, int port,
+                            int ttl, const char *user_data);
+int sip_send_udp_register(const char *host, int port, char *user_data);
 int sip_send_tcp_register(char *host, int port, char *user_data);
 
 /*sip_common.c*/
 int sip_send_udp(char *dst, int ttl, int port, char *msg);
-int sip_send_tcp_request(int fd, char *host, int port, char *msg, int wait);
-int sip_send_tcp_reply(int fd, char *callid, char *host, int port, char *msg);
-struct in_addr look_up_address(char *hostname);
-int sip_close_tcp_connnection(char *callid);
-int sip_listen(char *address, int port);
-int is_a_sip_request(char *msg);
-int is_a_sip_reply(char *msg);
+int sip_send_tcp_request(int fd, const char *host, int port, char *msg, int wait);
+int sip_send_tcp_reply(int fd, const char *callid, char *host, int port, char *msg);
+struct in_addr look_up_address(const char *hostname);
+int sip_close_tcp_connnection(const char *callid);
+int sip_listen(const char *address, int port);
+int is_a_sip_request(const char *msg);
+int is_a_sip_reply(const char *msg);
 int parse_sip_reply(int fd, char *msg, char *addr);
-char *sip_get_dstname(char *msg);
-char *sip_get_callid(char *msg);
-int sip_get_method(char *msg);
-int sip_udp_listen(char *address, int port);
+char *sip_get_dstname(const char *msg);
+char *sip_get_callid(const char *msg);
+int sip_get_method(const char *msg);
+int sip_udp_listen(const char *address, int port);
 int sip_tcp_listen(int port);
 int sip_tcp_accept(connection conns[]);
 void sip_tcp_free(connection *conn);
 int sip_request_ready(char *buf, int len);
 int extract_field(char *buf, char *field_ret, int retlen, char *field);
 int extract_parts(char *buf, char *method, char *url, char *via, char *rest);
-int is_a_sip_url(char *url);
-int parse_sip_url(char *url, char* user, char *passwd, char *host,
+int is_a_sip_url(const char *url);
+int parse_sip_url(const char *url, char* user, char *passwd, char *host,
                   int *port, int *transport, int *ttl, char *maddr,
                   char *tag, char *others);
 int parse_sip_path (char *path, char *version, int *transport,
                     char *host, int *port, int *ttl);
 int sip_finished_reading_tcp(char *data, int len);
 char *find_end_of_header(char *data, int len);
-struct in_addr look_up_address(char *hostname);
+struct in_addr look_up_address(const char *hostname);
 
 /*sip.c*/
 int sip_recv_udp();
 int sip_recv_tcp();
 int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr);
 int sip_readfrom_tcp();
-int sip_tx_init(char *address, int port, char ttl);
+int sip_tx_init(const char *address, int port, char ttl);
 int parse_sip_success(int fd, char *msg, char *addr);
 int parse_sip_progress(int fd, char *msg, char *addr);
 int parse_sip_fail(int fd, char *msg, char *addr);
@@ -123,7 +124,7 @@ void initnames();
 
 
 /*generate_ids*/
-int generate_port(char *s);
+int generate_port(const char *s);
 int delete_address(struct addr_list *test);
 int store_address(struct in_addr *addr, int addr_type, unsigned long endtime);
 struct in_addr generate_address();
@@ -199,6 +200,7 @@ void read_old_style_cache();
 int extract_ttl(char *addrstr);
 int extract_layers(char *addrstr);
 int check_net_type(char *in, char *ip, char *addr);
+int run_program(char *args);
 
 /* iohandler.c */
 void linksocket(int fd, int mask, Tcl_FileProc* callback);
