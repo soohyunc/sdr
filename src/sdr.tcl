@@ -4450,6 +4450,39 @@ proc periodic_save {interval} {
 # default user_hook is a noop - users should redefine it in
 # [sdrHome]/sdr.tcl to modify the tool's behavior.
 proc user_hook {} {
+# Parse plugins
+
+# find where we are installed
+set app_name $argv0
+while {[file type $app_name] == "link"} {
+    # don't worry about recursion since we know app must exist.
+    set app_name [file readlink $app_name]
+}
+set app_home [file dirname $app_name]
+
+# Specify plugin dirs.  First of these are possible places 
+# about where sdr is installed.
+#
+set plugin_dirs [list \
+	$app_home/sdr/plugins \
+	$app_home/plugins \
+	$app_home/../plugins \
+	/usr/local/etc/sdr/plugins \
+	[resource sdrHome]/plugins \
+]
+
+foreach plugin_dir $plugin_dirs {
+    if {[file isdirectory $plugin_dir]} {
+	parse_plugins $plugin_dir yes
+    }
+}
+
+# Add app_home to path
+switch $tcl_platform(platform) {
+    unix    {set env(PATH) $env(PATH):$app_home}
+    windows {set env(PATH) $env(PATH)\;$app_home}
+}
+
 }
 
 proc authinfo {win bgcolour authm} {
