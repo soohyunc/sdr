@@ -1979,7 +1979,7 @@ proc create {} {
 	if { ($auth_type == "pgp" || $auth_type == "cpgp" || $auth_type =="none" ) } {
      	set aauth "pgp"
     }
-    if { ($auth_type == "x509" || $auth_type == "cx509" ) } {
+    if { ($auth_type == "x509" || $auth_type == "cx50" ) } {
      	set aauth "x509"
     }
 if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
@@ -2013,13 +2013,13 @@ createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) 
         log "User entered an incorrect passphrase for key certificate"
         return 0
     }
-    if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx509"  )} {
+    if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx50"  )} {
         errorpopup "Secude failed" "The Signed DATA Failed for USER\
                                      $user_id($aauth,auth_cur_key_sel).  Try again."
         log "User entered an incorrect passphrase for key certificate"
         return 0
     }
-    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx509" )} {
+    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx50" )} {
         errorpopup "Length" "Authentication Lenght very big for the Sap session\
                                      $user_id($aauth,auth_cur_key_sel).  Try again."
         log "User entered an incorrect ling Cert for key certificate"
@@ -2365,7 +2365,7 @@ proc set_auth_type {win type} {
             $win.auth.sel.mauth configure -text PGP+CERT
             show_pgp_keys $win
         }
-       cx509 {
+       cx50 {
             clear_asym_keys $win x509
             clear_asym_keys $win pgp
             $win.auth.sel.mauth configure -text X509+CERT
