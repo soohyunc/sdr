@@ -74,7 +74,7 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
     char *auth_message=NULL;
     int messagelen;
 
-   AUTHDEB(printf("++ debug ++ > entered generate_authentication_x509_info\n");)
+   writelog(printf("++ debug ++ > entered generate_authentication_x509_info\n");)
  
     homedir=(char *)getenv("HOME");
 #ifdef WIN32
@@ -85,8 +85,8 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
 
     sprintf(irandstr, "%d", irand);
 
-    AUTHDEB(printf("++ debug ++ filename is %s\n",fulltxt);)
-    AUTHDEB(printf("++ debug ++ filename is %s\n",x509txt_fname);)
+    writelog(printf("++ debug ++ filename is %s\n",fulltxt);)
+    writelog(printf("++ debug ++ filename is %s\n",x509txt_fname);)
 
     txt_fd=fopen(fulltxt, "w");
      if (txt_fd == NULL)
@@ -141,7 +141,7 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
 
   char irandstr[10]="";
 /*  printf("data= %s\n", data); */
-  AUTHDEB(printf("This packet contains authentication information\n");)
+  writelog(printf("This packet contains authentication information\n");)
    sig_len= auth_p->siglen * 4;
  
   sig_len=auth_len  - 2;
@@ -150,10 +150,10 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   {
     pad_len = *(authinfo+(auth_len-2)-1);
     sig_len-=pad_len;
-    AUTHDEB(printf("Padding Length=%d\n", *(authinfo+(auth_len-2)-1));)
+    writelog(printf("Padding Length=%d\n", *(authinfo+(auth_len-2)-1));)
   }
  
-  AUTHDEB(printf("Key Certificate=%d bytes\n", key_len);)
+  writelog(printf("Key Certificate=%d bytes\n", key_len);)
  
   /* Extract the signature and key certificate from the packet and
      store in files. */
@@ -199,7 +199,7 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   }
  
 
- AUTHDEB( printf(" check AUTH_p->auth_type %d\n",auth_p->auth_type);
+ writelog( printf(" check AUTH_p->auth_type %d\n",auth_p->auth_type);
 )
   /* REMINDER: need to store end_time and keyid too if encrypted session
      Refer to SAP specification for encrypted announcements with
@@ -216,11 +216,11 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
  
  
   /* Executes a TCL script that invokes PGP to check signature info */
-    AUTHDEB(printf("writing SDP data to file\n\r");)
+    writelog(printf("writing SDP data to file\n\r");)
   Tcl_VarEval(interp, "pkcs7_check_authentication ", &irandstr, NULL);
  
   key_id = Tcl_GetVar(interp, "recv_asym_keyid", TCL_GLOBAL_ONLY);
-    AUTHDEB(printf("writing SDP data to file\n\r");)
+    writelog(printf("writing SDP data to file\n\r");)
   if (key_id !=NULL)
   memcpy(asym_keyid, key_id,strlen(key_id));
   auth_status = Tcl_GetVar(interp, "recv_authstatus", TCL_GLOBAL_ONLY);
@@ -259,7 +259,7 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
  
 
  
-  AUTHDEB(printf("++ debug ++ > entered store_authentication_in_memory\n");)
+  writelog(printf("++ debug ++ > entered store_authentication_in_memory\n");)
 
 /* Open all files and read data */
 
@@ -307,7 +307,7 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
    sapauth_p->auth_type = 2;
    else
 	printf("something is wrong auth_type is not pgp or x509\n");	
-   AUTHDEB(printf("authe_tyoe = %s \n", auth_type);)
+   writelog(printf("authe_tyoe = %s \n", auth_type);)
      
   /* Padding is required to ensure that the authentication info is aligned
      to a 32-bit boundary */
@@ -343,7 +343,7 @@ int generate_x509_encryption_info(char *data, char *encstatus, int irand,char *e
     int messagelen;
 
  
-   AUTHDEB(printf("++ debug ++ > entered generate_authentication_info\n");)
+   writelog(printf("++ debug ++ > entered generate_authentication_info\n");)
  
     homedir=(char *)getenv("HOME");
 #ifdef WIN32
@@ -437,9 +437,9 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   /* remove padding, if necessary */
   if ( enc_p->padding )
   {
-    AUTHDEB(printf("Padding Length=%d\n", *(encinfo+hdr_len-2));)
-    AUTHDEB(printf("Padding Length=%d\n", *(encinfo+hdr_len-1));)
-    AUTHDEB(printf("Padding Length=%d\n", *(encinfo+hdr_len));)
+    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len-2));)
+    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len-1));)
+    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len));)
     hdr_len= (hdr_len-2) - (*(encinfo+hdr_len-1)) ;
   }
  
@@ -472,11 +472,11 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
  
  
   /* Executes a TCL script that invokes PGP to check  info */
-    AUTHDEB(printf("writing SDP data to file\n\r");)
+    writelog(printf("writing SDP data to file\n\r");)
   Tcl_VarEval(interp, "pkcs7_check_encryption ", &irandstr, NULL);
   enc_status = Tcl_GetVar(interp, "recv_encstatus", TCL_GLOBAL_ONLY);
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
-    AUTHDEB(printf("writing SDP data to file\n\r");)
+    writelog(printf("writing SDP data to file\n\r");)
   if(key_id != NULL)
   memcpy(enc_asym_keyid, key_id,strlen(key_id));
    enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
@@ -488,7 +488,7 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
 	return("failed");
   }
 
-  AUTHDEB(printf(" encstatus %s",enc_status);)
+  writelog(printf(" encstatus %s",enc_status);)
 
   return (enc_status);
 }
@@ -507,7 +507,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
   char irandstr[10]="";
   int i;
  
-  AUTHDEB(printf("++ debug ++ > entered store_encryption\n");)
+  writelog(printf("++ debug ++ > entered store_encryption\n");)
  
 /* Open all files and read data */
  
@@ -532,7 +532,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
     sapenc_p->enc_type = PGP;
   else
    sapenc_p->enc_type = 0;
-   AUTHDEB(printf("enc_type = %s \n", enc_type);)
+   writelog(printf("enc_type = %s \n", enc_type);)
  
   enc_fd= fopen(sx509fullenc,"r");
    if (enc_fd == NULL)
@@ -561,9 +561,9 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
  
       return 0;
   }
-   AUTHDEB(printf(" encrypted data %s \n", encbuf);)
+   writelog(printf(" encrypted data %s \n", encbuf);)
    sapenc_p->encd_len=sbuf.st_size;
-   AUTHDEB(printf(" sapenc_p->encd_len = %d \n", sapenc_p->encd_len);)
+   writelog(printf(" sapenc_p->encd_len = %d \n", sapenc_p->encd_len);)
    stat(sx509fulltxt, &sbufd);
    decrypt = (char *)malloc(sbufd.st_size);
     if(( fread(decrypt,1,  sbufd.st_size ,txt_fd))!= sbufd.st_size)
@@ -584,7 +584,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
       sapenc_p->padding = 1;
   }
    sapenc_p->hdr_len = (sapenc_p->pad_len +  sapenc_p->encd_len +2) / 4;
-   AUTHDEB(printf(" sapenc_p->hdr_len = %d \n", sapenc_p->hdr_len);)
+   writelog(printf(" sapenc_p->hdr_len = %d \n", sapenc_p->hdr_len);)
     sapenc_p->enc_data =(char *)malloc(sapenc_p->pad_len +  sapenc_p->encd_len);
    memcpy(sapenc_p->enc_data,encbuf, sapenc_p->encd_len);
    ac=(char *)(sapenc_p->enc_data)+sapenc_p->encd_len;
@@ -597,7 +597,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
  
                 ac[i] = sapenc_p->pad_len;
         }
-   AUTHDEB(printf(" encrypted data %s \n", sapenc_p->enc_data);)
+   writelog(printf(" encrypted data %s \n", sapenc_p->enc_data);)
   free(encbuf);
   free(decrypt);
   Tcl_VarEval(interp, "enc_pkcs7_cleanup ", &irandstr, NULL);
