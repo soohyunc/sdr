@@ -1,3 +1,11 @@
+clean:
+	rm -f *.o
+	rm -f *.ehtml
+	rm -f *.c
+	rm -f *.tcl
+	rm -f sdr tcl2c
+	rm -f Makefile
+
 TK_LIBRARY_FILES = \
                 $(LIBRARY_TCL)/init.tcl \
                 $(LIBRARY_TK)/tk.tcl \
@@ -25,7 +33,8 @@ SDR_UI_FILES = \
 		tcl_sip.o \
 		tcl_sdp.o \
 		tcl_sdr.o \
-		tcl_cache.o
+		tcl_cache.o \
+		tcl_sap_crypt.o
 
 SDR_HELP_FILES = \
 	mbone_faq.ehtml \
@@ -67,7 +76,11 @@ OBJS= \
 	ui_fns.o  \
 	ui_init.o  \
 	www_fns.o \
-	sanitised.o
+	polluted.o
+
+ENCOBJS=crypt.o md5.o sap_crypt.o
+QFDES=qfDES.o
+QFINCLUDES=-I../src/qfdes
 
 .SUFFIXES: .ehtml .html .tcl $(.SUFFIXES)
 
@@ -87,9 +100,8 @@ WWWOBJS=www_fns.o www_ui.o www_ui_init.o www_main_ui.o www_main.o libs.o compat.
 GWOBJS=sdr_gw_listen.o compat.o
 SERVOBJS=sdr_server.o compat.o store_entries.o server_http.o server_form.o server_parser.o server_html.o server_scope.o server_init.o generate_ids.o server_send.o
 
-sdr: $(OBJS) $(SDR_UI_FILES)
-	rm ../src/tcl_modules.h; \
-	$(CC) $(CFLAGS) $(OBJS) $(SDR_UI_FILES) \
+sdr: $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) 
+	$(CC) $(CFLAGS) $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) \
 	-o sdr $(LIBS)
 
 $(SDR_HELP_FILES): tcl2c
@@ -143,10 +155,10 @@ www_ui_init.o:	../src/www_ui_init.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/www_ui_init.c
 ui_init.o:	../src/ui_init.c ../src/sdr.h ../src/tcl_modules.h
 	$(CC) -I. $(CFLAGS) -c ../src/ui_init.c
-../src/tcl_modules.h:	../src/tcl_nocrypt_modules.h
-	echo "/*DO NOT MODIFY THIS MODULE*/" > ../src/tcl_modules.h
-	echo "/*This module is automatically derived from tcl_nocrypt_modules.h*/" >> ../src/tcl_modules.h
-	cat ../src/tcl_nocrypt_modules.h >> ../src/tcl_modules.h
+../src/tcl_modules.h:	../src/tcl_crypt_modules.h
+	echo "/*DO NOT MODIFY THIS MODULE*/"                                      > ../src/tcl_modules.h
+	echo "/*This module is automatically derived from tcl_crypt_modules.h*/" >> ../src/tcl_modules.h
+	cat ../src/tcl_crypt_modules.h                                           >> ../src/tcl_modules.h
 tkUnixInit.o:	../src/tkUnixInit.c
 	$(CC) $(CFLAGS) -c ../src/tkUnixInit.c
 ui_fns.o:	../src/ui_fns.c ../src/sdr.h
@@ -169,16 +181,32 @@ sdr_help.o:     ../src/sdr_help.c $(SDR_HELP_FILES)
 	$(CC) $(CFLAGS) -I. -c ../src/sdr_help.c
 sanitised.o:     ../src/sanitised.c
 	$(CC) $(CFLAGS) -I. -c ../src/sanitised.c
-tcl_cache.c:	../src/cache.tcl
-../src/cache.tcl:   ../src/cache_nocrypt.tcl
+../src/cache.tcl:   ../src/cache_crypt.tcl
 	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
-	echo "#This module is automatically derived from cache_nocrypt.tcl" >> ../src/cache.tcl
-	cat ../src/cache_nocrypt.tcl >> ../src/cache.tcl
-	
+	echo "#This module is automatically derived from cache_crypt.tcl" >> ../src/cache.tcl
+	cat ../src/cache_crypt.tcl >> ../src/cache.tcl
 
 tclBasic.o:	
 	gcc -c -O -ggdb -I/cs/research/mice/speedy/common/src/pub/tcl7.3 -I. -DNO_GETWD=1 -DHAVE_UNISTD_H=1 -DNO_UNION_WAIT=1 -DNEED_MATHERR=1       -DTCL_LIBRARY=\"/cs/research/mice/speedy/common/hpux/lib/tcl\" /cs/research/mice/speedy/common/src/pub/tcl7.3/tclBasic.c
 
 
+# Encryption stubs...
+polluted.o:     ../src/polluted.c
+	$(CC) $(CFLAGS) -DDEBUG -I. -c ../src/polluted.c
+sap_crypt.o:	../src/sap_crypt.c ../src/sap_crypt.h
+	$(CC) $(CFLAGS) -c ../src/sap_crypt.c
+
+# Encryption/DES code...
+crypt.o: ../src/crypt.c ../src/crypt.h ../src/qfDES.h
+	$(CC) $(CFLAGS) -c ../src/crypt.c
+md5.o: ../src/md5.c ../src/md5.h
+	$(CC) $(CFLAGS) -c ../src/md5.c
+qfDES.o: ../src/qfDES.c
+	$(CC) $(CFLAGS) -c ../src/qfDES.c
+qfDES_memory.o: ../src/qfDES_memory.c
+	$(CC) $(CFLAGS) -c ../src/qfDES_memory.c
+qfDES_key.o: ../src/qfDES_key.c
+	$(CC) $(CFLAGS) -c ../src/qfDES_key.c
+	
 tcl2c:	../src/tcl2c.c
 	$(CC) -o tcl2c ../src/tcl2c.c
