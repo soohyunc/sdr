@@ -27,7 +27,9 @@
 #endif
 #include <tcl.h>
 #include <tk.h>
+#ifndef FREEBSD
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
