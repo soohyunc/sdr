@@ -343,10 +343,10 @@ try_again:
 		}
 	      webdatalen+=tmp;
 #ifdef DEBUG
-	      sprintf(msg, "Read %d bytes", webdatalen);
-	      printf("%s", msg);
-	      Tcl_SetVar2(interp, "webstatus", NULL, msg, TCL_GLOBAL_ONLY);
-	      if(Tcl_Eval(interp, "webstatus")!=0) {printf("%s\n", interp->result);}
+/*  	      sprintf(msg, "Read %d bytes", webdatalen);  */
+/*	      printf("%s", msg); */
+/*	      Tcl_SetVar2(interp, "webstatus", NULL, msg, TCL_GLOBAL_ONLY); */
+/*	      if(Tcl_Eval(interp, "webstatus")!=0) {printf("%s\n", interp->result);} */
 #endif
 	      Tcl_Eval(interp, "update");
 	    }
