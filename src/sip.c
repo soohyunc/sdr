@@ -126,7 +126,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    ((dstname!=NULL)&&(strcmp(u_at_a, dstname)==0)) || 
 	    ((dstname!=NULL)&&(strcmp(sipalias, dstname)==0))) {
 	    
-	    printf("It's for a request for me!\n");
+	    fprintf(sdderr,"It's for a request for me!\n");
 	    
 	    Tcl_SetVar(interp, "sip_advert", buf, TCL_GLOBAL_ONLY);
 	    sprintf(sipfdstr, "%d", sipfd);
@@ -138,7 +138,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 		/*	    Tcl_VarEval(interp, "puts $errorInfo", NULL);  */
 	    };
 	} else {
-	    printf("But it's not for me :-(\n");
+	    fprintf(stderr,"But it's not for me :-(\n");
 	    sprintf(sipfdstr, "%d", sipfd);
 	    callid=malloc(80);
 	    srcuser=malloc(80);
@@ -151,8 +151,8 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    extract_field(buf, dstuser, 80, "To");
 	    extract_field(buf, path, 80, "Via");
 	    extract_field(buf, cseq, 80, "Cseq");
-	    printf("path: >%s<\n", path);
-	    printf("cseq: >%s<\n", cseq);
+	    fprintf(stderr,"path: >%s<\n", path);
+	    fprintf(stderr,"cseq: >%s<\n", cseq);
 	    switch(method) {
 		case INVITE:
 		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", 
@@ -268,7 +268,7 @@ int sip_readfrom_tcp()
     for(i=0;i<MAX_CONNECTIONS;i++) {
 	if ((sip_tcp_conns[i].used==1)&&(FD_ISSET(sip_tcp_conns[i].fd, 
 						  &readfds))) {
-	    printf("on connection %d\n", i);
+	    fprintf(stderr,"on connection %d\n", i);
 	    if (sip_tcp_conns[i].bufsize<(1500+sip_tcp_conns[i].len)) {
 		/*need to allocate more buffer space before we read*/
 		sip_tcp_conns[i].buf=realloc(sip_tcp_conns[i].buf,
@@ -278,7 +278,7 @@ int sip_readfrom_tcp()
 	    bytes=read(sip_tcp_conns[i].fd, 
 		       &(sip_tcp_conns[i].buf[sip_tcp_conns[i].len]),
 		       1500);
-	    printf("read %d bytes from connection %d\n", bytes, i);
+	    fprintf(stderr,"read %d bytes from connection %d\n", bytes, i);
 	    if (bytes==0) {
 		fprintf(stderr, "connection aborted\n");
 		unlinksocket(sip_tcp_conns[i].fd);
@@ -287,7 +287,7 @@ int sip_readfrom_tcp()
 	    }
 
 	    (sip_tcp_conns[i].len)+=bytes;
-		printf("length %d bytes\n", sip_tcp_conns[i].len);
+		fprintf(stderr,"length %d bytes\n", sip_tcp_conns[i].len);
 		
 		/*
 		 * We can get multiple requests arrive concatenated.
@@ -297,9 +297,9 @@ int sip_readfrom_tcp()
 		 */
 		while ((consumed=sip_request_ready(sip_tcp_conns[i].buf, 
 						   sip_tcp_conns[i].len))>0) {
-		    printf("sip request ready\n");
+		    fprintf(stderr,"sip request ready\n");
 		    extract_field(sip_tcp_conns[i].buf, callid, 80, "Call-ID");
-		    printf("callid: %s\n", callid);
+		    fprintf(stderr,"callid: %s\n", callid);
 		    if (callid==NULL) {
 			fprintf(stderr, "Failed to extract call id\n");
 			return -1;
