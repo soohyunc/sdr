@@ -507,8 +507,8 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
 #ifdef AUTH
   int auth_len=0,bplen,i=0;
   struct advert_data *addata=NULL;
-  struct  advert_data *get_encryption_info();	
-  struct auth_header *sapauth_p=NULL;
+  struct  advert_data *get_advert_info();	
+  struct auth_info *authinfo=NULL;
   struct sap_header *bp=NULL;
 #endif
   char *filename;
@@ -533,21 +533,21 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
   {
  
         /* Obtains the key certificate and signature info for the advert */
-         addata = get_encryption_info(advertid);
+         addata = get_advert_info(advertid);
 	  if( addata  == NULL)
                  {
                  printf( "something is wrong\n");
                  return 1;
                  }
-            sapauth_p = addata->sapauth_p;
- 		bp = addata->sap_p;
-              if( sapauth_p != NULL)
-        	 if(sapauth_p->auth_type  == 3 )
+            authinfo = addata->authinfo;
+ 		bp = addata->sap_hdr;
+              if( authinfo != NULL)
+        	 if(authinfo->auth_type  == 3 )
 		{
-                auth_len = sapauth_p->key_len + sapauth_p->sig_len 
-					+sapauth_p->pad_len+2;
+                auth_len = authinfo->key_len + authinfo->sig_len 
+					+authinfo->pad_len+2;
 		} else
-                auth_len = sapauth_p->sig_len+sapauth_p->pad_len+2;
+                auth_len = authinfo->sig_len+authinfo->pad_len+2;
               if( bp == NULL)
                 {
               bp=malloc(sizeof(struct sap_header));
@@ -559,30 +559,30 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
               bp->src=htonl(hostaddr);
 	     }
  
-        writelog( printf(" write sapauth_p->auth_type %d",sapauth_p->auth_type);)
+        writelog( printf(" write authinfo->auth_type %d",authinfo->auth_type);)
         buf=malloc(len+24+sizeof(struct sap_header)+auth_len+4+addata->length);
         memcpy(buf+24, data, len);
         memcpy(buf+24+len, bp,sizeof(struct sap_header));
         bplen = sizeof(struct sap_header);
-        memcpy(buf+24+len+bplen, (char *)sapauth_p, 2);
-        memcpy(buf+24+len+bplen+2, sapauth_p->signature, sapauth_p->sig_len);
-        if(sapauth_p->auth_type  == 3 )
+        memcpy(buf+24+len+bplen, (char *)authinfo, 2);
+        memcpy(buf+24+len+bplen+2, authinfo->signature, authinfo->sig_len);
+        if(authinfo->auth_type  == 3 )
         {
-        memcpy(buf+24+len+bplen+2+sapauth_p->sig_len, sapauth_p->keycertificate,
-                sapauth_p->key_len);
-        len+=(bplen+sapauth_p->sig_len+sapauth_p->key_len+2);
+        memcpy(buf+24+len+bplen+2+authinfo->sig_len, authinfo->keycertificate,
+                authinfo->key_len);
+        len+=(bplen+authinfo->sig_len+authinfo->key_len+2);
         }
         else
-        len+=(bplen+sapauth_p->sig_len+2);
-	if (sapauth_p->pad_len != 0)
-        for (i=0; i<(sapauth_p->pad_len-1); ++i)
+        len+=(bplen+authinfo->sig_len+2);
+	if (authinfo->pad_len != 0)
+        for (i=0; i<(authinfo->pad_len-1); ++i)
                                {
  
                                         buf[len+24+i] = 0;
                                 }
  
-                                buf[len+24+i] = sapauth_p->pad_len;
-                                 len+=sapauth_p->pad_len;
+                                buf[len+24+i] = authinfo->pad_len;
+                                 len+=authinfo->pad_len;
          /**(u_int*)(buf+24+len)=0; */
         for (i=0; i<4; i++)
                  buf[len+24+i]=0;

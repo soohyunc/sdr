@@ -2,6 +2,8 @@
 <B><pre>
 
 2.5.8
+  - Assorted fixes to authentication code
+  - Many many changes to remove space leaks and memory corruption problems,
   - Add workaround for Irix bug where timezone sometimes contains an
     unmatched quote.
   - Fix SIP From URL in ACK and BYE requests.

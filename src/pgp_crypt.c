@@ -60,14 +60,15 @@ char *sapenc_fname="pgp";
 
 #endif
 
-
 #ifdef AUTH
 /* ---------------------------------------------------------------------- */
 /* generate_authentication_info - creates the authentication signature    */
 /*                                and extracts the key certificate and    */
 /*                                places them in separate files           */
 /* ---------------------------------------------------------------------- */
-int generate_authentication_info(char *data,int len, char *authstatus, int irand,char *authmessage)
+int generate_authentication_info(char *data,int len, char *authstatus, 
+				 int irand,char *authmessage,
+				 int authmessagelen)
 {
     FILE *auth_fd=NULL;
     char *code=NULL;
@@ -112,13 +113,11 @@ int generate_authentication_info(char *data,int len, char *authstatus, int irand
         return 0;
     }
     auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
-    messagelen = strlen(auth_message);
- 
-    strcpy(authmessage,auth_message);
+    strncpy(authmessage,auth_message, authmessagelen);
     strcpy(authstatus, "Authenticated");
 
     writelog(printf("generate_authentication_info: authmessage = \n%s\n",auth_message);)
-    writelog(printf("generate_authentication_info: authstatus  = %s",authstatus);)
+    writelog(printf("generate_authentication_info: authstatus  = %s\n",authstatus);)
 
     free(irandstr);
     free(fulltxt);
@@ -131,7 +130,8 @@ int generate_authentication_info(char *data,int len, char *authstatus, int irand
 /* ---------------------------------------------------------------------- */
 char *check_authentication(struct auth_header *auth_p, char *authinfo,
                          char *data, int data_len, int auth_len,
-                         char *asym_keyid, int irand,char *authmessage)
+                         char *asym_keyid, int irand,char *authmessage,
+			 int authmessagelen)
 {
   FILE *sig_fd=NULL, *key_fd=NULL, *auth_fd=NULL;
   int sig_len, key_len, pad_len, messagelen;
@@ -145,8 +145,10 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
   irandstr = (char *)malloc(10);
  
   writelog(printf("entered check_authentication\n");)
-  writelog(printf("check_auth: auth_p      = %d\n",&auth_p);)
+  writelog(printf("check_auth: auth_p      = %x\n",auth_p);)
+  writelog(hexdump(auth_p, AUTH_HEADER_LEN);)
   writelog(printf("check_auth: authinfo    = %s\n",authinfo);)
+  writelog(hexdump(authinfo, auth_len);)
   writelog(printf("check_auth: data        = %s\n",data);)
   writelog(printf("check_auth: data_len    = %d\n",data_len);)
   writelog(printf("check_auth: auth_len    = %d\n",auth_len);)
@@ -155,7 +157,7 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
   writelog(printf("check_auth: authmessage = %s\n",authmessage);)
 
   sig_len = auth_p->siglen * 4;
-  key_len = auth_len - sig_len - 2;
+  key_len = (auth_len - sig_len) - 2;
 
 /* remove padding, if necessary */
 
@@ -201,6 +203,10 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
     Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
     return ("failed");
   } else {
+    if (sig_len > MAXADSIZE) {
+      fprintf(stderr, "Signature length impossibly large:%d\n", sig_len);
+      abort();
+    }
     if ( fwrite(authinfo, 1, sig_len, sig_fd) < sig_len )
     {
       writelog(printf("Error writing signature to file\n\r");)
@@ -284,10 +290,10 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
     writelog(printf("edmund:c_a: messagelen   = %d\n",messagelen);)
     writelog(printf("edmund:c_a: auth_message = %s\n",auth_message);)
     writelog(printf("edmund:c_a: auth_status  = %s\n",auth_status);)
-    memcpy(authmessage,auth_message,messagelen);
+    strncpy(authmessage,auth_message,authmessagelen);
   } else {
     writelog(printf("edmund:c_a: auth_message is NULL (error was %s)\n",interp->result);)
-    strcpy(authmessage,"No message was produced");
+    strncpy(authmessage,"No message was produced", authmessagelen);
     return ("failed");
  }
 
@@ -307,7 +313,7 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
   FILE *sig_fd=NULL, *key_fd=NULL;
   struct stat sbuf;
   struct stat sbufk;
-  struct auth_header *sapauth_p;
+  struct auth_info *authinfo;
   char *keycert=NULL,*homedir=NULL,*irandstr=NULL;
   char *fullsig=NULL,*fullkey=NULL, *encsig=NULL;
   int test_len;
@@ -334,8 +340,8 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
   writelog(printf("store_auth: fullsig = %s\n",fullsig);)
   writelog(printf("store_auth: fullkey = %s\n",fullkey);)
 
-  sapauth_p = addata->sapauth_p;
-  sapauth_p->version = 1;
+  authinfo = addata->authinfo;
+  authinfo->version = 1;
 
 /* signature file */
 
@@ -354,20 +360,26 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
       fclose(sig_fd);
       return 0;
     }
-    sapauth_p->sig_len = sbuf.st_size;
-    if ((sapauth_p->siglen) % 4 != 0) {
+    authinfo->sig_len = sbuf.st_size;
+    writelog(printf("sig_len: %d\n", authinfo->sig_len);)
+    if ((authinfo->sig_len % 4) != 0) {
       writelog(printf( " Signature is not a Multiple of 4\n");)
-      sapauth_p->siglen = (sapauth_p->sig_len +1) / 4 ;
-      sapauth_p->signature = (char *)malloc(sapauth_p->sig_len+1);
-      memcpy (sapauth_p->signature, encsig,sapauth_p->sig_len);
-      memcpy(sapauth_p->signature+1,'\0',1);
+      authinfo->siglen = (authinfo->sig_len +1) / 4 ;
+      authinfo->signature = (char *)malloc(authinfo->sig_len+1);
+      memcpy (authinfo->signature, encsig,authinfo->sig_len);
+      /*XXX the following line is clearly bogus but what was it
+ 	meant to do???  it used to read:
+        memcpy(authinfo->signature+1,'\0',1);
+        but the second parameter needs to be a pointer.
+        However, it still sets the 2nd byte of the sig to \0*/
+      /*memcpy(authinfo->signature+1,"\0",1);*/
     } else {
-      sapauth_p->siglen = (sapauth_p->sig_len) / 4 ;
-      writelog(printf( "signature length is %d\n",sapauth_p->siglen);)
-      sapauth_p->signature = (char *)malloc(sapauth_p->sig_len);
-      memcpy (sapauth_p->signature, encsig,sapauth_p->sig_len);
+      authinfo->siglen = (authinfo->sig_len) / 4 ;
+      writelog(printf( "signature length is %d\n",authinfo->siglen);)
+      authinfo->signature = (char *)malloc(authinfo->sig_len);
+      memcpy (authinfo->signature, encsig,authinfo->sig_len);
     }
-    writelog(printf("%d chars read of signature\n", sapauth_p->sig_len);)
+    writelog(printf("%d chars read of signature\n", authinfo->sig_len);)
     fclose(sig_fd);
     free(encsig);
   }
@@ -391,35 +403,35 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
         fclose(key_fd);
         free(keycert);
       } else {
-        sapauth_p->key_len = sbufk.st_size;
-        sapauth_p->keycertificate=(char *)malloc(sapauth_p->key_len);
-        memcpy(sapauth_p->keycertificate,keycert,sapauth_p->key_len);
+        authinfo->key_len = sbufk.st_size;
+        authinfo->keycertificate=(char *)malloc(authinfo->key_len);
+        memcpy(authinfo->keycertificate,keycert,authinfo->key_len);
 
-        if (sapauth_p->key_len > 1024 ) {
+        if (authinfo->key_len > 1024 ) {
           writelog(printf("Sorry, Key Certificate is too large...\n");)
-          sapauth_p->key_len = 0;
+          authinfo->key_len = 0;
         }
-        writelog(printf("%d chars read of key certificate\n\r", sapauth_p->key_len);)
+        writelog(printf("%d chars read of key certificate\n\r", authinfo->key_len);)
         fclose(key_fd);
         free(keycert);
       }
     }
   } else {
-    sapauth_p->key_len =0;
-    sapauth_p->keycertificate=NULL;
+    authinfo->key_len =0;
+    authinfo->keycertificate=NULL;
   }
   free(fullkey);
 
 /* To add the authetication used pgp or X509 Plus the certificate*/
 
   if (memcmp(auth_type,"cpgp",4) == 0) {
-    sapauth_p->auth_type = 3;
+    authinfo->auth_type = 3;
   } else  if (memcmp(auth_type,"cx50",4) == 0) {
-    sapauth_p->auth_type = 4;
+    authinfo->auth_type = 4;
   } else  if (memcmp(auth_type,"pgp", 3) == 0) {
-    sapauth_p->auth_type = 1;
+    authinfo->auth_type = 1;
   } else  if (memcmp(auth_type,"x509",4) == 0) {
-    sapauth_p->auth_type = 2;
+    authinfo->auth_type = 2;
   } else {
     writelog(printf("something is wrong auth_type isnot pgp or x509\n");)
   }
@@ -435,25 +447,25 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
  
 /* Padding is required to ensure that auth info aligned to 32-bit boundary */
 
-  if(sapauth_p->auth_type==1 || sapauth_p->auth_type==2) {
-    sapauth_p->pad_len = 4-((sapauth_p->sig_len+2) % 4);
+  if(authinfo->auth_type==1 || authinfo->auth_type==2) {
+    authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
   } else {
-    sapauth_p->pad_len = 4-((sapauth_p->sig_len+sapauth_p->key_len+2) % 4);
+    authinfo->pad_len = 4-((authinfo->sig_len+authinfo->key_len+2) % 4);
   }
 
-  if (sapauth_p->pad_len != 0) {
-      sapauth_p->padding = 1;
+  if (authinfo->pad_len != 0) {
+      authinfo->padding = 1;
   }
   
-  if(sapauth_p->auth_type==1 || sapauth_p->auth_type==2) {
-    test_len = (sapauth_p->sig_len+2+sapauth_p->pad_len) /4;
+  if(authinfo->auth_type==1 || authinfo->auth_type==2) {
+    test_len = (authinfo->sig_len+2+authinfo->pad_len) /4;
   } else {
-    test_len = (sapauth_p->sig_len+sapauth_p->key_len+2+sapauth_p->pad_len) / 4;
+    test_len = (authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len) / 4;
   }
 
-  sapauth_p->autlen = test_len;
-  if (sapauth_p->autlen != test_len) {
-    writelog(printf ("auth header too big %d , %d \n", test_len ,sapauth_p->autlen);)
+  authinfo->autlen = test_len;
+  if (authinfo->autlen != test_len) {
+    writelog(printf ("auth header too big %d , %d \n", test_len ,authinfo->autlen);)
     return 2;
   }
 
@@ -462,7 +474,8 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
   return 1;
 }
 /* ---------------------------------------------------------------------- */
-int generate_encryption_info(char *data, char *encstatus, int irand,char *encmessage)
+int generate_encryption_info(char *data, char *encstatus, int irand,
+			     char *encmessage, int encmessagelen)
 {
     FILE *enc_fd=NULL;
     FILE *auth_fd=NULL;
@@ -520,11 +533,10 @@ int generate_encryption_info(char *data, char *encstatus, int irand,char *encmes
 
     enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
     if(enc_message !=NULL) {
-     messagelen = strlen(enc_message);
-     memcpy(encmessage,enc_message,messagelen);
+      strncpy(encmessage,enc_message,encmessagelen);
     } else {
-     writelog(printf(" The Message is empty string, Result is %s \n" ,interp->result);)
-     memcpy(encmessage,"No mesage were produced",24);
+      writelog(printf(" The Message is empty string, Result is %s \n" ,interp->result);)
+      strncpy(encmessage,"No mesage were produced",encmessagelen);
     }
 
     memcpy(encstatus, "Encrypted",9);
@@ -547,8 +559,9 @@ int generate_encryption_info(char *data, char *encstatus, int irand,char *encmes
     return 1;
 }
 char *check_encryption(struct priv_header *enc_p, char *encinfo,
-                         char *data, int data_len, int hdr_len,
-                         char *enc_asym_keyid, int irand,char *encmessage)
+		       char *data, int data_len, int hdr_len,
+		       char *enc_asym_keyid, int irand,
+		       char *encmessage, int encmessagelen)
 {
   FILE *enc_fd=NULL;
   char *enc_status_p=NULL, *enc_status=NULL;
@@ -645,11 +658,11 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if (enc_message == NULL) {
     writelog(printf("The Decryption did not produce any message %s\n",interp->result);)
-    strcpy(encmessage,"No Encryption Message");
+    strncpy(encmessage,"No Encryption Message", encmessagelen);
     return ("failed");
   } else {
     writelog(printf("strlen(enc_message) = %d\n",strlen(enc_message));)
-    memcpy(encmessage,enc_message,strlen(enc_message));
+    strncpy(encmessage,enc_message,encmessagelen);
     writelog(printf("edmund:c_e: encmessage = %s\n",encmessage);)
   }
 

@@ -65,7 +65,7 @@ char *sx509enc_fname="sym";
 /*                                and extracts the key certificate and    */
 /*                                places them in separate files           */
 /* ---------------------------------------------------------------------- */
-int generate_x509_authentication_info(char *data,int len, char *authstatus, int irand, char *authmessage)
+int generate_x509_authentication_info(char *data,int len, char *authstatus, int irand, char *authmessage, int authmessagelen)
 {
     FILE *txt_fd=NULL;
     char *code=NULL;
@@ -111,9 +111,8 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
     } */
     memcpy(authstatus, "Authenticated",13);
 
-  auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
-    messagelen = strlen(auth_message);
-   memcpy(authmessage,auth_message,messagelen);
+    auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
+    strncpy(authmessage,auth_message,authmessagelen);
 
     /* check_for_the signature_file */
     
@@ -126,7 +125,8 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
 /* ---------------------------------------------------------------------- */
 char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
                          char *data, int data_len, int auth_len,
-                         char *asym_keyid, int irand,char *authmessage)
+                         char *asym_keyid, int irand,char *authmessage,
+			 int authmessagelen)
 {
   FILE *sig_fd=NULL, *auth_fd=NULL;
   int sig_len;
@@ -222,14 +222,12 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   if (key_id !=NULL)
   memcpy(asym_keyid, key_id,strlen(key_id));
   auth_status = Tcl_GetVar(interp, "recv_authstatus", TCL_GLOBAL_ONLY);
-auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
-  if(auth_message !=NULL)
-   {
-   messagelen = strlen(auth_message);
-   memcpy(authmessage,auth_message,messagelen);
+  auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
+  if(auth_message !=NULL) {
+    strncpy(authmessage,auth_message,authmessagelen);
   } else {
- printf(" The Message is empty string %s \n" ,interp->result);
-    memcpy(authmessage,"No mesage were produced",24);
+    printf(" The Message is empty string %s \n" ,interp->result);
+    strncpy(authmessage,"No mesage were produced",authmessagelen);
  }
   return (auth_status);
 }
@@ -249,7 +247,7 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
   FILE *sig_fd=NULL;
   struct stat sbuf;
   char *encsig;
-  struct auth_header *sapauth_p;
+  struct auth_info *authinfo;
   char *homedir;
   char fullsig[MAXFILENAMELEN]="";
   char irandstr[10]="";
@@ -269,8 +267,8 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
 #endif
     sprintf(irandstr, "%d", irand);
 
-  sapauth_p = addata->sapauth_p;
-  sapauth_p->version = 1;
+  authinfo = addata->authinfo;
+  authinfo->version = 1;
   sig_fd=fopen(fullsig, "r");
   if (sig_fd == NULL)
   {
@@ -289,36 +287,36 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
         
    }
 /*    printf(" Signature data %s \n", encsig); */
-    sapauth_p->sig_len = sbuf.st_size;
-        sapauth_p->signature = malloc(sapauth_p->sig_len);
-        memcpy (sapauth_p->signature, encsig,sapauth_p->sig_len);
+    authinfo->sig_len = sbuf.st_size;
+        authinfo->signature = malloc(authinfo->sig_len);
+        memcpy (authinfo->signature, encsig,authinfo->sig_len);
  
   fclose(sig_fd);
 
-       sapauth_p->key_len =0;
-       sapauth_p->keycertificate=NULL;
+       authinfo->key_len =0;
+       authinfo->keycertificate=NULL;
 
 /* Toadd the authetication used pgp or X509 Plus the certificate*/
   if (memcmp(auth_type,"cx50",4) == 0)
-    sapauth_p->auth_type = 4;
+    authinfo->auth_type = 4;
    else  if (memcmp(auth_type,"x509",4) == 0)
-   sapauth_p->auth_type = 2;
+   authinfo->auth_type = 2;
    else
 	printf("something is wrong auth_type is not pgp or x509\n");	
    writelog(printf("authe_tyoe = %s \n", auth_type);)
      
   /* Padding is required to ensure that the authentication info is aligned
      to a 32-bit boundary */
-  sapauth_p->pad_len = 4-((sapauth_p->sig_len+2) % 4);
-  	sapauth_p->siglen = (sapauth_p->sig_len + sapauth_p->pad_len) / 4 ;
-  if (sapauth_p->pad_len != 0)
+  authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
+  	authinfo->siglen = (authinfo->sig_len + authinfo->pad_len) / 4 ;
+  if (authinfo->pad_len != 0)
   {
-      sapauth_p->padding = 1;
+      authinfo->padding = 1;
   }
-   test_len = (sapauth_p->sig_len+2+sapauth_p->pad_len) /4;
-   sapauth_p->autlen = test_len;
-   if (sapauth_p->autlen != test_len) {
-     printf ("authentication Header is Two big %d %d \n",sapauth_p->autlen , test_len);
+   test_len = (authinfo->sig_len+2+authinfo->pad_len) /4;
+   authinfo->autlen = test_len;
+   if (authinfo->autlen != test_len) {
+     printf ("authentication Header is Two big %d %d \n",authinfo->autlen , test_len);
      return 2;
   }
 
@@ -329,7 +327,8 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
 }
 
 
-int generate_x509_encryption_info(char *data, char *encstatus, int irand,char *encmessage)
+int generate_x509_encryption_info(char *data, char *encstatus, int irand,
+				  char *encmessage, int encmessagelen)
 {
     FILE *txt_fd=NULL;
     FILE *enc_fd=NULL;
@@ -380,11 +379,10 @@ sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
       enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if(enc_message !=NULL)
    {
-   messagelen = strlen(enc_message);
-   memcpy(encmessage,enc_message,messagelen);
+     strncpy(encmessage,enc_message,encmessagelen);
   } else {
  printf(" The Message is empty string %s \n" ,interp->result);
-    memcpy(encmessage,"No mesage were produced",24);
+    strncpy(encmessage,"No mesage were produced",encmessagelen);
  }
  
     /* It either works or fails */
@@ -406,7 +404,8 @@ sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
 }
 char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
                          char *data, int data_len, int hdr_len,
-                         char *enc_asym_keyid, int irand,char *encmessage)
+                         char *enc_asym_keyid, int irand,
+			 char *encmessage,int encmessagelen)
 {
   FILE  *enc_fd=NULL;
   char *enc_status=NULL;
@@ -479,10 +478,10 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   memcpy(enc_asym_keyid, key_id,strlen(key_id));
    enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if(enc_message != NULL)
-  memcpy(encmessage,enc_message,strlen(enc_message));
+  strncpy(encmessage,enc_message,encmessagelen);
   else {
         printf("The Decryption didnot produce any message %s\n",interp->result);
-        memcpy(encmessage,"No Encryption Message",20);
+        strncpy(encmessage,"No Encryption Message",encmessagelen);
 	return("failed");
   }
 

@@ -1016,9 +1016,9 @@ proc pgp_InterpretOutput { in outvar key} {
     } else {
        set pgpresult(date) "none"
        set pgpresult(siglen) "none"
-       set pgpresult(sigdate) "none"
      }
-    if { [regexp {.*Signature made (.*) GMT .*} $in {} pgpresult(sigdate)] == 1 }  {
+    set pgpresult(sigdate) "Unknown"
+    if { [regexp {.*Signature made (.*) GMT.*} $in {} pgpresult(sigdate)] == 1 }  {
 	putlogfile "   pgp_InterpretOutput: $pgpresult(sigdate)"
 	}
     if [regexp {This.*do not have the secret key.*file.} $in \
