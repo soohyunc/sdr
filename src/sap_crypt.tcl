@@ -280,6 +280,9 @@ proc submit_key {} {
     #this will get re-installed by the re-load that happens after saving...
     set keylist ""
 
+    #this is needed to allow the first key to be shown on freeBSD
+    save_prefs
+
     if {[get_passphrase] == ""} {
 	enter_long_passphrase save
     } else {
