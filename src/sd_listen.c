@@ -869,7 +869,6 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     int ttl, mediattl, medialayers, code;
     int port, origlen;
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
-    unsigned int aid;
     struct in_addr source;
     struct in_addr maddr;
     struct timeval tv;
@@ -1425,17 +1424,11 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
 
     sprintf(namestr, "%s%s%s", creator, createtime, createaddr);
+
     /*Create a hash of originator data as advert ID*/
-    aid=0;
-    for(i=0;i<=4;i++)
-      namestr[strlen(namestr)+i]='\0';
-    for(i=0;i<=strlen(namestr)/4;i++)
-      {
-	unsigned int tmp;
-	memcpy((char *)&tmp,&namestr[i*4],4);
-	aid=(aid<<1|aid>>31)^tmp;
-      }
-    sprintf(namestr, "%x", aid);
+    Tcl_VarEval(interp, "get_aid ", namestr, NULL);
+    sprintf(namestr, "%s", interp->result);
+
     if (advertid!=NULL)
       strcpy(advertid, namestr);
     Tcl_SetVar(interp, "advertid", namestr, TCL_GLOBAL_ONLY);
