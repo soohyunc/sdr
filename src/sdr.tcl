@@ -67,7 +67,7 @@ proc gettime {sec} {
     set res [clock format $sec -format {%Y %m %d %H %M %w %B %a %A}]
     #do TZ separately because of a bug in IRIX which returns TZ with an
     #unmatched quote preceding it
-    set tz [clock format $sec -format {%Z}]
+    set tz [clock format $sec -format { %Z }]
     lappend res $tz
     return $res
 }
