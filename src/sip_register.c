@@ -32,6 +32,7 @@
  */
 
 #include "sdr.h"
+#include "sip.h"
 #include "prototypes.h"
 #include "ui_fns.h"
 
@@ -43,21 +44,14 @@
 
 
 #include <tcl.h>
-#ifndef INADDR_NONE
-#define INADDR_NONE     0xffffffff
-#endif
 
 extern char hostname[];
 extern char username[];
 extern Tcl_Interp *interp;
 extern char *webdata;
 extern int webblocks;
-#define BLOCKSIZE 100000
-#define READSIZE 1024
 extern int webdatalen;
-#ifdef DEBUG
-static char msg[80];
-#endif
+#define DEBUG
 
 int send_sip_register(char *uridata, char *proxyuri, char *user_data);
 
@@ -69,311 +63,82 @@ int sip_register()
   #define MAXURLLEN 256
   #define MSGLEN 2048
   char emailaddr[MAXEMAILLEN];
-  char serverurl[MAXURLLEN];
+  char *serverurl;  
   char msg[MSGLEN];
   strncpy(emailaddr, 
 	  Tcl_GetVar(interp, "youremail", TCL_GLOBAL_ONLY), 
 	  MAXEMAILLEN);
   if ((strlen(emailaddr)==0)||(strchr(emailaddr,'@')==0))
     return -1;
+  serverurl=malloc(MAXURLLEN);
   strncpy(serverurl,
 	  Tcl_GetVar(interp, "sip_server_url", TCL_GLOBAL_ONLY),
 	  MAXURLLEN);
-  if ((strlen(serverurl)==0)||(strncmp(serverurl,"http://",7)!=0))
+  if ((strlen(serverurl)==0)||(is_a_sip_url(serverurl)==0))
     return -1;
-  strcat(msg, "user:");
+  strcpy(msg, "REGISTER sip:");
   strcat(msg, emailaddr);
-  strcat(msg, "\r\nredirect:");
+  strcat(msg, " SIP/2.0\r\nVia: SIP/2.0/UDP ");
+  strcat(msg, hostname);
+  strcat(msg, "\r\nCall-ID: ");
+  strcat(msg, sip_generate_callid());
+  strcat(msg, "\r\nTo: sip:");
+  strcat(msg, emailaddr);
+  strcat(msg, "\r\nFrom: sip:");
+  strcat(msg, emailaddr);
+  strcat(msg, "\r\nLocation: sip:");
   strcat(msg, username);
   strcat(msg, "@");
   strcat(msg, hostname);
-  strcat(msg, "\r\n");
-  strcat(msg, "proto:udp\r\n");
-  strcat(msg, "action:redirect\r\n");
-  strcat(msg, "ttl:0\r\n");
+  strcat(msg, "\r\nContent-length:0\r\n\r\n");
   return(send_sip_register(serverurl, NULL, msg));
+  free(serverurl);
 }
 
 int send_sip_register(char *uridata, char *proxyuri, char *user_data)
 {
-  
-  char *uri, *end, *t1, *t2, *proto, lenbuf[80];
-  struct sockaddr_in sinhim;
-  struct hostent *addr;
-  unsigned long inaddr;
-  int fd, usingproxy;
-  int webstate;
-#define	CONNECTING	1
-#define	READING		2
-  struct msghdr msg;
-  struct iovec iov[10];
-  int iovlen;
-#ifdef MSG_EOF
-  int usettcp = 1;
-#endif
-
 #ifdef DEBUG
   printf("send_sip_register %s %s", uridata, user_data);
 #endif
-  uri=uridata;
-  proto=uri;
-  if (proxyuri!=NULL)
-    usingproxy=1;
-  end=strchr(uri,':');
-  if(end==0)
-    {
-      fprintf(stderr, "Parse error in URL: %s\n", uri);
-      return -1;
-    }
-  *end='\0';
-  if (strncmp(proto, "http", 4)==0 || usingproxy)
-    {
-      int port=80;
-      char file[256];
-
-      uri=end+3;
-      t1=strchr(uri, '/');
-      if (t1==0)
-	{
-	  strcpy(file, "/");
-	}
-      else
-	{
-	  *t1='\0';
-	  file[0]='/';
-	  strncpy(&file[1], t1+1, sizeof(file) - 2);
-	}
-      
-      t2=strchr(uri, ':');
-      if (t2==0)
-	{
-	  port=80;
-	}
-      else
-	{
-	  port=atoi(t2+1);
-	  *t2='\0';
-	}
-#ifdef DEBUG
-      printf("proto=http, host=%s, port=%d, file=%s\n",
-	     uri, port, file);
-#endif
-      if ( (inaddr = inet_addr(uri)) != INADDR_NONE)
-	{
-	  /* it's dotted-decimal */
-	  memcpy((char *)&sinhim.sin_addr.s_addr, (char *)&inaddr, sizeof(inaddr) );
-	  sinhim.sin_family = AF_INET;
-	}
-      else
-	{
-	  if ((addr=gethostbyname(uri)) == NULL)
-	    {
-	      fprintf(stderr, "Unknown hostname %s\n", uri);
-	    }
-	  sinhim.sin_family = addr->h_addrtype;
-	  sinhim.sin_family = AF_INET;
-	  sinhim.sin_port = htons(port);
-#ifdef h_addr
-	  memcpy((char*)&sinhim.sin_addr, addr->h_addr_list[0], addr->h_length);
-#else
-	  memcpy((char*)&sinhim.sin_addr, addr->h_addr, addr->h_length);
-#endif
-	}
-
-      while (Tk_DoOneEvent(TK_DONT_WAIT)) ;
-try_again:
-      if((fd=socket(AF_INET, SOCK_STREAM, 0))<0)
-	{
-	  perror("socket");
-	  return -1;
-	}
-#ifdef NBCONNECT
-      fcntl(fd, F_SETFL, FNDELAY);
-#endif
-
-      iovlen = 0;
-      iov[iovlen].iov_base = "POST ";
-      iov[iovlen++].iov_len = 5;
-      iov[iovlen].iov_base = file;
-      iov[iovlen++].iov_len = strlen(file);
-      iov[iovlen].iov_base = " HTTP/1.0\r\nUser-agent: sdrwww ";
-      iov[iovlen++].iov_len = 30;
-      iov[iovlen].iov_base = Tcl_GetVar(interp, "sdrversion", TCL_GLOBAL_ONLY);
-      iov[iovlen].iov_len = strlen(iov[iovlen].iov_base);
-      iovlen++;
-      iov[iovlen].iov_base = "\r\nPragma: nocache";
-      iov[iovlen++].iov_len = 17;
-      iov[iovlen].iov_base = "\r\nContent-type: application/x-sip-loc";
-      iov[iovlen].iov_len = strlen(iov[iovlen++].iov_base);
-      sprintf(lenbuf, "\r\nContent-length: %d", strlen(user_data));
-      iov[iovlen].iov_base = lenbuf;
-      iov[iovlen].iov_len = strlen(iov[iovlen++].iov_base);
-      iov[iovlen].iov_base = "\r\nAccept: text/plain\r\n"
-			     "Accept: text/html\r\n\r\n";
-      iov[iovlen++].iov_len = 43;
-      iov[iovlen].iov_base = user_data;
-      iov[iovlen].iov_len = strlen(iov[iovlen++].iov_base);
-
-      /* workaround for accrights / control renaming */
-      memset((char *)&msg, 0, sizeof(msg));
-
-      msg.msg_name = (void *)&sinhim;
-      msg.msg_namelen = sizeof sinhim;
-      msg.msg_iov = iov;
-      msg.msg_iovlen = iovlen;
-#ifdef MSG_EOF
-      msg.msg_flags = usettcp ? MSG_EOF : 0;
-
-      if (sendmsg(fd, &msg, msg.msg_flags) < 0
-#ifdef NBCONNECT
-		&& errno != EINPROGRESS
-#endif
-	 )
-	{
-	  perror("connect/send");
-	  return -1;
-	}
-#else
-      if (connect(fd, (struct sockaddr *)&sinhim, sizeof(struct sockaddr_in))<0
-#ifdef NBCONNECT
-		&& errno != EINPROGRESS
-#endif
-	 )
-	{
-	  perror("connect");
-	  return -1;
-	}
-#endif
-
-      webdatalen=0;
-      webstate = CONNECTING;
-      while (1)
-	{
-	  int tmp;
-	  fd_set r,w;
-	  struct timeval tv;
-
-	  tv.tv_sec=0;
-	  tv.tv_usec=100000;
-	  FD_ZERO(&r);
-	  if (webstate == READING) FD_SET(fd, &r);
-	  FD_ZERO(&w);
-	  if (webstate == CONNECTING) FD_SET(fd, &w);
-	  
-	  if(select(fd+1, &r, &w, NULL, &tv)!=0)
-	    {
-	      if (webstate == CONNECTING) {
-#ifdef NBCONNECT
-		int err = 0;
-		int errlen = sizeof(err);
-
-		if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0) {
-#ifdef SOLARIS
-		  switch (errno) {
-		    /*
-		     * Solaris 2.4's socket emulation doesn't allow you
-		     * to determine the error from a failed non-blocking
-		     * connect and just returns EPIPE.  Create a fake
-		     * error message for connect.
-		     */
-		    case EPIPE:
-			err = ENOTCONN;
-			break;
-
-		    /*
-		     * Solaris 2.5's socket emulation returns the connect
-		     * error as a getsockopt error.  If getsockopt returns
-		     * an error that could have been returned by connect,
-		     * use that.
-		     */
-		    case ENETDOWN:
-		    case ENETUNREACH:
-		    case ENETRESET:
-		    case ECONNABORTED:
-		    case ECONNRESET:
-		    case ENOBUFS:
-		    case EISCONN:
-		    case ENOTCONN:
-		    case ESHUTDOWN:
-		    case ETOOMANYREFS:
-		    case ETIMEDOUT:
-		    case ECONNREFUSED:
-		    case EHOSTDOWN:
-		    case EHOSTUNREACH:
-		    case EWOULDBLOCK:
-		    case EALREADY:
-		    case EINPROGRESS:
-			err = errno;
-			break;
-
-		    /*
-		     * Otherwise, it's probably a real error.
-		     */
-		    default:
-		      {
-			perror("getsockopt");
-			return -1;
-		      }
-		  }
-#else
-		  perror("getsockopt");
-		  return -1;
-#endif
-		}
-		if (err != 0) 
-		  {
-		    perror("connect");
-		    return -1;
-		  }
-		fcntl(fd, F_SETFL, 0);
-#endif
-#ifndef MSG_EOF
-		sendmsg(fd, &msg, 0);
-#endif
-		webstate = READING;
-		continue;
-	      }
-	      if((webdatalen+READSIZE)>(webblocks*BLOCKSIZE)) {
-		webblocks++;
-		webdata=realloc(webdata, webblocks*BLOCKSIZE);
-	      }
-	      tmp=recv(fd, &webdata[webdatalen], READSIZE, 0);
-	      if(tmp <= 0)
-		{
-		  break;
-		}
-	      webdatalen+=tmp;
-	    }
-	  else 
-	    {
-	    }
-	}
-      close(fd);
-#ifdef MSG_EOF
-      /*
-       * Some web servers can't handle T/TCP and just close the connection.
-       * Try again if we hit one of those.
-       */
-      if (webdatalen == 0 && usettcp) {
-	usettcp = 0;
-	goto try_again;
+  if (is_a_sip_url(uridata)==1) {
+    int port=0, transport=SIP_NO_TRANSPORT, ttl=0;
+    char host[strlen(uridata)], maddr[strlen(uridata)], url[strlen(uridata)];
+    strcpy(url, uridata);
+    parse_sip_url(url, NULL, NULL, host, &port, &transport, &ttl, maddr, 
+		  NULL, NULL);
+    /*set appropriate defaults for register*/
+    if (port==0) port=SIP_PORT;
+    if (transport==SIP_NO_TRANSPORT) transport=SIP_TCP_TRANSPORT;
+    if ((strlen(maddr)>0)&&(ttl==0)) ttl=16;
+    
+    if (transport==SIP_TCP_TRANSPORT) {
+      sip_send_tcp_register(host, port, user_data);
+    } else {
+      if (strlen(maddr)>0) {
+	sip_send_mcast_register(host, maddr, port, ttl, user_data);
+      } else {
+	sip_send_udp_register(host, port, user_data);
       }
-#endif
-      webdata[webdatalen]='\0';
-      interp->result=webdata;
     }
-  else if(strncmp(proto, "ftp", 3)==0)
-    {
-      Tcl_VarEval(interp, "msgpopup", "Protocol Error", "Sorry - this browser does not yet support ftp URLs", NULL);
-    }
-  else if(strncmp(proto, "mailto", 6)==0)
-    {
-      Tcl_VarEval(interp, "msgpopup", "Protocol Error", "Sorry - this browser does not yet support mailto URLs", NULL);
-    }
-  else
-    {
-      perror("Unknown protocol");
-    }
-  return -1;
+  } else {
+    fprintf(stderr, "invalid SIP URL entered: %s\n", uridata);
+  }
+  return 0;
+}
+
+int sip_send_mcast_register(char *host, char *maddr, int port, 
+			    int ttl, char *user_data)
+  {
+    return -1;
+  }
+
+int sip_send_udp_register(char *host, int port, char *user_data)
+  {
+    return -1;
+  }
+
+int sip_send_tcp_register(char *host, int port, char *user_data)
+{
+  return(sip_send_tcp_request(0, host, port, user_data, 1/*wait for reply*/));
 }
 

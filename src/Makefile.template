@@ -29,7 +29,8 @@ SDR_UI_FILES = \
 		tcl_sip.o \
 		tcl_sdp.o \
 		tcl_sdr.o \
-		tcl_cache.o 
+		tcl_cache.o \
+	        tcl_cli.o
 
 SDR_HELP_FILES = \
 	mbone_faq.ehtml \
@@ -70,7 +71,8 @@ OBJS= \
 	tkUnixInit.o  \
 	ui_fns.o  \
 	ui_init.o  \
-	www_fns.o 
+	www_fns.o \
+	cli.o
 
 .SUFFIXES: .ehtml .html .tcl $(.SUFFIXES)
 

@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 #include "sdr.h"
+#include "sip.h"
 #include "ui_fns.h"
 #include "prototypes.h"
 
@@ -83,15 +84,16 @@ int ui_lookup_host(dummy, interp, argc, argv)
   sprintf(interp->result, "%s", inet_ntoa(in));
   return TCL_OK;
 }
- 
-int ui_sip_send_msg(dummy, interp, argc, argv)
+
+int ui_sip_send_udp(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
     Tcl_Interp *interp;                 /* Current interpreter. */
     int argc;                           /* Number of arguments. */
     char **argv;                        /* Argument strings. */
 {
   int code;
-  code=sip_send_udp(argv[2], 0, argv[1]);
+  /*addr, ttl, port, message*/
+  code=sip_send_udp(argv[1], atoi(argv[2]), atoi(argv[3]), argv[4]);
   switch (code)
     {
     case 0:
@@ -99,6 +101,42 @@ int ui_sip_send_msg(dummy, interp, argc, argv)
       return TCL_OK;
     case 61:
       sprintf(interp->result, "-1");
+      return TCL_OK;
+    default:
+      return(code);
+    }
+}
+
+int ui_sip_send_tcp_request(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;                        /* Argument strings. */
+{
+  int fd;
+  /*fd, addr, port, msg, wait*/
+  /*fd here is so we can reuse existing connections for ACK and BYE*/
+  /*fd will be 0 if there is no connection to reuse*/
+  fd=sip_send_tcp_request(atoi(argv[1]), argv[2], atoi(argv[3]), 
+			    argv[4], 1/*wait for reply*/);
+  sprintf(interp->result, "%d", fd);
+  return TCL_OK;
+}
+
+int ui_sip_send_tcp_reply(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;                        /* Argument strings. */
+{
+  int code;
+  /*fd, callid, addr, port, msg*/
+  code=sip_send_tcp_reply(atoi(argv[1]), argv[2], argv[3], 
+			  atoi(argv[4]), argv[5]);
+  switch (code)
+    {
+    case 0:
+      sprintf(interp->result, "0");
       return TCL_OK;
     default:
       return(code);
@@ -298,7 +336,7 @@ int ui_getpid(dummy, interp, argc, argv)
 #ifndef WIN32
   pid=getpid();
 #endif
-  sprintf(pids, "%d", pid);
+  sprintf(pids, "%d", (unsigned int)pid);
   interp->result=pids;
   return TCL_OK;
 }
@@ -313,3 +351,97 @@ int ui_stop_session_ad(dummy, interp, argc, argv)
   return TCL_OK;
 }
 
+int ui_sip_parse_url(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  /*do this here and not in TCL because we want a single common SIP
+    URL parser for the sip_server and sdr*/
+
+  int port=SIP_PORT, ttl=0, transport=SIP_NO_TRANSPORT;
+  char *addr, *user, *passwd, *maddr, *tag, *others, transport_str[5];
+  /*allocate enough memory*/
+  addr=malloc(strlen(argv[1]));
+  *addr='\0';
+  user=malloc(strlen(argv[1]));
+  *user='\0';
+  maddr=malloc(strlen(argv[1]));
+  *maddr='\0';
+  passwd=malloc(strlen(argv[1]));
+  *passwd='\0';
+  tag=malloc(strlen(argv[1]));
+  *tag='\0';
+  others=malloc(strlen(argv[1]));
+  *others='\0';
+  parse_sip_url(argv[1], user, passwd, addr, &port, &transport, 
+    &ttl, maddr, tag, others);
+  switch(transport) {
+  case SIP_NO_TRANSPORT: 
+    strcpy(transport_str, "NONE");
+    break;
+  case SIP_UDP_TRANSPORT: 
+    strcpy(transport_str, "UDP");
+    break;
+  case SIP_TCP_TRANSPORT: 
+    strcpy(transport_str, "TCP");
+    break;
+  }
+  sprintf(interp->result, 
+	  "\"%s\" \"%s\" \"%s\" %d \"%s\" %d \"%s\" \"%s\" \"%s\"", 
+	  user, passwd, addr, port, transport_str, ttl, maddr, tag, others);
+  free(addr);
+  free(user);
+  free(maddr);
+  free(passwd);
+  free(tag);
+  free(others);
+  return TCL_OK;
+}
+
+int ui_sip_parse_path(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  /*do this here and not in TCL because we want a single common SIP
+    Via field parser for the sip_server and sdr*/
+
+  int port=SIP_PORT, ttl=0, transport=SIP_NO_TRANSPORT;
+  char *addr, *version, transport_str[5];
+  /*allocate enough memory*/
+  addr=malloc(strlen(argv[1]));
+  *addr='\0';
+  version=malloc(strlen(argv[1]));
+  *version='\0';
+  parse_sip_path(argv[1], version, &transport, addr, &port, &ttl);
+  switch(transport) {
+  case SIP_NO_TRANSPORT: 
+    strcpy(transport_str, "NONE");
+    break;
+  case SIP_UDP_TRANSPORT: 
+    strcpy(transport_str, "UDP");
+    break;
+  case SIP_TCP_TRANSPORT: 
+    strcpy(transport_str, "TCP");
+    break;
+  }
+  sprintf(interp->result, 
+	  "\"%s\" \"%s\" \"%s\" %d %d", 
+	  version, transport_str, addr, port, ttl);
+  free(addr);
+  free(version);
+  return TCL_OK;
+}
+
+
+int ui_sip_close_tcp_connection(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  return (sip_close_tcp_connection(argv[1]));
+}

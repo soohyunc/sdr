@@ -12,7 +12,7 @@ set yourname ""
 set yourphone ""
 set youremail ""
 set youralias ""
-set sip_server_url "http://north.lcs.mit.edu/sip/"
+set sip_server_url "sip:north.east.isi.edu"
 set keylist ""
 
 set lang C
@@ -776,6 +776,7 @@ proc list_session {aid lastix list} {
     if {$ifstyle(list)=="logo"} {
 	set type $ldata($aid,type)
 	if {[winfo exists $sessbox($list).win$aid]==0} {
+	    puts "creating new window $sessbox($list).win$aid"
 	    label $sessbox($list).win$aid \
 		    -bitmap [get_type_icon $ldata($aid,type)] \
 		    -borderwidth 2 -relief groove
@@ -787,6 +788,7 @@ proc list_session {aid lastix list} {
 	    bind $sessbox($list).win$aid <2> "start_all $aid"
 	    bind $sessbox($list).win$aid <3> "hide_session $aid"
 	}
+	puts "$sessbox($list) window create ..."
 	$sessbox($list) window create [expr $lastix+1].0 -window \
 		$sessbox($list).win$aid
 	$sessbox($list) insert [expr $lastix+1].1 "$ldata($aid,session)                                             \n"
@@ -827,13 +829,22 @@ proc list_session {aid lastix list} {
 
 proc relist_session {aid lastix list} {
     global sessbox ldata showwhich
+    puts relist_session
     if {[listing_criteria $aid $showwhich]!=1} {
 	#this session just became unshown - better redisplay everything.
 	reshow_sessions $showwhich
+	puts reshow_sessions
 	return 0
     }
-    $sessbox($list) delete [expr $lastix+1].0 [expr $lastix+1].end+1c
-    list_session $aid $lastix $list
+    #did the session type or name change?
+    set txt [$sessbox($list) get [expr $lastix+1].0 [expr $lastix+1].end+1c]
+    set txt [string trim $txt "\n"]
+    set txt [string trim $txt]
+    puts "new:>>$ldata($aid,session)<<, old:>>$txt<<"
+    if {[string compare $ldata($aid,session) $txt]!=0} {
+	$sessbox($list) delete [expr $lastix+1].0 [expr $lastix+1].end+1c
+	list_session $aid $lastix $list
+    }
     if {[ispopped $aid]==1} {
 	highlight_tag $aid popup
     }
@@ -1589,8 +1600,8 @@ if {$ifstyle=="norm"} {
       pack $win.f3.dismiss -side left -fill x -expand true
   } else {
       button $win.f3.accept -text [tt "Accept Invitation"] -relief raised \
-	  -command "accept_invite_fix_ui $win $aid;sip_accept_invite $aid" \
-	   -highlightthickness 0
+	      -highlightthickness 0 -command \
+	      "accept_invite_fix_ui $win $aid;sip_accept_invite $aid" 
       button $win.f3.refuse -text [tt "Reject Invitation"] -relief raised \
 	  -command "destroy $wname;sip_refuse_invite $aid" \
 	   -highlightthickness 0
@@ -1768,10 +1779,9 @@ proc show_times {win aid} {
     }
 }
 
-proc show_times_english {win aid} {
+proc text_times_english {aid} {
     global ldata
     set timestr [tt "Session will take place\n"]
-    pack [message $win.msg -width 400 -justify center -borderwidth 2 -relief groove -font [option get . mediumFont Sdr]] -after $win.hidden1 -side top -fill x -expand true
     for {set i 0} {$i<$ldata($aid,no_of_times)} {incr i} {
       if {$i!=0} { set timestr "$timestr\nand "}
       if {$ldata($aid,time$i,no_of_rpts)!=0} {
@@ -1862,7 +1872,14 @@ proc show_times_english {win aid} {
       }
   }
 #  set timestr "$timestr \nfrom [cropdate $ldata($aid,tfrom)] [croptime $ldata($aid,tfrom)] to $ldata($aid,tto)"
-  $win.msg configure -text $timestr
+  return $timestr
+}
+
+proc show_times_english {win aid} {
+    global ldata
+    set timestr [tt "Session will take place\n"]
+    pack [message $win.msg -width 400 -justify center -borderwidth 2 -relief groove -font [option get . mediumFont Sdr]] -after $win.hidden1 -side top -fill x -expand true
+    $win.msg configure -text [text_times_english $aid]
 }
 
 #proc text_wrap {t width} {

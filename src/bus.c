@@ -109,7 +109,7 @@ int bus_listen()
   int sock = -1;
 #else
   int sock;
-  sock=sip_listen(BUS_ADDR, BUS_PORT);
+  sock=sip_udp_listen(BUS_ADDR, BUS_PORT);
 #endif
   return(sock);
 }

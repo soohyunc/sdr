@@ -12,20 +12,21 @@ extern const char tcl_sdp[];
 extern const char tcl_sdr[];
 extern const char tcl_cache[];
 extern const char tcl_sap_crypt[];
+extern const char tcl_cli[];
 
-#define MAX_TCL_MODULE 11
+#define MAX_TCL_MODULE 12
 
 const char *modname[MAX_TCL_MODULE]=
 {"tcl_generic", "tcl_www", "tcl_new", "tcl_start_tools",
  "tcl_parsed_plugins", "tcl_plugins", "tcl_sip", "tcl_sdp", "tcl_cache",
- "tcl_sdr", "tcl_sap_crypt"};
+ "tcl_sdr", "tcl_sap_crypt", "tcl_cli"};
 
 const char *modvar[MAX_TCL_MODULE]=
 {tcl_generic, tcl_www, tcl_new, tcl_start_tools,
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
- tcl_sdr, tcl_sap_crypt};
+ tcl_sdr, tcl_sap_crypt, tcl_cli};
 
-#define MAX_UI_FN 30
+#define MAX_UI_FN 35
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -46,7 +47,12 @@ const char *ui_fn_name[MAX_UI_FN]=
   "stop_www_loading",
   "sd_listen",
   "lookup_host",
-  "sip_send_msg",
+  "sip_send_udp",
+  "sip_send_tcp_request",
+  "sip_send_tcp_reply",
+  "sip_close_tcp_connection",
+  "sip_parse_url",
+  "sip_parse_path",
   "ui_quit",
   "set_sipalias",
   "getpid",
@@ -80,7 +86,12 @@ void *ui_fn[MAX_UI_FN]=
   ui_stop_www_loading,
   ui_sd_listen,
   ui_lookup_host,
-  ui_sip_send_msg,
+  ui_sip_send_udp,
+  ui_sip_send_tcp_request,
+  ui_sip_send_tcp_reply,
+  ui_sip_close_tcp_connection,
+  ui_sip_parse_url,
+  ui_sip_parse_path,
   ui_quit,
   ui_set_sipalias,
   ui_getpid,
@@ -94,3 +105,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_save_keys,
   ui_write_crypted_file
 };
+
+
+
+

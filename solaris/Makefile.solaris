@@ -1,7 +1,6 @@
 CC=gcc -g -O
-INCLUDES=-I/usr/openwin/include -I/cs/research/mice/starship/common/solaris/include -I/usr/local/include
-LIB_DIR=/cs/research/mice/starship/common/solaris/lib
-#LIB_DIR=/usr/local/lib
+INCLUDES=-I/usr/openwin/include -I/usr/local/include -I/usr/local/include
+LIB_DIR=/usr/local/lib
 LIBS=	$(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a \
 	-R/usr/openwin/lib -L/usr/openwin/lib -lX11 \
 	-lm -lnsl -ldl -lsocket -lresolv

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 1997,1998 University of Southern California
  * Copyright (c) 1995,1996 University College London
  * Copyright (c) 1994 Tom Pusateri, J.P.Knight
  * All rights reserved.
@@ -14,10 +15,11 @@
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
  *      This product includes software developed by the Computer Science
- *      Department at University College London
- * 4. Neither the name of the University nor of the Department may be used
- *    to endorse or promote products derived from this software without
- *    specific prior written permission.
+ *      Department at University College London and by the Information
+ *      Sciences Institute of the University of Southern California
+ * 4. Neither the name of the Universities nor of the Department or Institute
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -57,6 +59,7 @@
 #include <locale.h>
 
 #include "sdr.h"
+#include "sip.h"
 #include "prototypes.h"
 #include "prototypes_crypt.h"
 
@@ -71,7 +74,7 @@
 #define TMPSTRLEN 1024
 
 extern Tcl_Interp *interp;
-int gui;
+int gui, cli;
 int logging;
 
 unsigned long parse_entry();
@@ -101,7 +104,7 @@ int no_of_rx_socks=0;
 int txsock[MAX_SOCKS];
 char *tx_sock_addr[MAX_SOCKS];
 int no_of_tx_socks=0;
-int siprxsock, siptxsock, busrxsock;
+int sip_udp_rx_sock, sip_tcp_rx_sock, sip_udp_tx_sock, busrxsock;
 unsigned long hostaddr;
 char hostname[TMPSTRLEN];
 char username[TMPSTRLEN];
@@ -378,6 +381,7 @@ int argc;
 char *argv[];
 {
     int i;
+    int inChannel;
     struct in_addr in;
     struct hostent *hstent;
 
@@ -510,6 +514,7 @@ char *argv[];
     debug1=FALSE;
     logging=FALSE;
     gui=GUI;
+    cli=FALSE;
     for(i=1;i<argc;i++)
       {
 	if(strncmp(argv[i], "-s", 3)==0)
@@ -524,6 +529,10 @@ char *argv[];
 	   {
 	     gui=NO_GUI;
 	     doexit=FALSE;
+	   }
+	if(strncmp(argv[i], "-cli", 7)==0)
+	   {
+	     cli=TRUE;
 	   }
 	if(strncmp(argv[i], "-log", 7)==0)
 	   {
@@ -590,12 +599,23 @@ char *argv[];
 	linksocket(rxsock[i], TK_READABLE, (Tcl_FileProc*)recv_packets);
       }
 /*Set up SIP socket*/
-    siprxsock=sip_listen(SIP_GROUP, SIP_PORT);
+    sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);
+    sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
 #ifdef NOTDEF
-    siptxsock=sip_tx_init(SIP_GROUP, SIP_PORT, (char)1);
+    sip_udp_tx_sock=sip_tx_init(SIP_GROUP, SIP_PORT, (char)1);
 #endif
-    if (siprxsock!=-1)
-      linksocket(siprxsock, TK_READABLE, (Tcl_FileProc*)sip_recv);
+    if (sip_udp_rx_sock!=-1)
+      linksocket(sip_udp_rx_sock, TK_READABLE, (Tcl_FileProc*)sip_recv_udp);
+    if (sip_tcp_rx_sock!=-1)
+      linksocket(sip_tcp_rx_sock, TK_READABLE, (Tcl_FileProc*)sip_recv_tcp);
+    else {
+      while (sip_tcp_rx_sock==-1) {
+	fprintf(stderr, "Failed to open SIP TCP socket\n");
+	sleep(5);
+	sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
+      }
+      linksocket(sip_tcp_rx_sock, TK_READABLE, (Tcl_FileProc*)sip_recv_tcp);
+    }
 
     Tcl_CreateCommand(interp, "load_cache_entry", load_cache_entry, 0, 0);
     Tcl_Eval(interp, "load_from_cache");
@@ -614,6 +634,18 @@ char *argv[];
 	signal(SIGPIPE, SIG_IGN);
       }
 #endif
+
+#ifndef WIN32
+    /*Set up the file handler for the Command Line Interface*/
+    if (cli) {
+      init_cli();
+      inChannel = fileno(stdin);
+      Tcl_CreateFileHandler(inChannel, TCL_READABLE, (Tcl_FileProc*)do_cli, 
+			    (ClientData) inChannel);
+    }
+#endif
+
+
     while ((doexit==FALSE)||(Tk_GetNumMainWindows() > 0)) 
       {
 	if ((ui_visible==TRUE) &&(Tk_GetNumMainWindows() > 0)) 
@@ -855,7 +887,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     int i;
     static char namestr[MAXADSIZE];
     char *cur, *end, *attr, *unknown, *version, *session=NULL, *desc=NULL, *orig=NULL, *chan[MAXMEDIA], 
-         *media[MAXMEDIA], *times[MAXTIMES], *rpt[MAXTIMES][MAXRPTS], *uri,
+         *media[MAXMEDIA], *times[MAXTIMES], *rpt[MAXTIMES][MAXRPTS], *uri=NULL,
          *phone[MAXPHONE], *email[MAXPHONE], *bw[MAXBW],
          *key[MAXKEY], *data2;
     int mediactr, tctr, pctr, ectr, bctr, kctr, uctr;
@@ -1442,8 +1474,12 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     if(uctr>0)
       {
-	splat_tcl_special_chars(uri);
-	Tcl_SetVar(interp, "uri", uri, TCL_GLOBAL_ONLY);
+	if (uri!=NULL) {
+	  splat_tcl_special_chars(uri);
+	  Tcl_SetVar(interp, "uri", uri, TCL_GLOBAL_ONLY);
+	} else {
+	  Tcl_SetVar(interp, "uri", "", TCL_GLOBAL_ONLY);
+	}
       }
     for(i=0;i<pctr;i++)
       {
