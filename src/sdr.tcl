@@ -3173,7 +3173,6 @@ day."]
 	    incr mon -12
 	    incr year
 	}
-	set cal [exec cal $mon $year]
 	.cal.f0.c addtag mon$i withtag \
 	    [.cal.f0.c create text [expr $i*$fw*32] 0 -anchor nw\
              -fill $fg -font $font]
