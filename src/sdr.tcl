@@ -107,7 +107,7 @@ proc fixdaysinmonth {year} {
 	}
 }
 
-set sdrversion "v2.8"
+set sdrversion "v2.9"
 set titlestr "Multicast Session Directory $sdrversion"
 
 # return the 'current window' (usually ".w0", unless we're updating a subdir):
