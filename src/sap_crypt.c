@@ -74,7 +74,10 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
   char *dstbuf, origbuf[*len];
   struct enc_header *enchead;
   struct keydata *tmpkey=keylist;
-  int i, length=0;
+  int length=0;
+#ifdef DEBUG
+  int i;
+#endif
 
   memcpy(origbuf,buf,*len);          /* decrypt splats buffer so save it */
   enchead=(struct enc_header *)buf;
