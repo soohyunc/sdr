@@ -128,6 +128,9 @@ struct in6_addr hostaddr_v6;
 char hostname[TMPSTRLEN];
 char username[TMPSTRLEN];
 char sipalias[MAXALIAS];
+#if HAVE_IPv6
+unsigned int ttlint=1;
+#endif
 #ifdef WIN32
 unsigned int ttl=1;
 unsigned char rfd2sock[768];
@@ -462,7 +465,7 @@ int sd_tx_ipv6(char *address, int port, int *txsock, int *no_of_socks)
     }
     
     if (setsockopt(txsock[*no_of_socks], IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
-                   (char *)&ttl,  sizeof(ttl)) < 0) {
+                   (char *)&ttlint,  sizeof(ttlint)) < 0) {
         perror("sd_tx_ipv6: setsockopt HOPS");
         fprintf(stderr, "sd_tx: ttl: %d, socket: %d\n", 
                 ttl, txsock[*no_of_socks]);
