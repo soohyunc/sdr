@@ -4509,9 +4509,9 @@ foreach media $medialist {
 set send([lindex $medialist 0]) 1
 
 # add_admin     name           sap_addr     sap_port   base_addr  netmask ttl
-add_admin "Local Scope"     239.255.255.255   9875    239.255.0.0   16    15
-add_admin "Region (ttl 63)" 224.2.127.254     9875    224.2.128.0   17    63
-add_admin "World (ttl 127)" 224.2.127.254     9875    224.2.128.0   17    127
+add_admin "IPv4 Local Scope"     239.255.255.255   9875    239.255.0.0   16    15
+add_admin "IPv4 Region (ttl 63)" 224.2.127.254     9875    224.2.128.0   17    63
+add_admin "IPv4 World (ttl 127)" 224.2.127.254     9875    224.2.128.0   17    127
 # add_admin                    sap_addr     sap_port   base_addr  netmask ttl
 add_ttl_scope               224.2.127.254     9875    224.2.128.0   17
 set zoneDataForWindow([cw]) [array get zone]

@@ -726,7 +726,7 @@ proc new_mk_session_tech_scope {win aid} {
 	frame $win.f3.r
 	label $win.f3.r.l2 -text "Scope Mechanism:"
 	radiobutton $win.f3.r.b3 -text "TTL Scope" \
-		-highlightthickness 0 \
+		-highlightthickness 0 -state disabled \
 		-variable scope -value ttl -relief flat -command \
 		[format { 
 	    set addr [generate_address %s]
@@ -848,13 +848,13 @@ World:     127
 Specify the smallest scope that will reach the people you want to communicate with."]
 
         label $win.f3.rr.l -text [tt "Scope"]
-        radiobutton $win.f3.rr.r1 -relief flat -text [tt "Site"] -variable ttl\
+        radiobutton $win.f3.rr.r1 -relief flat -text [tt "IPv4 Site"] -variable ttl\
 		-highlightthickness 0 \
 		-value 15 -command {disable_scope_entry 15}
-	radiobutton $win.f3.rr.r2 -relief flat -text [tt "Region"] -variable ttl\
+	radiobutton $win.f3.rr.r2 -relief flat -text [tt "IPv4 Region"] -variable ttl\
 		-highlightthickness 0 \
 		-value 63 -command {disable_scope_entry 63}
-	radiobutton $win.f3.rr.r3 -relief flat -text [tt "World"] -variable ttl\
+	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv4 World"] -variable ttl\
 		-highlightthickness 0 \
 		-value 127 -command {disable_scope_entry 127}
 	hlfocus $win.f3.rr.r1

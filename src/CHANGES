@@ -1,5 +1,8 @@
 <H1>Sdr changes log</H1>
 <pre>
+    C.Perkins 16 Nov 1999
+  - Remove TTL scoping option
+
 2.9 K.Hasler 26 Oct 1999
   - created a directory type for the directory icon, so that the directory icon 
     is displayed for directory sessions in the main SDR window.
