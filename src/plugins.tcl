@@ -770,6 +770,8 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
 	catch {puts \"$rule\"}
 	catch {eval puts \"$rule\"}
     }
+# [csp]
+puts $rule
     set pid [eval exec $rule &]
 
     #keep track of the pid so we can see if the tools are still running...

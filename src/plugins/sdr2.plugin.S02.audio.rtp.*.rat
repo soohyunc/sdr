@@ -426,19 +426,5 @@ fmt:*(DYNAMIC)
 	}
 }
 
-<<<<<<< sdr2.plugin.S02.audio.rtp.*.rat
-#attr:rtpmap
-#{
-#  macro:RTPMAP
-#  {
-#    value:$(RTPMAP) -rtp $(VALUE)
-#  }
-#}
-flags:-t $(TTL)
-flags:-C $(SESSNAME)
-#flags:$(PRIMARY)$(SECONDARY)
-flags:$(ADDRESS)/$(PORT)
-=======
 flags:-C $(SESSNAME) -t $(TTL) -f $(PRIMARY)$(SECONDARY) $(FMTP) $(ADDRESS)/$(PORT)
 
->>>>>>> 1.2
