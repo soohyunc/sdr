@@ -3605,30 +3605,29 @@ struct advert_data *get_advert_info(char *advertid)
 }
 
 #define MAX_PARAM_SIZE 255
-/* parse tcl variables in command line */
-void convert_vars(char *ptr1, char *dest) {
-    char *ptr2;
+/* expand tcl variables in command line */
+void convert_vars(char *ptr, char *dest) {
     char cpy[MAX_PARAM_SIZE];
     int pos, len=0;
 
-    if (*ptr1=='$') {
-        while (*ptr1=='$') {
-            pos=strcspn(ptr1," /");
-            strcpy (cpy,ptr1);
-            ptr2=cpy;
-            ptr2+=pos;
-            if (ptr2!=NULL) *ptr2='\0';
+    while (*ptr!='\0') {
+        if (*ptr=='$') {
+			/* find the separator - not one of these.... */
+            pos=strspn(ptr,"$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+			/* make copy of tcl variable, in case there's more */
+            strcpy (cpy,ptr);
+            if (*(cpy+pos)!='\0') *(cpy+pos)='\0';
             strcpy(dest+len,Tcl_GetVar(interp, cpy+1, 0));
             len= strlen(dest);
-            ptr1+=pos;
-            /* append extra text/variables */
-            while(*ptr1 !='\0' && *ptr1!='$') {
-                strncpy (dest+len, ptr1, 1);
-                len++;
-                ptr1++;
-            }
+            ptr+=pos;
+		} else {
+			/* copy any other text */
+            strncpy (dest+len, ptr, 1);
+            len++;
+            ptr++;
         }
-    } else strcpy (dest, ptr1);
+    }
+	*(dest+len)='\0';
 }
 
 #ifndef WIN32
