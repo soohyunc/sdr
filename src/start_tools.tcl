@@ -48,6 +48,8 @@ proc start_media {aid mnum mode} {
   set $tmp $ldata($aid,$mnum,port)
   set tmp sd_$media\(address\)
   set $tmp $ldata($aid,$mnum,addr)
+  set tmp sd_$media\(layers\)
+  set $tmp $ldata($aid,$mnum,layers)
   set tmp sd_$media\(ttl\)
   set $tmp $ldata($aid,$mnum,ttl)
   set tmp sd_$media\(proto\)

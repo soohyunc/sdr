@@ -81,27 +81,6 @@ unsigned long sd_parse_entry();
 
 extern int init_security();
 
-void dump(buf, buflen)
-char *buf;
-int buflen;
-{
-#ifdef DEBUG
-        int i;
-        unsigned char c;
-        printf("Unexpected packet. Dumping...\n");
-        printf("Buffer length: %d\n",buflen);
-        for (i=0; i<buflen; i++) {
-                c=buf[i];
-#ifdef HEXDEBUG
-                printf(" %02x %c", c,c);
-#else
-		printf("%c",c);
-#endif
-        }
-        printf("\n");
-#endif
-}
-
 void seedrand()
 {
   struct timeval tv;
@@ -135,9 +114,32 @@ unsigned char ttl=1;
 unsigned char rfd2sock[64];
 #endif
 int doexit=FALSE;
-int debug1=FALSE;
 int ui_visible=TRUE;
+int debug1=FALSE;
 jmp_buf env;
+
+void dump(buf, buflen)
+char *buf;
+int buflen;
+{
+  if (debug1)
+  {
+        int i;
+        unsigned char c;
+        printf("Unexpected packet. Dumping...\n");
+        printf("Buffer length: %d\n",buflen);
+        for (i=0; i<buflen; i++) {
+                c=buf[i];
+#ifdef HEXDEBUG
+                printf(" %02x %c", c,c);
+#else
+		printf("%c",c);
+#endif
+        }
+        printf("<<<\n");
+  }
+}
+
 
 int sd_listen(char *address, int port, int rx_sock[], int *no_of_socks, int fatal) 
 {    
@@ -545,6 +547,11 @@ char *argv[];
     else
       Tcl_SetVar(interp, "log", "FALSE", TCL_GLOBAL_ONLY);
 
+    if (debug1)
+      Tcl_SetVar(interp, "debug1", "1", TCL_GLOBAL_ONLY);
+    else
+      Tcl_SetVar(interp, "debug1", "0", TCL_GLOBAL_ONLY);
+
 #ifndef WIN32
 /*Set up local conference bus to talk to local clients*/
     busrxsock=bus_listen();
@@ -807,9 +814,15 @@ void recv_packets(ClientData fd)
     if (bp->compress==1) {
       if (debug1==TRUE) 
 	fprintf(stderr, 
-		"compressed announcement received and ignored\n");
+		"compressed announcement received from %s\n",
+		inet_ntoa(from.sin_addr));
+#ifdef NOTDEF
       return;
+#endif
     }
+
+    if (debug1==TRUE)
+      printf("SAP packet received from %s\n", inet_ntoa(from.sin_addr));
 
     /*parse_announcement*/
     parse_announcement(bp->enc, data, length, 
@@ -840,12 +853,11 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	    char *sd_addr, int sd_port, time_t t, char *trust, char *recvkey)
 {
     int i;
-    int origlen;
     static char namestr[MAXADSIZE];
     char *cur, *end, *attr, *unknown, *version, *session=NULL, *desc=NULL, *orig=NULL, *chan[MAXMEDIA], 
          *media[MAXMEDIA], *times[MAXTIMES], *rpt[MAXTIMES][MAXRPTS], *uri,
          *phone[MAXPHONE], *email[MAXPHONE], *bw[MAXBW],
-         *key[MAXKEY];
+         *key[MAXKEY], *data2;
     int mediactr, tctr, pctr, ectr, bctr, kctr, uctr;
     char vars[MAXMEDIA][TMPSTRLEN];
     char debug=0;
@@ -854,13 +866,44 @@ unsigned long parse_entry(char *advertid, char *data, int length,
          heardfrom[TMPSTRLEN], origsrc[TMPSTRLEN], creator[TMPSTRLEN],
          modtime[TMPSTRLEN], createtime[TMPSTRLEN], createaddr[TMPSTRLEN],
          in[TMPSTRLEN], ip[TMPSTRLEN];
-    int ttl, mediattl, code;
-    int port;
+    int ttl, mediattl, medialayers, code;
+    int port, origlen;
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
     unsigned int aid;
     struct in_addr source;
     struct in_addr maddr;
     struct timeval tv;
+
+    if (data[length-1]!='\n')
+    {
+      if (debug1)
+	fprintf(stderr, "Announcement doesn't end in LF - will try to fix it up\n");
+      if (data[length-1]=='\0') 
+      {
+	/*someone sent the end of string character - illegal but we'll
+	  accept it*/
+	if (debug1)
+	  fprintf(stderr, "Illegal end-of-string character present - removed!\n");
+	data[length-1]='\n';
+      } 
+      else 
+      {
+	/*someone simply missed off the NL at end of the announcement*/
+	/*also illegal, but again we'll be liberal in what we accept*/
+	data[length]='\n';
+	length++;
+      }
+    }
+
+    if (debug1)
+    {
+      data2=(char *)malloc(length);
+      memcpy(data2, data, length);
+    } else {
+      data2=data;
+    }
+    origlen=length;
+
 
     if(strncmp(data, "v=", 2)!=0)
       {
@@ -871,10 +914,9 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 #endif
 
 	if (length==0) return((unsigned long)-1);
-#ifdef DEBUG
-	fprintf(stderr, "No session name field\n");
-#endif
-	dump(data, length);
+	if (debug1)
+	  fprintf(stderr, "No session name field\n");
+	dump(data2, origlen);
 	goto errorleap;
       }
     else
@@ -887,19 +929,18 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	length-=2;
       }
     if(((end=strchr(version, 0x0a)) == NULL)||(debug == 1)) {
-#ifdef DEBUG
-      fprintf(stderr, "No end to version name\n");
-#endif
-      dump(data, length);
+      if (debug1)
+	fprintf(stderr, "No end to version name\n");
+      dump(data2, origlen);
       goto errorleap;
     }
     *end++ = '\0';
-    origlen=length;
     length -= end-version;
     source.s_addr=htonl(hfrom);
     strncpy(heardfrom, (char *)inet_ntoa(source), 16);
     source.s_addr=htonl(src);
     strncpy(origsrc, (char *)inet_ntoa(source), 16);
+
 
     i = 0;
     mediactr=0;  tctr=0;  pctr=0;  ectr=0;  bctr=0;  kctr=0;
@@ -913,12 +954,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 		        /* session description */
 		        session = end+2;
                         if ((end=strchr(session, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding session\n");
-				printf("Failure at byte %ld\n", (long)session-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1) 
+			  {
+			    printf("Error decoding session\n");
+			    printf("Failure at byte %ld\n", (long)session-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(session);
@@ -929,12 +971,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         /* print description */
                         desc = end+2;
                         if ((end=strchr(desc, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding description\n");
-				printf("Failure at byte %ld\n", (long)desc-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding description\n");
+			    printf("Failure at byte %ld\n", (long)desc-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(desc);
@@ -946,12 +989,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         uri = end+2;
 			uctr++;
                         if ((end=strchr(uri, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding URI\n");
-				printf("Failure at byte %ld\n", (long)desc-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding URI\n");
+			    printf("Failure at byte %ld\n", (long)desc-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(uri);
@@ -961,12 +1005,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         /* print originator */
                         orig = end+2;
                         if ((end=strchr(orig, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding originator\n");
-				printf("Failure at byte %ld\n", (long)orig-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding originator\n");
+			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(orig);
@@ -984,12 +1029,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(email[ectr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding email address\n");
-				printf("Failure at byte %ld\n", (long)orig-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding email address\n");
+			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(email[ectr++]);
@@ -1008,12 +1054,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(phone[pctr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding originator\n");
-				printf("Failure at byte %ld\n", (long)orig-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding originator\n");
+			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(phone[pctr++]);
@@ -1024,12 +1071,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         /* print channel */
 			chan[mediactr] = end+2;
                         if ((end=strchr(chan[mediactr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding channel\n");
-				printf("Failure at byte %ld\n", (long)chan[mediactr]-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding channel\n");
+			    printf("Failure at byte %ld\n", (long)chan[mediactr]-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(chan[mediactr]);
@@ -1048,12 +1096,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(bw[bctr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding bandwidth\n");
-				printf("Failure at byte %ld\n", (long)bw[bctr-1]-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding bandwidth\n");
+			    printf("Failure at byte %ld\n", (long)bw[bctr-1]-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(bw[bctr++]);
@@ -1073,11 +1122,12 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  }
 			rctr[tctr]=0;
                         if ((end=strchr(times[tctr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding time\n");
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding time\n");
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(times[tctr++]);
@@ -1096,11 +1146,10 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(end+2, 0x0a)) == NULL) {
-#ifdef DEBUG
+			  if (debug1)
                                 printf("Error decoding time\n");
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(rpt[tctr-1][rctr[tctr-1]++]);
@@ -1119,12 +1168,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(key[kctr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding key\n");
-				printf("Failure at byte %ld\n", (long)chan-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding key\n");
+			    printf("Failure at byte %ld\n", (long)chan-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(key[kctr]++);
@@ -1143,12 +1193,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			    goto errorleap;
 			  }
                         if ((end=strchr(media[mediactr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding media\n");
-				printf("Failure at byte %ld\n", (long)media[mediactr]-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding media\n");
+			    printf("Failure at byte %ld\n", (long)media[mediactr]-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
 			strcpy(vars[mediactr], "");
 			chan[mediactr]=chan[0];
@@ -1160,12 +1211,14 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         /* print format */
                         attr = end+2;
                         if ((end=strchr(attr, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding attribute\n");
-				printf("Failure at byte %ld\n", (long)attr-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding attribute\n");
+			    printf("Failure at byte %ld\n", (long)attr-(long)version);
+			    printf("Remaining text: %s<<<\n", attr-2);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
 			remove_cr(attr);
@@ -1192,7 +1245,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			      printf("Error decoding cache data\n");
 			      printf("Failure at byte %ld\n", (long)unknown-(long)version);
 			    }
-			  dump(data, origlen);
+			  dump(data2, origlen);
 			  goto errorleap;
                         }
                         *end++ = '\0';
@@ -1202,16 +1255,16 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                 default:
                         /* unknown */
                         unknown = end+2;
-#ifdef DEBUG
-                        printf("Warning: unknown option - >%s<\n", end);
-#endif
+			if (debug1)
+			  printf("Warqning: unknown option - >%s<\n", end);
                         if ((end=strchr(unknown, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding unknown\n");
-				printf("Failure at byte %ld\n", (long)unknown-(long)version);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding unknown\n");
+			    printf("Failure at byte %ld\n", (long)unknown-(long)version);
+			  }
+			  dump(data2, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1220,26 +1273,23 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                 i++;
 	      }
     if (session==NULL) {
-#ifdef DEBUG
-      printf("No session name field\n");
-#endif
-      dump(data, origlen);
+      if (debug1)
+	printf("No session name field\n");
+      dump(data2, origlen);
       goto errorleap;
     }
 
     if (orig==NULL) {
-#ifdef DEBUG
-      printf("No originator field\n");
-#endif
-      dump(data, origlen);
+      if (debug1)
+	printf("No originator field\n");
+      dump(data2, origlen);
       goto errorleap;
     }
 
     if (desc==NULL) {
-#ifdef DEBUG
-      printf("No description field\n");
-#endif
-      dump(data, origlen);
+      if (debug1)
+	printf("No description field\n");
+      dump(data2, origlen);
       goto errorleap;
     }
 
@@ -1453,10 +1503,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       }
       sscanf(chan[i], "%s %s %s", in, ip, tmpstr);
       if (check_net_type(in,ip)<0) return (unsigned long)-1;
+      medialayers=extract_layers(tmpstr);
       mediattl=extract_ttl(tmpstr);
       if (mediattl>ttl) ttl=mediattl;
       sprintf(namestr, "%d", mediattl);
       Tcl_SetVar(interp, "mediattl", namestr, TCL_GLOBAL_ONLY);
+      sprintf(namestr, "%d", medialayers);
+      Tcl_SetVar(interp, "medialayers", namestr, TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "mediaaddr", tmpstr, TCL_GLOBAL_ONLY);
 
       code = Tcl_GlobalEval(interp, "set_media");
@@ -1513,9 +1566,8 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
     if (strncmp(data, "s=", 2) != 0)
       {
 	if (length==0) return(-1);
-#ifdef DEBUG
-	fprintf(stderr, "No session name field\n");
-#endif
+	if (debug1)
+	  fprintf(stderr, "No session name field\n");
 	dump(data, length);
 	goto errorleap;
       }
@@ -1525,9 +1577,8 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
 	length -= 2;
       }
     if ((end = strchr(session, 0x0a)) == NULL) {
-#ifdef DEBUG
-      fprintf(stderr, "No end to session name\n");
-#endif
+      if (debug1)
+	fprintf(stderr, "No end to session name\n");
       dump(data, length);
       goto errorleap;
     }
@@ -1551,12 +1602,13 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                         /* print description */
                         desc = end+2;
                         if ((end=strchr(desc, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding description\n");
-				printf("Failure at byte %ld\n", (long)desc-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1) 
+			  {
+			    printf("Error decoding description\n");
+			    printf("Failure at byte %ld\n", (long)desc-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1566,12 +1618,13 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                         /* print originator */
                         orig = end+2;
                         if ((end=strchr(orig, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding originator\n");
-				printf("Failure at byte %ld\n", (long)orig-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1) 
+			  {
+			    printf("Error decoding originator\n");
+			    printf("Failure at byte %ld\n", (long)orig-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1581,12 +1634,13 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                         /* print channel */
 			chan = end+2;
                         if ((end=strchr(chan, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding channel\n");
-				printf("Failure at byte %ld\n", (long)chan-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding channel\n");
+			    printf("Failure at byte %ld\n", (long)chan-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1600,12 +1654,13 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                         media[++mediactr] = end+2;
 			format[mediactr] = NULL;
                         if ((end=strchr(media[mediactr], 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding media\n");
-				printf("Failure at byte %ld\n", (long)media[mediactr]-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1) 
+			  {
+			    printf("Error decoding media\n");
+			    printf("Failure at byte %ld\n", (long)media[mediactr]-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
 			strcpy(vars[mediactr], "");
                         *end++ = '\0';
@@ -1615,12 +1670,13 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                         /* print format */
                         attr = end+2;
                         if ((end=strchr(attr, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding attribute\n");
-				printf("Failure at byte %ld\n", (long)attr-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1) 
+			  {
+			    printf("Error decoding attribute\n");
+			    printf("Failure at byte %ld\n", (long)attr-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1662,16 +1718,16 @@ unsigned long sd_parse_entry(char *advertid, char *data, int length,
                 default:
                         /* unknown */
                         unknown = end+2;
-#ifdef DEBUG
-                        printf("Warning: unknown option - >%s<\n", end);
-#endif
+			if (debug1)
+			  printf("Warning: unknown option - >%s<\n", end);
                         if ((end=strchr(unknown, 0x0a)) == NULL) {
-#ifdef DEBUG
-                                printf("Error decoding unknown\n");
-				printf("Failure at byte %ld\n", (long)unknown-(long)data);
-#endif
-                                dump(data, origlen);
-                                goto errorleap;
+			  if (debug1)
+			  {
+			    printf("Error decoding unknown\n");
+			    printf("Failure at byte %ld\n", (long)unknown-(long)data);
+			  }
+			  dump(data, origlen);
+			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
@@ -1908,6 +1964,17 @@ int extract_ttl(char *addrstr)
   return(atoi(ttlstr+1));
 }
 
+int extract_layers(char *addrstr)
+{
+  char *layersstr;
+  layersstr=strchr(addrstr, '/');
+  if (layersstr==NULL) return 1;
+  layersstr=strchr(layersstr+1, '/');
+  if (layersstr==NULL) return 1;
+  *layersstr='\0';
+  return(atoi(layersstr+1));
+}
+
 int check_net_type(char *in, char *ip)
 {
   if (strncmp(in, "IN", 2)!=0)
@@ -2062,8 +2129,8 @@ int stop_session_ad(char *aid)
     /*check whether the advert id matches*/
     if(strcmp(aid, addata->aid)==0)
       {
-#ifdef DEBUG	
-        printf("Found matching aid: %s\n", aid);
+#ifdef DEBUG
+	  printf("Found matching aid: %s\n", aid);
 #endif
       }
     else

@@ -390,24 +390,32 @@ proc parse_plugin {file needtool} {
 	    }
 	    macro {
 		if {([lindex $stack 0]=="attr")||\
-		    ([lindex $stack 0]=="attrvalue")} {
+ 		    ([lindex $stack 0]=="attrvalue")||\
+		    ([lindex $stack 0]=="fmt")} {
 			set last macro
 			set curmacro [string trim $value " "]
 		    } else {
-			catch {puts "parse error: macro outside of attribute"}
+			catch {puts "parse error: macro outside of attribute or fmt"}
 		    }
 	    }
 	    value {
 		if {[lindex $stack 0]=="macro"} {
 		    if {[lindex $stack 2]=="fmt"} {
+			#stack is fmt,attr,macro
 			set macrokeys($tool.$media.$proto.$curfmt.$curattr) $curmacro
 			set macros($tool.$media.$proto.$curfmt.$curattr) $value
 		    } elseif {[lindex $stack 2]=="attr"} {
+			#stack is fmt,attr,attrvalue,macro
                         set macrokeys($tool.$media.$proto.$curfmt.$curattr) $curmacro
                         set macros($tool.$media.$proto.$curfmt.$curattr) $value
-                    } else {
+                    } elseif {[lindex $stack 1]=="attr"} {
+			#stack is ??,attr,macro
 			set macrokeys($tool.$media.$proto.$curattr) $curmacro
 			set macros($tool.$media.$proto.$curattr) $value
+		    } elseif {[lindex $stack 1]=="fmt"} {
+			#stack is fmt,macro
+			set macrokeys($tool.$media.$proto.$curfmt) $curmacro
+			set macros($tool.$media.$proto.$curfmt) $value
 		    }
 		} else {
 		    catch {puts "parse error: macrovalue outside of macro"}
@@ -665,6 +673,7 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     global attrflags noattrflags noattrlist macrovalues
     global youremail
     global ldata
+    global debug1
 
 #    puts apply_startup_rule
 #    puts "media: $media"
@@ -701,6 +710,14 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
         }
         set attrs "$attrs $tmp"
     }
+    catch {
+	set tmp $macros($tool.$media.$proto.$fmt)
+	set macrokey $macrokeys($tool.$media.$proto.$fmt)
+    }
+    if {$tmp!=""} {
+        set macrovalues($macrokey) [expand_macro $tmp ""]
+    }
+
     foreach attr $attrlist {
 	set key [lindex [split $attr ":"] 0]
 	set tmp ""
@@ -722,17 +739,27 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     set ttl $sd_sess(ttl)
     set sessname \"$sd_sess(name)\"
     set address [set sd_[set media](address)]
+    set layers [set sd_[set media](layers)]
     set port [set sd_[set media](port)]
     set chan [get_channel $sd_sess(sess_id)]
 
     set rule "$tool $attrs $rule"
-#    puts "fixing rule: $rule"
+    if {$debug1} {
+	puts "fixing rule: $rule"
+    }
+    set rule [fix_up_plugin_rule $rule]
+    if {$debug1} {
+	puts "fixing rule: $rule"
+    }
     set rule [fix_up_plugin_rule $rule]
     global tcl_platform
     #if {$tcl_platform(platform) != "windows"} {
 	eval "set rule \"$rule\""
     #}
-#    catch {eval puts \"$rule\"}
+    if {$debug1} {
+	catch {puts \"$rule\"}
+	catch {eval puts \"$rule\"}
+    }
 
     set pid [eval exec $rule &]
 
@@ -786,6 +813,9 @@ proc fix_up_plugin_rule {rule} {
 		    TTL {
 			set newrule "$newrule\$ttl$rest"
 		    }
+		    LAYERS {
+			set newrule "$newrule\$layers$rest"
+		    }
 		    SESSNAME {
 			set newrule "$newrule\$sessname$rest"
 		    }
@@ -819,8 +849,7 @@ proc fix_up_plugin_rule {rule} {
 		return -1
 	    }
 	} else {
-	    catch {puts "rule parse error"}
-	    return -1
+	    set newrule "$newrule\$$var"
 	}
     }
     return $newrule

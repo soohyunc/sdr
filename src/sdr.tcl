@@ -494,8 +494,8 @@ proc media_changed_warning {aid medianum} {
 }
 
 proc set_media {} {
-    global media vars port proto fmt medianum ldata advertid mediaaddr mediattl
-    global rtp_payload
+    global media vars port proto fmt medianum ldata advertid 
+    global mediaaddr mediattl medialayers rtp_payload
     set origaddr 0
     set aid $advertid
     catch {
@@ -514,6 +514,7 @@ proc set_media {} {
     set ldata($aid,$medianum,fmt) $fmt
     set ldata($aid,$medianum,vars) $vars
     set ldata($aid,$medianum,addr) $mediaaddr
+    set ldata($aid,$medianum,layers) $medialayers
     set ldata($aid,$medianum,ttl) $mediattl
     set ldata($aid,$medianum,pid) 0
     incr medianum
@@ -521,11 +522,16 @@ proc set_media {} {
 }
 
 proc add_to_list {} {
-  global session multicast recvttl recvsd_addr recvsd_port desc advertid creator tfrom tto
-  global ldata ix fullnumitems fullix medianum source 
-  global heardfrom timeheard 
-  global starttime endtime showwhich phone email uri rctr repeat 
-  global createtime modtime createaddr sessvars trust recvkey
+    global session multicast recvttl recvsd_addr recvsd_port desc 
+    global advertid creator tfrom tto
+    global ldata ix fullnumitems fullix medianum source 
+    global heardfrom timeheard 
+    global starttime endtime showwhich phone email uri rctr repeat 
+    global createtime modtime createaddr sessvars trust recvkey
+    global debug1
+    if {$debug1 == 1} {
+	puts "add_to_list $advertid"
+    }
   set aid $advertid
   set code 0
   debug "add_to_list $session key:$recvkey"
@@ -951,6 +957,7 @@ proc update_displayed_session {aid} {
 		    $ldata($aid,$i,port) \
 		    $ldata($aid,$i,ttl) \
 		    $ldata($aid,$i,addr) \
+		    $ldata($aid,$i,layers) \
 		    $ldata($aid,$i,vars)
 	}
     }
@@ -1443,6 +1450,9 @@ media tools individually."]
     entry $fname.d4  -relief sunken -borderwidth 1\
 	-width 13 -font $infofont -highlightthickness 0
     $fname.d4 insert 0 $ldata($aid,$i,addr)
+    if {$ldata($aid,$i,layers)>1} {
+	$fname.d4 insert end "/$ldata($aid,$i,layers)"
+    }
 
     label $fname.l5 -text [tt "TTL:"] -font $infofont
     entry $fname.d5  -relief sunken -borderwidth 1\
@@ -1631,38 +1641,41 @@ proc popup_update {aid field value} {
     }
 }
 
-proc popup_update_media {aid medianum fmt proto port ttl addr vars} {
-  set fname .desc$aid.f.media.$medianum
-  catch {
-    $fname.d3 delete 0 end
-    $fname.d3 insert 0 [get_fmt_name $fmt]
-    $fname.d7 delete 0 end
-    $fname.d7 insert 0 [get_proto_name $proto]
-    $fname.d2 delete 0 end
-    $fname.d2 insert 0 $port
-    $fname.d5 delete 0 end
-    $fname.d5 insert 0 $ttl
-    $fname.d4 delete 0 end
-    $fname.d4 insert 0 $addr
-    if {$vars != ""} {
-	set code 0
-	catch {set code [$fname.d6 delete 0 end;$fname.d6 insert 0 $vars]}
-	if {$code==0} {
-	    set infofont "[option get . infoFont Sdr]"
-	    label $fname.l6 -text "Vars:" -font $infofont
-	    entry $fname.d6 -relief sunken -borderwidth 1\
-		-font $infofont
-	    $fname.d6 insert 0 $vars
-	    bind $fname.d6 <KeyPress> {break}
-	    bind $fname.d6 <1> {%W selection from @%x;break}
-	    bind $fname.d6 <2> {break}
-	    pack $fname.l6 -side left
-	    pack $fname.d6 -side left -expand true -fill x
+proc popup_update_media {aid medianum fmt proto port ttl addr layers vars} {
+    set fname .desc$aid.f.media.$medianum
+    catch {
+	$fname.d3 delete 0 end
+	$fname.d3 insert 0 [get_fmt_name $fmt]
+	$fname.d7 delete 0 end
+	$fname.d7 insert 0 [get_proto_name $proto]
+	$fname.d2 delete 0 end
+	$fname.d2 insert 0 $port
+	$fname.d5 delete 0 end
+	$fname.d5 insert 0 $ttl
+	$fname.d4 delete 0 end
+	$fname.d4 insert 0 $addr
+	if {$layers>1} {
+	    $fname.d4 insert end "/$layers"
 	}
-    } else {
-	$fname.d6 delete 0 end
+	if {$vars != ""} {
+	    set code 0
+	    catch {set code [$fname.d6 delete 0 end;$fname.d6 insert 0 $vars]}
+	    if {$code==0} {
+		set infofont "[option get . infoFont Sdr]"
+		label $fname.l6 -text "Vars:" -font $infofont
+		entry $fname.d6 -relief sunken -borderwidth 1\
+			-font $infofont
+		$fname.d6 insert 0 $vars
+		bind $fname.d6 <KeyPress> {break}
+		bind $fname.d6 <1> {%W selection from @%x;break}
+		bind $fname.d6 <2> {break}
+		pack $fname.l6 -side left
+		pack $fname.d6 -side left -expand true -fill x
+	    }
+	} else {
+	    $fname.d6 delete 0 end
+	}
     }
-  }
 }
 
 proc sameday {t1 t2} {
@@ -3648,6 +3661,9 @@ proc make_session {aid {mediavar {}}} {
 	set addr $ldata($aid,$i,addr)
 	set newttl $ldata($aid,$i,ttl)
 	set msg "$msg\nc=IN IP4 $addr/$newttl"
+	if {$ldata($aid,$i,layers)>1} {
+	    set msg "$msg/$ldata($aid,$i,layers)"
+	}
 	set varlist [split $ldata($aid,$i,vars) "\n"]
 	foreach var $varlist {
 	    set msg "$msg\na=$var"
