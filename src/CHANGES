@@ -22,6 +22,10 @@
 - fixed longstanding bug where email and phone fields are switched in 
   announcements.
 
+2.4a8 January 98 E. Whelan
+
+- Added lots of code for symmetric encryption of the announcements
+
 fenner 20th Jan 98
 
 - I had previously sent you some code to handle duration > interval,
