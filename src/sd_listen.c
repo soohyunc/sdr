@@ -338,7 +338,7 @@ int load_cache_entry(
     struct auth_header *auth_p=NULL;
     struct priv_header *enc_p=NULL;
     struct advert_data *addata=NULL;
-    char *data;
+    char *data=NULL;
 
     char *tmp_keyid=NULL,    *key=NULL, *keyname=NULL;
     char *asym_keyid=NULL,   *enc_asym_keyid=NULL;
@@ -905,6 +905,7 @@ int load_cache_entry(
               }
 		        
 	      if (strncmp(addata->sapenc_p->txt_data, "v=", 2) ==0) {
+                data = (char *)calloc(1,addata->sapenc_p->txt_len);
                 memcpy(data,addata->sapenc_p->txt_data,addata->sapenc_p->txt_len);
 	        new_len = addata->sapenc_p->txt_len;
               }
@@ -1025,7 +1026,39 @@ int load_cache_entry(
                      authstatus, enctype, encstatus, addata); 
             }
             free(newbuf);
+
+            free(trust);
+            free(key);
+            free(authtype);
+            free(authstatus);
+            free(asym_keyid);
+            free(enctype);
+            free(encstatus);
+            free(enc_asym_keyid);
+            free(authmessage);
+            free(encmessage);
+            free(keyname);
+            free(buf);
+            free(advert);
+            free(nrandstr);
+            free(tmp_keyid);
           } else {
+            free(trust);
+            free(key);
+            free(authtype);
+            free(authstatus);
+            free(asym_keyid);
+            free(enctype);
+            free(encstatus);
+            free(enc_asym_keyid);
+            free(authmessage);
+            free(encmessage);
+            free(keyname);
+            free(buf);
+            free(advert);
+            free(nrandstr);
+            free(tmp_keyid);
+
             return -1;
           }
         }
