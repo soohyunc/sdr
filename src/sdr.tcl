@@ -120,12 +120,12 @@ proc initialise_resources {} {
     }
 
 
-    option add *infoFont   -*-helvetica-medium-r-normal--10-*-iso8859-1 
-    option add *headerFont -*-helvetica-bold-r-normal--14-*-iso8859-1 
-    option add *largeFont  -*-helvetica-bold-r-normal--24-*-iso8859-1 
-    option add *mediumFont -*-helvetica-medium-r-normal--12-*-iso8859-1 
-    option add *font       -*-helvetica-bold-r-normal--12-*-iso8859-1 
-    option add *italfont   -*-helvetica-bold-o-normal--12-*-iso8859-1 
+    option add *infoFont   -*-helvetica-medium-r-normal--*-100-*-iso8859-1 
+    option add *headerFont -*-helvetica-bold-r-normal--*-140-*-iso8859-1 
+    option add *largeFont  -*-helvetica-bold-r-normal--*-240-*-iso8859-1 
+    option add *mediumFont -*-helvetica-medium-r-normal--*-120-*-iso8859-1 
+    option add *font       -*-helvetica-bold-r-normal--*-120-*-iso8859-1 
+    option add *italfont   -*-helvetica-bold-o-normal--*-120-*-iso8859-1 
     set tmp 0
     catch {set tmp [label .test -font [option get . font Sdr]];destroy .test}
     if {$tmp==0} {
@@ -3679,7 +3679,7 @@ proc sdr_delete_session_hook {advert} {
 #these should be derived automatically, but for now...
 set fh 13
 set fw 7
-set font -adobe-courier-bold-r-normal--12-120-75-75-m-70-iso8859-1
+set font -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1
 set tmp 0
 catch {set tmp [label .test -font $font];destroy .test}
 if {$tmp==0} {
