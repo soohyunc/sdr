@@ -1521,7 +1521,14 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     sprintf(namestr, "%d", sap_port);
     Tcl_SetVar(interp, "recvsap_port", namestr, TCL_GLOBAL_ONLY);
 
+#ifdef WIN32
+	Tcl_GlobalEval(interp,".f2.sb configure -command {}");
     code = Tcl_GlobalEval(interp, "add_to_list");
+	Tcl_GlobalEval(interp,"after 500 {.f2.sb configure -command {.f2.lb yview}}");
+#else
+    code = Tcl_GlobalEval(interp, "add_to_list");
+#endif
+
     if (code != TCL_OK) 
       {
 	if (debug1==TRUE)
