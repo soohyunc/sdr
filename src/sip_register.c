@@ -71,6 +71,7 @@ int sip_register()
     char emailaddr[MAXEMAILLEN];
     char *serverurl;  
     char msg[MSGLEN];
+    int retval;
 
     strncpy(emailaddr, 
 	    Tcl_GetVar(interp, "youremail", TCL_GLOBAL_ONLY), 
@@ -86,8 +87,10 @@ int sip_register()
 	    MAXURLLEN);
 
 
-    if ((strlen(serverurl)==0)||(is_a_sip_url(serverurl)==0))
+    if ((strlen(serverurl)==0)||(is_a_sip_url(serverurl)==0)) {
+	free(serverurl);
 	return -1;
+    }
 
     strcpy(msg, "REGISTER sip:");
     strcat(msg, emailaddr);
@@ -104,8 +107,9 @@ int sip_register()
     strcat(msg, "@");
     strcat(msg, hostname);
     strcat(msg, "\r\nContent-length:0\r\n\r\n");
-    return(send_sip_register(serverurl, NULL, msg));
+    retval = send_sip_register(serverurl, NULL, msg);
     free(serverurl);
+    return retval;
 }
 
 int send_sip_register(char *uridata, char *proxyuri, char *user_data)
