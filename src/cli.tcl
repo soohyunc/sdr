@@ -452,7 +452,7 @@ proc cli_parse_command {} {
 	    }
 	    "create" {
 		if {[llength $line]!=1} {cli_usage}
-		cli_new_session 
+		cli_new_session new
 	    }
 	    "preferences" {
 		if {[llength $line]!=1} {cli_usage}
