@@ -21,16 +21,6 @@ proc clear_asym_keys {win type} {
 # SYMT end
 # ---------------------------------------------------------------------
 
-proc enc_show_pgp_keys {win aid} {
-#    global env
-    #set env(PGPPATH)  "test"
-    #foreach i [array names env] {
-    #msgpopup "$env($i)" "[array names env]"
-    #}
-    enc_pgp_get_key_list $win $aid
-}
-
- 
 proc enc_clear_asym_keys {win type} {
     global user_id
     global key_id
@@ -245,16 +235,32 @@ set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) 
     return 1
 }
 proc pgp_cleanup {irand} {
-   file delete  "[glob -nocomplain [resource sdrHome]]/$irand.txt" 
-   file delete "[glob -nocomplain [resource sdrHome]]/$irand.sig"
-   file delete "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
+   set txtfile "[glob -nocomplain [resource sdrHome]]/$irand.txt"
+   set sigfile "[glob -nocomplain [resource sdrHome]]/$irand.sig"
+   set pgpfile "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
+ 
+   set filelist "[list $txtfile $sigfile $pgpfile]"
+ 
+   foreach filename $filelist {
+     if { [file exists $filename] } {
+       file delete $filename
+     }
+   }
  
 }
 
 proc enc_pgp_cleanup {irand} {
-   file delete "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-   file delete "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
-   file delete "[glob -nocomplain [resource sdrHome]]/x$irand"
+   set txtfile "[glob -nocomplain [resource sdrHome]]/$irand.txt"
+   set sigfile "[glob -nocomplain [resource sdrHome]]/$irand.sig"
+   set pgpfile "[glob -nocomplain [resource sdrHome]]/x$irand"
+ 
+   set filelist "[list $txtfile $sigfile $pgpfile]"
+ 
+   foreach filename $filelist {
+     if { [file exists $filename] } {
+       file delete $filename
+     }
+   }
  
 }
 proc pgp_get_key_list { win } {
