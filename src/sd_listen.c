@@ -775,18 +775,15 @@ void recv_packets(ClientData fd)
       return;
     }
 
-    /*Enforce that the authentication header is a multiple of 4 bytes */
-    if ((bp->authlen % 4) != 0) {
-      fprintf(stderr, "authentication header with wrong padding, announcement ignored\n");
-      return;
+    /* Skip the authentication header if there is one */
+    /* - We'll check this in a later version          */
+
+    if (bp->authlen > 0) 
+    {
+      length -= (bp->authlen * 4);
+        data += (bp->authlen * 4);
     }
 
-    /*Skip the authentication header if there is one - we'll check 
-      this in a later version*/
-    if (bp->authlen>0) {
-      length-=bp->authlen;
-      data+=bp->authlen;
-    }
     /*sanity check*/
     if (length<30) {
       if (debug1==TRUE) 
