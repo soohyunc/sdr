@@ -1008,10 +1008,15 @@ proc enter_pse_details {} {
 }
 proc x509state { } {
 	global env
+        global x509disable
 	if [info exists env(X509STATE)] {
-   	return 1
+          if { $x509disable == 1 } {
+            return 0
+          } else {
+            return 1
+          }
 	} else {
-   	return 0
+   	  return 0
 	}
 }
 
