@@ -905,11 +905,10 @@ if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
  set validauth 0
  set validfile 0
     set validkey 0
-#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type
- $key_id(pgp,auth_cur_key_sel)
+#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $key_id(pgp,auth_cur_key_sel)
 
 #authentication and Encryption
-createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aaut h,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
+createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aauth,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
 
     if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
         errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
