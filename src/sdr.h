@@ -5,7 +5,6 @@
 
 #ifdef WIN32
 #define TclGetTime TclpGetTime
-#include <winsock.h>
 #include "sys/stat.h"
 #else
 #include <sys/socket.h>

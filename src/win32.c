@@ -112,17 +112,6 @@ int gettimeofday(struct timeval *p, struct timezone *z)
     return 0;
 }
 
-int
-strcasecmp(const char *s1, const char *s2)
-{
-    return stricmp(s1, s2);
-}
-
-int
-strncasecmp(const char *s1, const char *s2, size_t count)
-{
-    return strnicmp(s1, s2, count);
-}
 
 uid_t
 getuid(void) 
@@ -183,7 +172,9 @@ WinMain(
     }
 /*    TclHasSockets(NULL);  ...not sure what this does? [csp] */
 
+#ifdef NDEF	/* What the hell does this do???? [csp] */
     DllMain(hInstance, DLL_PROCESS_ATTACH, 0);
+#endif
     TkWinXInit(hInstance);
 
     /*
