@@ -1,6 +1,9 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.6.1 K.Hasler@cs.ucl.ac.uk 30 Mar 1999
+  - solaris/irix/windows release
+
 2.6.0 E.Whelan@cs.ucl.ac.uk 25 Feb 1999
 
   - added test on PGPSTATE environment variable. To use PGP you must set
