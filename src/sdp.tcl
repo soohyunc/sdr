@@ -13,8 +13,8 @@ proc parse_sdp {msg} {
 		set aid [get_aid $str]
 
 		set ldata($aid,creator) [lindex $value 0]
-		set ldata($aid,modtime) [lindex $value 2]
-		set ldata($aid,createtime) [lindex $value 1]
+		set ldata($aid,sessvers) [lindex $value 2]
+		set ldata($aid,sessid) [lindex $value 1]
 		set ldata($aid,createaddr) [lindex $value 5]
 		set ldata($aid,phonelist) ""
 		set ldata($aid,emaillist) ""

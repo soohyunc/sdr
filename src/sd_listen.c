@@ -1946,7 +1946,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     char *tag, *mediakey[MAXMEDIA], *fullkey=NULL;
     char tmpstr[TMPSTRLEN]="", fmt[TMPSTRLEN]="", proto[TMPSTRLEN]="",
          heardfrom[TMPSTRLEN]="", origsrc[TMPSTRLEN]="", creator[TMPSTRLEN]="",
-         modtime[TMPSTRLEN]="", createtime[TMPSTRLEN]="", 
+         sessvers[TMPSTRLEN]="", sessid[TMPSTRLEN]="", 
          createaddr[TMPSTRLEN]="", in[TMPSTRLEN]="", ip[TMPSTRLEN]="";
     int ttl, mediattl, medialayers, code, port, origlen;
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
@@ -2573,13 +2573,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	fprintf(stderr, "Unacceptably long originator field received\n");
       orig[TMPSTRLEN-1]='\0';
     };
-    sscanf(orig, "%s %s %s %s %s %s", creator, createtime, modtime, in, ip, 
+    sscanf(orig, "%s %s %s %s %s %s", creator, sessid, sessvers, in, ip, 
 	   createaddr);
     if (check_net_type(in,ip)<0) return (unsigned long)-1;
 
     Tcl_SetVar(interp, "creator",    creator,    TCL_GLOBAL_ONLY);
-    Tcl_SetVar(interp, "modtime",    modtime,    TCL_GLOBAL_ONLY);
-    Tcl_SetVar(interp, "createtime", createtime, TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "sessvers",   sessvers,   TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "sessid",     sessid,     TCL_GLOBAL_ONLY);
     Tcl_SetVar(interp, "createaddr", createaddr, TCL_GLOBAL_ONLY);
 
 /* The PGP Key ID is about as unique as it gets.  So good idea to use it */
@@ -2597,7 +2597,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
          
 /* Add some more stuff to the namestr (hashed to create the advertid) */
 
-    sprintf(namestr, "%s%s%s", creator, createtime, createaddr);
+    sprintf(namestr, "%s%s%s", creator, sessid, createaddr);
 
 /* Create a hash of originator data as advert ID */
 

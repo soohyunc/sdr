@@ -186,8 +186,8 @@ proc qcreate {} {
     }
     set ldata($aid,medianum) $medianum
     set ldata($aid,creator) [getusername]
-    set ldata($aid,createtime) [gettimeofday]
-    set ldata($aid,modtime) [gettimeofday]
+    set ldata($aid,sessid) [gettimeofday]
+    set ldata($aid,sessvers) [gettimeofday]
     set ldata($aid,createaddr) [gethostaddr]
     set ldata($aid,uri) 0
     set ldata($aid,multicast) $ldata($aid,0,addr)

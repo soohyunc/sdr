@@ -555,13 +555,31 @@ proc set_media {} {
     debug "medianum=$medianum"
 }
 
+#
+# Compare two arbitrary strings of digits.
+# The SDP session ID and session version are strings of digits that
+# are not required to be representable as tcl numbers.
+proc sesscmp {mt1 mt2} {
+    set mt1 [string trimleft $mt1 "0"]
+    set mt2 [string trimleft $mt2 "0"]
+    set l1 [string length $mt1]
+    set l2 [string length $mt2]
+    if {$l1 < $l2} {
+	return -1
+    } elseif {$l1 == $l2} {
+	return [string compare $mt1 $mt2]
+    } else {
+	return 1
+    }
+}
+
 proc add_to_list {} {
   global session multicast recvttl recvsap_addr recvsap_port desc 
   global advertid creator tfrom tto
   global ldata fullnumitems fullix medianum source items
   global heardfrom timeheard 
   global starttime endtime showwhich phone email uri rctr repeat 
-  global createtime modtime createaddr sessvars trust recvkey
+  global sessid sessvers createaddr sessvars trust recvkey
   global debug1
 
   global asym_cur_keyid
@@ -579,6 +597,27 @@ proc add_to_list {} {
   }
 
   set aid $advertid
+  if {[info exists ldata($aid,sessid)] && [sesscmp $ldata($aid,sessid) $sessid] == 0} {
+    if {[sesscmp $ldata($aid,sessvers) $sessvers] == 0} {
+      # This is the same version we already have.
+      set ldata($aid,heardfrom) $heardfrom
+      set ldata($aid,theard) $timeheard
+      set ldata($aid,lastheard) [gettimeofday]
+      # only skip updating it if we've updated it within the last minute.
+      # We could also add "&& [random] < .75" to only update it
+      # randomly after a minute, but for now this is probably OK since
+      # the goal is to skip the hundreds of copies from rabid looping
+      if {$ldata($aid,lastheard) < [expr $ldata($aid,lastupdated) + 60]} {
+	  debug "aid $aid name $session already have this version"
+	  popup_update $aid heard "Heard from $ldata($aid,heardfrom) at $ldata($aid,theard)"
+	  return
+      }
+      debug "aid $aid name $session already have this version but updating anyway"
+    } elseif {[sesscmp $ldata($aid,sessvers) $sessvers] > 0} {
+      debug "aid $aid name $session got version $sessvers but already have $ldata($aid,sessvers)"
+      return
+    }
+  }
   set code 0
   debug "add_to_list $session key:$recvkey"
   catch {set code $ldata($aid,session);set code 1}
@@ -609,8 +648,8 @@ proc add_to_list {} {
   set ldata($aid,encmessage)     $sess_enc_message
 
   set ldata($aid,key)            $recvkey
-  set ldata($aid,createtime)     $createtime
-  set ldata($aid,modtime)        $modtime
+  set ldata($aid,sessid)         $sessid
+  set ldata($aid,sessvers)       $sessvers
   set ldata($aid,createaddr)     $createaddr
   set ldata($aid,source)         $source
   set ldata($aid,heardfrom)      $heardfrom
@@ -703,6 +742,7 @@ proc add_to_list {} {
   }
   set ldata($aid,no_of_times) [array size starttime]
   set ldata($aid,lastheard) [gettimeofday]
+  set ldata($aid,lastupdated) $ldata($aid,lastheard)
   set ldata($aid,emaillist) ""
   set ldata($aid,uri) $uri
   catch {
@@ -3947,7 +3987,7 @@ proc dotted_decimal_to_decimal {dd} {
 proc make_session {aid {mediavar {}}} {
     global ldata
     set msg "v=0"
-    set msg "$msg\no=$ldata($aid,creator) $ldata($aid,createtime) $ldata($aid,modtime) IN IP4 $ldata($aid,createaddr)"
+    set msg "$msg\no=$ldata($aid,creator) $ldata($aid,sessid) $ldata($aid,sessvers) IN IP4 $ldata($aid,createaddr)"
     set msg "$msg\ns=$ldata($aid,session)"
     set desc $ldata($aid,desc)
     regsub -all "\n" $desc " " desc
