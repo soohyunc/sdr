@@ -78,6 +78,8 @@ unsigned long parse_entry();
 unsigned long sd_parse_entry();
 #endif
 
+extern int init_security();
+
 void dump(buf, buflen)
 char *buf;
 int buflen;
