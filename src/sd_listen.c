@@ -140,15 +140,27 @@ int buflen;
   {
         int i;
         unsigned char c;
-        printf("Unexpected packet. Dumping...\n");
+        printf("Problem with packet. Dumping...\n");
         printf("Buffer length: %d\n",buflen);
+	printf("Byte %4d: ", 0);
         for (i=0; i<buflen; i++) {
                 c=buf[i];
 #ifdef HEXDEBUG
-                printf(" %02x %c", c,c);
+		if (!isprint(c))
+		    printf(" %02x .", c);
+		else
+		    printf(" %02x %c", c,c);
 #else
-		printf("%c",c);
+		if (!isprint(c) && c != '\n')
+		    if (c < 32)
+			printf("^%c", c + 64);
+		    else
+			printf("\\x%02x", c);
+		else
+		    printf("%c",c);
 #endif
+		if (c == '\n')
+			printf("Byte %4d: ", i + 1);
         }
         printf("<<<\n");
   }
@@ -1518,7 +1530,7 @@ void recv_packets(ClientData fd)
 
 /* if debugging have a look at the header */
 
-    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, ntohl(bp->src));)
 
 /* save a copy of the original buffer */
 
@@ -2107,6 +2119,12 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     while (length > 0) 
       {
                 cur = end;
+		if (*(cur + 1) != '=') {
+		    if (debug1)
+			printf("no = at byte %d\n", end-data);
+		    dump(data2, origlen);
+		    goto errorleap;
+		}
                 switch (*cur) {
 		case 's':
 		        /* session description */
@@ -2115,7 +2133,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1) 
 			  {
 			    printf("Error decoding session\n");
-			    printf("Failure at byte %ld\n", (long)session-(long)version);
+			    printf("Failure at byte %d\n", session-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2132,7 +2150,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding description\n");
-			    printf("Failure at byte %ld\n", (long)desc-(long)version);
+			    printf("Failure at byte %d\n", desc-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2150,7 +2168,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding URI\n");
-			    printf("Failure at byte %ld\n", (long)uri-(long)version);
+			    printf("Failure at byte %d\n", uri-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2166,7 +2184,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding originator\n");
-			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			    printf("Failure at byte %d\n", orig-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2190,7 +2208,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding email address\n");
-			    printf("Failure at byte %ld\n", (long)email[ectr]-(long)version);
+			    printf("Failure at byte %d\n", email[ectr]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2215,7 +2233,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding phone\n");
-			    printf("Failure at byte %ld\n", (long)phone[pctr]-(long)version);
+			    printf("Failure at byte %d\n", phone[pctr]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2232,7 +2250,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding channel\n");
-			    printf("Failure at byte %ld\n", (long)chan[mediactr]-(long)version);
+			    printf("Failure at byte %d\n", chan[mediactr]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2257,7 +2275,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding bandwidth\n");
-			    printf("Failure at byte %ld\n", (long)bw[bctr-1]-(long)version);
+			    printf("Failure at byte %d\n", bw[bctr-1]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2327,7 +2345,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding key\n");
-			    printf("Failure at byte %ld\n", (long)key[kctr]-(long)version);
+			    printf("Failure at byte %d\n", key[kctr]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2387,7 +2405,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding media\n");
-			    printf("Failure at byte %ld\n", (long)media[mediactr]-(long)version);
+			    printf("Failure at byte %d\n", media[mediactr]-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2399,13 +2417,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 'a':
-                        /* print format */
+                        /* print attribute */
                         attr = end+2;
                         if ((end=strchr(attr, 0x0a)) == NULL) {
 			  if (debug1)
 			  {
 			    printf("Error decoding attribute\n");
-			    printf("Failure at byte %ld\n", (long)attr-(long)version);
+			    printf("Failure at byte %d\n", attr-data);
 			    printf("Remaining text: %s<<<\n", attr-2);
 			  }
 			  dump(data2, origlen);
@@ -2434,7 +2452,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1==TRUE)
 			    {
 			      printf("Error decoding cache data\n");
-			      printf("Failure at byte %ld\n", (long)unknown-(long)version);
+			      printf("Failure at byte %d\n", unknown-data);
 			    }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2443,8 +2461,9 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			remove_cr(unknown);
                         length -= end-cur;
 			break;
-                case 'z':
-                        /* signature */
+                case 'Z':
+		case 'z':	/*XXX transitional - must be removed */
+                        /* signature - not in packet stream! */
 			if (data_len)
 			  *data_len = (int)( (end+3) - data );
                         length = 0;
@@ -2452,20 +2471,20 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
                 default:
                         /* unknown */
-                        unknown = end+2;
-			if (debug1)
-			  printf("Warning: unknown option - >%s<\n", end);
+                        unknown = end;
                         if ((end=strchr(unknown, 0x0a)) == NULL) {
 			  if (debug1)
 			  {
 			    printf("Error decoding unknown\n");
-			    printf("Failure at byte %ld\n", (long)unknown-(long)version);
+			    printf("Failure at byte %d\n", unknown-data);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
                         }
                         *end++ = '\0';
                         length -= end-cur;
+			if (debug1)
+			  printf("Warning: unknown option - >%s<\n", unknown);
                         break;
                 }
                 i++;
@@ -2633,12 +2652,14 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     if (strlen(orig)>TMPSTRLEN) {
       if (debug1==TRUE)
 	fprintf(stderr, "Unacceptably long originator field received\n");
+      dump(data2, origlen);
       orig[TMPSTRLEN-1]='\0';
     };
     if (sscanf(orig, "%s %s %s %s %s %s", creator, sessid, sessvers, in, ip, 
 	   createaddr) != 6) {
       if (debug1)
 	fprintf(stderr, "o= line doesn't have 6 fields\n");
+      dump(data2, origlen);
       goto errorleap;
     }
     if (check_net_type(in,ip,createaddr)<0)
@@ -2757,11 +2778,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       if(strlen(media[i])>TMPSTRLEN) {
 	if (debug1==TRUE)
 	  fprintf(stderr, "Unacceptably long media field received\n");
+        dump(data2, origlen);
 	media[i][TMPSTRLEN-1]='\0';
       }
       if (sscanf(media[i], "%s %s %s %s", tmpstr, portstr, proto, fmt) != 4) {
 	if (debug1==TRUE)
-	  fprintf(stderr, "Media description doesn't have 4 fields\n");
+	  fprintf(stderr, "Media description #%d doesn't have 4 fields\n", i);
+        dump(data2, origlen);
 	goto errorleap;
       }
       nports = 1;
@@ -2785,14 +2808,17 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       if(strlen(chan[i])>100) {
 	if (debug1==TRUE)
 	  fprintf(stderr, "Unacceptably long channel field received\n");
+        dump(data2, origlen);
 	chan[i][100]='\0';
       }
       sscanf(chan[i], "%s %s %s", in, ip, tmpstr);
 
       medialayers = extract_layers(tmpstr);
       mediattl    = extract_ttl(tmpstr);
-      if (check_net_type(in,ip,tmpstr)<0)
+      if (check_net_type(in,ip,tmpstr)<0) {
+        dump(data2, origlen);
         goto errorleap;
+      }
       if (mediattl>ttl) ttl=mediattl;
       sprintf(namestr, "%d", mediattl);
       Tcl_SetVar(interp, "mediattl", namestr, TCL_GLOBAL_ONLY);
