@@ -713,12 +713,17 @@ proc pgp_check_encryption { irand } {
 # something went wrong  - not sure what this code is doing 
 
       #set result [pgpExecw [list $local_sapenc_file -o $local_enctxt_file] output]
-      set test [regexp -nocase {user id:(.+)} $output {} userw]
+      set test [regexp -nocase {user id: (.+)} $output {} userw]
+      set mykeylist [split $userw \n ]
+
       if {$test == 1} {
-        set key [lindex $userw 0]
+        putlogfile "test = 1"
+        set key [lindex $mykeylist 0]
         set interactive 0
     	set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output $key $irand $interactive]
+        putlogfile "debug - result = $result"
       } else {
+        putlogfile "test != 1"
         set recv_encstatus "failed"
         set recv_enc_asym_keyid "nonenone"
         set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) "none" "none" "none" "none" "none"] 
@@ -734,30 +739,41 @@ proc pgp_check_encryption { irand } {
 
     pgp_InterpretOutput $output pgpresult $key
 
+    putlogfile "pgpresult(ok) = $pgpresult(ok) "
+
     if {$pgpresult(ok) == 1} {
 
 # it all worked okay 
 
+      putlogfile "debug 1"
       set recv_enc_asym_keyid $pgpresult(keyid)
       set recv_encstatus "success"
       set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
+      putlogfile "debug 2"
       return 0
 
     } else {
 
 # there was some problem 
 
+      putlogfile "debug 3"
       set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output  $key $irand 0]
+      putlogfile "debug 4 - result = $result"
       pgp_InterpretOutput $output pgpresult $key
+      putlogfile "debug 5 - pgpresult(ok) = $pgpresult(ok)"
       if {$pgpresult(ok) == 1} {
+        putlogfile "debug 6"
         set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n  Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
         set recv_encstatus "success"
         set recv_enc_asym_keyid $pgpresult(keyid)
+        putlogfile "debug 7"
         return 0
       } else {
+        putlogfile "debug 8"
         set recv_encstatus "failed"
         set recv_enc_asym_keyid "nonenone"
         set recv_encmessage $pgpresult(msg)
+        putlogfile "debug 9"
       }
     }
 
@@ -780,9 +796,9 @@ proc pgp_InterpretOutput { in outvar key} {
     upvar $outvar pgpresult
 
     putlogfile "entered pgp_InterpretOutput"
-#    putlogfile "   pgp_InterpretOutput: in     = $in"
-#    putlogfile "   pgp_InterpretOutput: outvar = $outvar"
-#    putlogfile "   pgp_InterpretOutput: key    = $key"
+    putlogfile "   pgp_InterpretOutput: in     = $in"
+    putlogfile "   pgp_InterpretOutput: outvar = $outvar"
+    putlogfile "   pgp_InterpretOutput: key    = $key"
  
 # find PGPPATH
 
@@ -829,7 +845,7 @@ proc pgp_InterpretOutput { in outvar key} {
 
      if { $pgpresult(userid) != "none" } {
        set tclcmdkey [ list exec pgp -kv  +batchmode=on]
-       set tclcmdkey [concat $tclcmdkey $pgpresult(userid)]
+       set tclcmdkey [ concat $tclcmdkey \"$pgpresult(userid)\" ]
        putlogfile "  pgp_InterpretOutput: $tclcmdkey"
        set resultkey [ catch $tclcmdkey output1 ]
        set keyinfo   [split $output1 "\n"]
@@ -980,6 +996,13 @@ proc pgpExec { arglist outvar key  irand  interactive  } {
  upvar $outvar output
  global  env
 
+ putlogfile "entered pgpExec"
+ putlogfile "arglist     = $arglist"
+ putlogfile "outvar      = $outvar"
+ putlogfile "key         = $key"
+ putlogfile "irand       = $irand"
+ putlogfile "interactive = $interactive"
+
  if {$interactive !=0 } {
    return [pgpExec_Interactive $arglist output $irand]
  } else {
@@ -987,7 +1010,9 @@ proc pgpExec { arglist outvar key  irand  interactive  } {
      return [pgpExec_Batch $arglist output $irand]
    } else {
      set p [pgp_GetPass $key]
+     putlogfile "*** p = >$p<"
      if {[string length $p] == 0} {
+       putlogfile "string length >$p< = 0 so returning 0"
        return 0
      }
      return [pgpExec_Batch $arglist output $p]
@@ -998,6 +1023,8 @@ proc pgpExec { arglist outvar key  irand  interactive  } {
 
 proc pgpExec_Interactive { arglist outvar irand } {
     upvar $outvar output
+    putlogfile "entered pgpExec_Interactive"
+
     set args [concat [list +armorlines=0 +keepbinary=off] $arglist]
     set shcmd "unset PGPPASSFD;
         pgp \"[join [Misc_Map x {
@@ -1007,10 +1034,10 @@ proc pgpExec_Interactive { arglist outvar irand } {
         echo
         echo press Return...;
         read dummy"
-    #putlogfile " $shcmd"
+    putlogfile "shcmd = $shcmd"
     set logfile "[glob -nocomplain [resource sdrHome]]/x$irand"
     set tclcmd {exec xterm -l -lf $logfile -title PGP -e sh -c $shcmd}
-    #putlogfile "$tclcmd"
+    putlogfile "tclcmd = $tclcmd"
     set result [catch $tclcmd]
     if [catch {open $logfile r} log] {
         set output ""
@@ -1027,6 +1054,7 @@ proc pgpExec_Interactive { arglist outvar irand } {
     #regsub "^.*Public key is required \[^\n]*\n" $output "" output
     #set output [string trim $output]
  
+    putlogfile "pgpExec_Interactive returning $result"
     return $result
 }
 proc Misc_Map { var expr list } {
@@ -1060,18 +1088,32 @@ proc pgp_GetPass { key } {
     global sspass
     global ppass
  
-    set keyname [lindex $key 0]
+    set keyname $key
+
     if [info exists sspass] {
+
+# info on sspass
+
       if {$sspass == 0} {
+
+# sspass = 0
+
         if [info exists pgpPass($keyname)] {
           return $pgpPass($keyname)
         }
         set passtimeout 60
 
         while 1 {
-          if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw ] {
-            return {}
+
+          set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection s not being used)"} passw ]
+
+          putlogfile "pgp_GetPass - result is >$result< and passw is >$passw<"
+
+          if { $passw == "" } {
+            putlogfile "pgp_GetPass - Error: key = >$key< and passw = >$passw<"
+            return ""
           } elseif {[pgpExec_CheckPassword $passw $key]} {
+            putlogfile "pgp_GetPass - Okay: key = >$key< and passw = >$passw<"
             set pgpPass($keyname) $passw
 #           after [expr $passtimeout * 60 * 1000] [list pgp_ClearPassword $key]
             return $passw
@@ -1079,24 +1121,40 @@ proc pgp_GetPass { key } {
         }
  
       } else {
+
+# sspass != 0
+
        	set pgpPass($keyname) $ppass
         return $pgpPass($keyname)
       }
+
    } else {
+
+# no info on sspass 
+
     if [info exists pgpPass($keyname)] {
       return $pgpPass($keyname)
     }
      
     set passtimeout 60
+
     while 1 {
-      if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw] {
-        return {}
+
+      set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection s not being used)"} passw ]
+
+      putlogfile "pgp_GetPass - result is >$result< and passw is >$passw<"
+
+      if { $passw == "" } {
+        putlogfile "pgp_GetPass - Error: key = >$key< and passw = >$passw<"
+        return ""
       } elseif {[pgpExec_CheckPassword $passw $key]} {
+        putlogfile "pgp_GetPass - Okay: key = >$key< and passw = >$passw<"
         set pgpPass($keyname) $passw
 #       after [expr $passtimeout * 60 * 1000] [list pgp_ClearPassword $key]
         return $passw
       }
     }
+
    }
 }
 proc pgp_ClearPassword {{keyname {}}} {
@@ -1113,6 +1171,7 @@ proc pgp_ClearPassword {{keyname {}}} {
 proc pgpExec_Batch { arglist outvar passw } {
     upvar $outvar output
     global env
+    putlogfile "entered pgpExec_Batch"
  
     # pgp 4.0 command doesn't like the +keepbinary=off option
 
@@ -1123,7 +1182,7 @@ proc pgpExec_Batch { arglist outvar passw } {
     set tclcmd [concat \
             [list exec pgp +armorlines=0 +batchmode=on +pager=cat] \
             $arglist]
-    #putlogfile "password= $passw"
+    putlogfile "password= $passw"
  
     if {$passw == {}} {
         catch { unset env(PGPPASSFD) }
@@ -1131,15 +1190,16 @@ proc pgpExec_Batch { arglist outvar passw } {
         lappend tclcmd << $passw
         set env(PGPPASSFD) 0
     }
-    #putlogfile " $tclcmd "
+    putlogfile " tclcmd = $tclcmd "
     set result [catch $tclcmd output]
-    #putlogfile "result $result "
-    #putlogfile "output $output "
+    putlogfile "result = $result "
+    putlogfile "output = $output "
     regsub -all "\x07" $output "" output
-    #putlogfile "$output"
+    putlogfile "output = $output"
  
     catch { unset env(PGPPASSFD) }
  
+    putlogfile "pgpExec_Batch returning $result"
     return $result
 }
 proc certExec { arglist outvar irand} {
@@ -1186,6 +1246,9 @@ global sspass
    }
 }
 
+# --------------------------------------------------------------------------- #
+# Misc_GetPass - pops up window for PGP passphrase and asks if using same one #
+# --------------------------------------------------------------------------- #
 proc Misc_GetPass { title label } {
     global getpass ppass spass sspass
 
@@ -1193,7 +1256,7 @@ proc Misc_GetPass { title label } {
     catch {destroy $w}
     sdr_toplevel "$w -borderwidth 10" $title
 
-    checkbutton $w.b1 -text "Same Pass" -variable spass\
+    checkbutton $w.b1 -text "Click this box if all your PGP private keys have the same passphrase" -variable spass\
         -highlightthickness 0 -justify l \
         -relief flat -onvalue yes -offvalue no \
         -command "toggle_pass"
@@ -1205,7 +1268,7 @@ proc Misc_GetPass { title label } {
 
      #password $w.entry -width 30 -relief sunken -borderwidth 1 \
         -variable ppass
-     password $w.entry -width 30  -relief sunken -borderwidth 1 -variable ppass \
+     password $w.entry -width 30 -relief sunken -borderwidth 1 -variable ppass \
          -background [option get . entryBackground Sdr]
      pack $w.entry -side top  -anchor w
      bind $w.entry <Key-Return> "set getpass(ok) 1"

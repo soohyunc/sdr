@@ -752,6 +752,7 @@ int check_encryption(	struct priv_header *enc_p,
 
   if (strncmp(code,"success",7) != 0 ) {
     strcpy(enc_status,"failed");
+    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
     return 1;
   } else {
     strcpy(enc_status, "success");
@@ -794,8 +795,6 @@ int check_encryption(	struct priv_header *enc_p,
   sapenc_p = addata->sapenc_p;
 
 /* version is always 1 at the moment */
-/* type is always PGP as this covers PGP & PGP+CERT - X509 has own routine */
-/* PGP+CERT is obsolete and will be removed                                */
 
   sapenc_p->version  = 1;
   sapenc_p->enc_type = PGP;
