@@ -399,14 +399,24 @@ proc quit {} {
   write_cache
   log "Sdr exiting (Quit button pressed) at [getreadabletime]"
   savelog
+  if [info exists env(X509STATE)] {
+  putlogfile "X509 Not set"
+  } else {
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else {
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
 
-  if { [file exists $logfile] } {
-  file delete $logfile
-  }
-  set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
   if { [file exists $env(PGPPATH)/secring.enc] } {
   if {[ info exists env(SMARTLOC)]} {
-  set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
   set env(USERPIN) $env(SMARTPIN)
   set tclcmd [ list exec secude pkcs7enc ENVELOPED-DATA -p $env(SMARTLOC) -i $env(PGPPATH)/secring.pgp -o $env(PGPPATH)/secring.enc ]
   set result [ catch $tclcmd output]
@@ -421,6 +431,19 @@ proc quit {} {
             while {$i == 0 } {
            if { $result == 1} {
             set env(USERPIN) $env(SMARTPIN)
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else {
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
             set tclcmd [ list exec secude pkcs7enc ENVELOPED-DATA -p $env(SMARTLOC) -i $env(PGPPATH)/secring.pgp -o $env(PGPPATH)/secring.enc ]
   set result [ catch $tclcmd output]
                file delete $env(PGPPATH)/secring.pgp
@@ -438,6 +461,10 @@ proc quit {} {
          }
      }
     } 
+  }
+}
+  if { [file exists $logfile] } {
+  file delete $logfile
   }
   ui_quit
   destroy .
