@@ -22,6 +22,22 @@ proc enc_clear_asym_keys {win type} {
 }
 
 #--------------------------------------------------------------------#
+# pgpstate - returns 1 if env(PGPSTATE) is set in environment        #
+#--------------------------------------------------------------------#
+proc pgpstate { } {
+  global env
+  if [info exists env(PGPSTATE)] {
+    if { $env(PGPSTATE) == 1 } {
+      return 1
+    } else {
+      return 0
+    }
+  } else {
+    return 0
+  }
+}
+
+#--------------------------------------------------------------------#
 # Get the list of keys in the public keyring                         #
 # Return: 0 if succeeded; 1 if failed                                #
 #--------------------------------------------------------------------#

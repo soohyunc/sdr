@@ -327,6 +327,7 @@ char *check_authentication(struct auth_header *auth_p,
   
     int irand, sig_len, key_len, pad_len, messagelen;
     char *key_id=NULL, *auth_status=NULL, *auth_message=NULL;
+    char *tmpauth_status=NULL;
 
     struct auth_info *authinfo;
   
@@ -384,6 +385,9 @@ char *check_authentication(struct auth_header *auth_p,
     }
 
 /* Extract the signature and key certificate from packet and store in files */
+
+  Tcl_Eval(interp, "pgpstate");
+  if (strcmp(interp->result,"1") == 0) {
 
 /* signature file - irand.sig */
 
@@ -462,7 +466,7 @@ char *check_authentication(struct auth_header *auth_p,
       memcpy(asym_keyid, key_id, 8);
     }
 
-    auth_status  = Tcl_GetVar(interp, "recv_authstatus",  TCL_GLOBAL_ONLY);
+    tmpauth_status  = Tcl_GetVar(interp, "recv_authstatus",  TCL_GLOBAL_ONLY);
     auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
 
     if(auth_message != NULL) {
@@ -470,16 +474,35 @@ char *check_authentication(struct auth_header *auth_p,
       if (messagelen >= AUTHMESSAGELEN) {
         messagelen = AUTHMESSAGELEN - 1;
       }
-      writelog(printf("chk_auth: messagelen   = %d\n",messagelen);)
-      writelog(printf("chk_auth: auth_message = %s\n",auth_message);)
-      writelog(printf("chk_auth: auth_status  = %s\n",auth_status);)
       strncpy(authmessage,auth_message,messagelen);
       strcpy(authmessage+messagelen+1,(char *)"\0");
+      writelog(printf("chk_auth: messagelen   = %d\n",messagelen);)
+      writelog(printf("chk_auth: authmessage = %s\n",authmessage);)
+
+      auth_status = (char *)malloc(AUTHSTATUSLEN);
+      messagelen = strlen(tmpauth_status);
+      if (messagelen >= AUTHSTATUSLEN) {
+        messagelen = AUTHSTATUSLEN - 1;
+      }
+      strncpy(auth_status,tmpauth_status,messagelen);
+      strcpy(auth_status+messagelen+1,(char *)"\0");
+      writelog(printf("chk_auth: auth_status  = %s\n",auth_status);)
     } else {
       writelog(printf("chk_auth: auth_message is NULL (error was %s)\n",interp->result);)
       strncpy(authmessage,"No message was produced", authmessagelen);
       return ("failed");
    }
+
+  } else {
+   strcpy(asym_keyid,"nokey");
+   auth_status = (char *)malloc(10);
+   strcpy(auth_status,"unchecked");
+   strcpy(authmessage,"This announcement contained a PGP digital signature which has not been checked");
+   Tcl_SetVar(interp, "sess_auth_message",authmessage,TCL_GLOBAL_ONLY);
+   free(fullsig);
+   free(fulltxt);
+   free(fullkey);
+  }
 
 /* the rest of this routine was store_authentication_in_memory() */
 /* want to store signature and certificate in main addata        */
@@ -534,6 +557,16 @@ char *check_authentication(struct auth_header *auth_p,
 
     Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
     free(irandstr);
+
+/* sort out the problem with Tcl strings not being well-terminated */
+
+  if ( (strncmp(auth_status,"trustworthy",11) == 0) ) {
+    strcpy(auth_status,"trustworthy");
+  } else if ( (strncmp(auth_status,"failed",6) == 0) ) {
+    strcpy(auth_status,"failed");
+  } else if ( (strncmp(auth_status,"integrity",9) == 0) ) {
+    strcpy(auth_status,"integrity");
+  }
 
    return (auth_status);
 }

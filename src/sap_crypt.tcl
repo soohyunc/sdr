@@ -980,31 +980,26 @@ proc set_auth_type {win type} {
             clear_asym_keys $win pgp
         }
         pgp {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text PGP
-            $win.auth.pwd.e configure -state normal
-            pgp_get_key_list $win
+            if {[pgpstate]==1} {
+              clear_asym_keys $win x509
+              clear_asym_keys $win pgp
+              $win.auth.sel.mauth configure -text PGP
+              $win.auth.pwd.e configure -state normal
+              pgp_get_key_list $win
+            } else {
+              errorpopup "PGPSTATE Environment Variable Not Set" "To use PGP the environment variable PGPSTATE must be set to 1.\n\nOn Windows: Use the autoexec.bat file.\n\nOn Unix: Use command line or shell configuration file\n"
+              $win.auth.sel.mauth configure -text None
+              set cert "0"
+              set auth_type "none"
+              clear_asym_keys $win x509
+              clear_asym_keys $win pgp
+            }
         }
         x509 {
             clear_asym_keys $win x509
             clear_asym_keys $win pgp
             set cert "cert"
             $win.auth.sel.mauth configure -text X509
-            show_pkcs7_keys $win
-        }
-        cpgp {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text PGP+CERT
-            $win.auth.pwd.e configure -state normal
-            pgp_get_key_list $win
-        }
-       cx50 {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text X509+CERT
-            set cert "path"
             show_pkcs7_keys $win
         }
         other {
@@ -1038,12 +1033,21 @@ proc set_enc_type {win type aid} {
 
         }
         pgp {
-            set security public
-            enc_clear_asym_keys $win x509
-            enc_clear_asym_keys $win pgp
-            clear_keys $win
-            $win.enc.sel.menc configure -text PGP
-            enc_pgp_get_key_list $win $aid
+            if {[pgpstate]==1} {
+              set security public
+              enc_clear_asym_keys $win x509
+              enc_clear_asym_keys $win pgp
+              clear_keys $win
+              $win.enc.sel.menc configure -text PGP
+              enc_pgp_get_key_list $win $aid
+            } else {
+              errorpopup "PGPSTATE Environment Variable Not Set" "To use PGP the environment variable PGPSTATE must be set to 1.\n\nOn Windows: Use the autoexec.bat file.\n\nOn Unix: Use command line or shell configuration file\n"
+              $win.enc.sel.menc configure -text None
+              enc_clear_asym_keys $win x509
+              enc_clear_asym_keys $win pgp
+              set security public
+              set enc_type "none"
+            }
         }
         x509 {
             set security public
