@@ -151,46 +151,12 @@ proc pgp_check_authentication {irand} {
       set recv_authmessage  $mess
       set recv_asym_keyid   $pgpresult(keyid)
     } else {
-      if { [ file exists $local_key_file ] } {
-        update
-        set oldpgppath $env(PGPPATH)
-        catch { unset env(PGPPATH)}
-        set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]"
-        #putlogfile "NEWPGPPATH $env(PGPPATH)"
-        set localpub  "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
-        file copy  $local_key_file $localpub
-        set tclcmd [ list exec pgp +batchmode=on $local_authsig_file $local_authtxt_file ]
-        set result [ catch $tclcmd output ]
-     	pgp_InterpretOutput $output pgpresult 1
-        file delete "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
-        catch { unset env(PGPPATH)}
-        set env(PGPPATH) $oldpgppath
 
-     	if {$pgpresult(ok) == 1} {
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
-          regsub -all {\"} $pgpresult(msg) {} mess
-          set recv_authstatus "integrity"
-      	  set recv_authmessage $mess
-    	  set recv_asym_keyid  $pgpresult(keyid)
-          set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) "\"to your public key ring"]
-          regsub -all {\"}  $pubkey {} pubkey1
-          pgp_AddCert $local_key_file "Adding Public Key" "$pubkey1"
-     	} else {
-          set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) "none" "none" "none" "none" ]
-      	  set recv_authstatus "failed"
-      	  set recv_asym_keyid $pgpresult(keyid)
-          regsub -all {\"} $pgpresult(msg) {} mess
-      	  set recv_authmessage $mess
-        }
-
-      } else {
-
-        set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) $pgpresult(keyid) "none" "none" "none" "none" ]
-        set recv_authstatus "failed"
-        set recv_asym_keyid $pgpresult(keyid)
-        regsub -all {\"} $pgpresult(msg) {} mess
-        set recv_authmessage $mess
-      }
+      set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) $pgpresult(keyid) "none" "none" "none" "none" ]
+      set recv_authstatus "failed"
+      set recv_asym_keyid $pgpresult(keyid)
+      regsub -all {\"} $pgpresult(msg) {} mess
+      set recv_authmessage $mess
     }
 
 #    putlogfile "pgp_chk_auth: About to return"
@@ -831,7 +797,7 @@ proc pgp_InterpretOutput { in outvar key} {
 
      if { $pgpresult(userid) != "none" } {
        set tclcmdkey [ list exec pgp -kv  +batchmode=on]
-       set tclcmdkey [ concat $tclcmdkey \"$pgpresult(userid)\" ]
+       set tclcmdkey [ concat $tclcmdkey $pgpresult(userid) ]
        putlogfile "  pgp_InterpretOutput: $tclcmdkey"
        set resultkey [ catch $tclcmdkey output1 ]
        set keyinfo   [split $output1 "\n"]
