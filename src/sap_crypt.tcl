@@ -536,11 +536,6 @@ proc new_mk_session_security {win aid} {
 # comment out the X.509 option until they are added in properly
 #	    $win.auth.sel.mauth.menu add command -label "X509"\
 #		-command "set_auth_type $win x509"
-# comment out these as they won't be used
-#	    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
-#		-command "set_auth_type $win cpgp"
-#	    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
-#		-command "set_auth_type $win cx50"
 	 
 	    frame $win.auth.keys
 	    text $win.auth.keys.lb -width 15 -height 5 -relief flat\
@@ -890,9 +885,9 @@ proc create {} {
 
 # why is the first if "none" as well ?
 
-    if { ($auth_type=="pgp" || $auth_type=="cpgp" || $auth_type=="none") } {
+    if { ($auth_type=="pgp" || $auth_type=="none") } {
       set aauth "pgp"
-    } elseif { ($auth_type == "x509" || $auth_type == "cx50" ) } {
+    } elseif { $auth_type == "x509" } {
       set aauth "x509"
     }
 
@@ -918,7 +913,7 @@ proc create {} {
          "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
          entered before authentication information can be \
          constructed for this session announcement."
-      log "User did not enter a passphrase for key certificate"
+      log "User did not enter a passphrase for key "
       return 0
     }
 
@@ -933,10 +928,10 @@ proc create {} {
 
 # check PGP password
 
-    if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
+    if {$validpassword==0 && ($auth_type =="pgp" )} {
       errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
         $user_id($aauth,auth_cur_key_sel).  Try again."
-      log "User entered an incorrect passphrase for key certificate"
+      log "User entered an incorrect passphrase for key "
       return 0
     }
 
@@ -947,10 +942,9 @@ proc create {} {
       return 0
     }
 
-    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx50" )} {
+    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" )} {
         errorpopup "Length" "Authentication Length very big for the Sap session\
            $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect ling Cert for key certificate"
         return 0
     }
     if {$validfile==0 && ($enc_type =="pgp" || $enc_type=="x509")} {
