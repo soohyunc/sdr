@@ -225,6 +225,7 @@ int ui_createsession(dummy, interp, argc, argv)
   char new_data[2048]="";
   struct timeval tv;
   char key[MAXKEYLEN]="";
+  char *tempptr;
 #ifdef AUTH
   int i, *authinfo=0;
   int  *encinfo=0;
@@ -236,6 +237,9 @@ int ui_createsession(dummy, interp, argc, argv)
   int irand;
   int new_len;
 #endif
+
+  tempptr = (char *)malloc(10);
+
 #ifdef AUTH
 /* Clear key */
   for (i=0; i<MAXKEYLEN; ++i) {
@@ -347,7 +351,10 @@ int ui_createsession(dummy, interp, argc, argv)
    } else {
      strcpy(encstatus, "noenc");
      strcpy(encmessage, "none");
-     strcpy(argv[8], "none");
+/* fix to avoid memory problem as string "none" is longer than argv[8] if */
+/* this is "des" */
+     strcpy(tempptr, "none");
+     argv[8] = tempptr;
    }
     if (strcmp(argv[6],"")!=0) {
         if (find_key_by_name(argv[6], key)!=-1)
@@ -395,7 +402,7 @@ int ui_createsession(dummy, interp, argc, argv)
   parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port, tv.tv_sec, "trusted", key);
   queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6]);
 #endif /* AUTH */
-
+  free(tempptr);
   return TCL_OK;
 }
  
