@@ -1,6 +1,6 @@
 CC          = gcc -g -O
-INCLUDES    = -I/usr/local/include -I/usr/X11R6/include
-LIB_DIR     = /usr/local/lib
+INCLUDES    = -I/cs/research/mice/starship/common/freebsd/include -I/usr/X11R6/include
+LIB_DIR     = /cs/research/mice/starship/common/freebsd/lib
 LIBS        = $(LIB_DIR)/libtk80.a $(LIB_DIR)/libtcl80.a -lm -L/usr/X11R6/lib -lX11
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
 LIBRARY_TK  = $(LIB_DIR)/tk8.0
