@@ -2915,7 +2915,7 @@ Select \"balloon help\" if you'd like to know what sdr's buttons and controls do
     tixAddBalloon .help.f.f.mode Button [tt "Click here to disable balloon help"]
     tixAddBalloon .help.f.f.about Button [tt "Click here to access sdr's full help system"]
 
-    label .help.f.bugs -text "Please report bugs and suggestions to mjh@isi.edu"
+    label .help.f.bugs -text "Please report bugs and suggestions to sdr@cs.ucl.ac.uk"
     pack .help.f.bugs -side top -anchor w
 
     button .help.f.dismiss -text [tt "Dismiss"] -command "destroy .help" \
