@@ -750,14 +750,19 @@ int check_encryption(	struct priv_header *enc_p,
 
   enc_status = (char *)malloc(10);
 
-  if (strncmp(code,"success",7) != 0 ) {
+  if (code !=NULL) {
+    if (strncmp(code,"success",7) != 0 ) {
+      strcpy(enc_status,"failed");
+      Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+      return 1;
+	} else {
+      strcpy(enc_status, "success");
+	}
+  } else {
     strcpy(enc_status,"failed");
     Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
     return 1;
-  } else {
-    strcpy(enc_status, "success");
   }
-
 /* retrieve the key_id */
 
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
