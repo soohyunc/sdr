@@ -1391,11 +1391,7 @@ char *argv[];
         memcpy((char *)&hostaddr_v6, (char *)&sin6->sin6_addr, 
                result->ai_addrlen);
         freeaddrinfo(result);
-    } else if (thstent != (struct hostent*) NULL) {
-        /* 
-         * getaddrinfo() failed, let's try getipnodebyname() because
-         * we might function somewhat with a v4-mapped address.
-         */
+    } else {
 #ifdef WIN32            
         printf("SDR: getaddrinfo failed, couldn't resolve '%s'!\n",
                hostname);
@@ -1403,14 +1399,6 @@ char *argv[];
         fprintf(stderr, "SDR: getaddrinfo failed, couldn't resolve '%s'!\n", 
                 hostname);
 #endif
-        thstent = (struct hostent*)getipnodebyname((char *)hostname,
-                                                   AF_INET6, AI_ALL, NULL);
-        memcpy((char *)&hostaddr_v6, (char *)thstent->h_addr, 
-               thstent->h_length);
-        freehostent(thstent);
-    } else {
-        fprintf(stderr, "SDR: Can't resolve hostname ('%s'!)\n", 
-                hostname);
         exit(1);
     }
 #endif
