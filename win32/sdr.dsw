@@ -35,11 +35,14 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name tclsh
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tcl2c
+    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "tcllib"="..\..\tcl-8.0\win\tcllib.dsp" - Package Owner=<4>
+Project: "tcl2c"="..\..\tcl-8.0\win\tcl2c\tcl2c.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -51,7 +54,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "tclsh"="..\..\tcl-8.0\win\tclsh\tclsh.dsp" - Package Owner=<4>
+Project: "tcllib"="..\..\tcl-8.0\win\tcllib.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
