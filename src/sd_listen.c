@@ -1527,7 +1527,6 @@ void recv_packets(ClientData fd)
       free(buf);
       return;
     }
-	splat_tcl_special_chars(buf);
 
 /* some sneaky bugger is trying to splat the stack?  */
 
@@ -2197,6 +2196,19 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     struct in_addr source;
     struct in_addr maddr;
     struct timeval tv;
+	splat_tcl_special_chars(advertid);
+	splat_tcl_special_chars(data);
+	splat_tcl_special_chars(sap_addr);
+	splat_tcl_special_chars(trust);
+	splat_tcl_special_chars(recvkey);
+	splat_tcl_special_chars(authtype);
+	splat_tcl_special_chars(authstatus);
+	splat_tcl_special_chars(asym_keyid);
+	splat_tcl_special_chars(enctype);
+	splat_tcl_special_chars(encstatus);
+	splat_tcl_special_chars(enc_asym_keyid);
+	splat_tcl_special_chars(authmessage);
+	splat_tcl_special_chars(encmessage);
 
     writelog(printf("parse_entry: > entered parse_entry\n");)
 
