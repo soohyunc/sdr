@@ -138,13 +138,18 @@ ui_init(int *argc, char **argv)
 	 * loading the library files. Ignore error returns and load
 	 * built in versions.
 	 */
-	Tcl_Init(interp);
-	Tk_Init(interp);
-
+	if (Tcl_Init(interp) != TCL_OK) {
+                fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+                exit(-1);
+        }
+        if (Tk_Init(interp) != TCL_OK) {
+                fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+                exit(-1);
+        }
         tk = mainWindow = Tk_MainWindow(interp);
 	if (tk == 0) {
-            fprintf(stderr, "sdr: display error\n");
-            exit(1);
+            fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+            exit(-1);
 	}    
 }
 #ifdef WIN32
