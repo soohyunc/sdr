@@ -722,9 +722,10 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
         }
         set attrs "$attrs $tmp"
     }
+    set tmp ""
     catch {
-	set tmp $macros($tool.$media.$proto.$fmt)
 	set macrokey $macrokeys($tool.$media.$proto.$fmt)
+	set tmp $macros($tool.$media.$proto.$fmt)
     }
     if {$tmp!=""} {
         set macrovalues($macrokey) [expand_macro $tmp ""]
@@ -734,13 +735,13 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
 	set key [lindex [split $attr ":"] 0]
 	set tmp ""
 	catch {
-	    set tmp $macros($tool.$media.$proto.$key)
 	    set macrokey $macrokeys($tool.$media.$proto.$key)
+	    set tmp $macros($tool.$media.$proto.$key)
 	}
 	if {$tmp==""} {
 	    catch {
-		set tmp $macros($tool.$media.$proto.$fmt.$key)
 		set macrokey $macrokeys($tool.$media.$proto.$fmt.$key)
+		set tmp $macros($tool.$media.$proto.$fmt.$key)
 	    }
 	}
 	if {$tmp!=""} {
