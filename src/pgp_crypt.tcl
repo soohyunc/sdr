@@ -59,8 +59,8 @@ proc enc_pgp_get_key_list {win aid} {
   catch $tclcmd keylist
   pgp_InterpretOutput $keylist pgpresult 1
 
-  if {$pgpresult(ok) == 1} {
-    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)pubring.pgp" 10000
+  if {$pgpresult(ok) != 1} {
+    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)/pubring.pgp" 10000
     return 1
   }
 
