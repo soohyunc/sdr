@@ -384,17 +384,21 @@ proc enter_long_passphrase {mode} {
     password .pass.f.f.f0.e -width 40 -variable tmppass \
          -background [option get . entryBackground Sdr]
     pack .pass.f.f.f0.e -side left
- 
-    frame .pass.f.f.f1
-    pack  .pass.f.f.f1 -side top -fill x -expand true
-    label .pass.f.f.f1.l -text "Retype Password:"
-    pack .pass.f.f.f1.l -side left -anchor e -fill x -expand true
-    password .pass.f.f.f1.e -width 40 -variable tmppass1 \
-         -background [option get . entryBackground Sdr]
-    pack .pass.f.f.f1.e -side left
- 
+
     bind .pass.f.f.f0.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
-    bind .pass.f.f.f1.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
+
+# only want to retype passphrase if saving the keys file for the first time
+    if { $mode == "save" } { 
+      frame .pass.f.f.f1
+      pack  .pass.f.f.f1 -side top -fill x -expand true
+      label .pass.f.f.f1.l -text "Retype Password:"
+      pack .pass.f.f.f1.l -side left -anchor e -fill x -expand true
+      password .pass.f.f.f1.e -width 40 -variable tmppass1 \
+           -background [option get . entryBackground Sdr]
+      pack .pass.f.f.f1.e -side left
+ 
+      bind .pass.f.f.f1.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
+    }
 
     label .pass.f.msg -borderwidth 1 -relief raised
     pack .pass.f.msg -side top -fill x -expand true
@@ -404,21 +408,25 @@ proc enter_long_passphrase {mode} {
     button .pass.f.f2.ok -text "OK" \
 	-command "submit_pass .pass $mode .pass.f.msg \"\""
     pack .pass.f.f2.ok -side left -fill x -expand true
-    button .pass.f.f2.cancel -text "Cancel" -command "destroy_pass .pass"
+    button .pass.f.f2.cancel -text "Cancel" -command "destroy_pass .pass $mode"
     pack .pass.f.f2.cancel -side left -fill x -expand true
 }
 
-proc destroy_pass {win} {
+proc destroy_pass {win mode} {
     global tmpkey2
 
 # destroy key which has been created and saved even though no passphrase
 # entered and now cancelled from passphrase screen
 
-    set tmpdel [find_keyname_by_key $tmpkey2]
-    set delkey [lindex $tmpdel 0]
-    clear_prefs_keys
-    delete_key $delkey
-    unset tmpkey2
+# only want to remove key if we are cancelling from a save keyfile for the
+# first time rather than a load keys at startup with Long labels selected
+    if {$mode == "save"} {
+      set tmpdel [find_keyname_by_key $tmpkey2]
+      set delkey [lindex $tmpdel 0]
+      clear_prefs_keys
+      delete_key $delkey
+      unset tmpkey2
+    }
  
 # destroy passphrase window
     catch {destroy $win}
