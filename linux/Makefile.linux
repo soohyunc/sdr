@@ -1,9 +1,6 @@
 CC          = gcc -g -O
-INCLUDES    = -I/cs/research/mice/starship/common/linux/include
-LIB_DIR     = /cs/research/mice/starship/common/linux/lib
-LIBS        = -L$(LIB_DIR) -ltk8.0 -ltcl8.0 -L/usr/X11R6/lib -lX11 -lc -lm -ldl -lresolv
-LIBRARY_TCL = $(LIB_DIR)/tcl8.0
-LIBRARY_TK  = $(LIB_DIR)/tk8.0
+INCLUDES    = -I../../tk-8.0/generic -I../../tcl-8.0/generic
+LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/tcl8.0.a -L/usr/X11R6/lib -lX11 -lc -lm -ldl -lresolv
 CFLAGS      = $(INCLUDES) -Wall -DNORANDPROTO -DNEEDSTRERROR -DDIFF_BYTE_ORDER -DAUTH
 
 all::	sdr

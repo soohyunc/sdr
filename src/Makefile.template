@@ -2,24 +2,23 @@
 #include ../src/Makefile.template.clear
 include ../src/Makefile.template.crypt
 
-TK_LIBRARY_FILES = \
-                $(LIBRARY_TCL)/init.tcl \
-                $(LIBRARY_TK)/tk.tcl \
-                $(LIBRARY_TK)/bgerror.tcl \
-                $(LIBRARY_TK)/button.tcl \
-                $(LIBRARY_TK)/dialog.tcl \
-                $(LIBRARY_TK)/entry.tcl \
-                $(LIBRARY_TK)/focus.tcl \
-                $(LIBRARY_TK)/listbox.tcl \
-                $(LIBRARY_TK)/menu.tcl \
-                $(LIBRARY_TK)/palette.tcl \
-                $(LIBRARY_TK)/scale.tcl \
-                $(LIBRARY_TK)/tearoff.tcl \
-                $(LIBRARY_TK)/text.tcl \
-                $(LIBRARY_TK)/optMenu.tcl $(LIBRARY_TK)/scrlbar.tcl
+#TK_LIBRARY_FILES = \
+#                $(LIBRARY_TCL)/init.tcl \
+#                $(LIBRARY_TK)/tk.tcl \
+#                $(LIBRARY_TK)/bgerror.tcl \
+#                $(LIBRARY_TK)/button.tcl \
+#                $(LIBRARY_TK)/dialog.tcl \
+#                $(LIBRARY_TK)/entry.tcl \
+#                $(LIBRARY_TK)/focus.tcl \
+#                $(LIBRARY_TK)/listbox.tcl \
+#                $(LIBRARY_TK)/menu.tcl \
+#                $(LIBRARY_TK)/palette.tcl \
+#                $(LIBRARY_TK)/scale.tcl \
+#                $(LIBRARY_TK)/tearoff.tcl \
+#                $(LIBRARY_TK)/text.tcl \
+#                $(LIBRARY_TK)/optMenu.tcl $(LIBRARY_TK)/scrlbar.tcl
 
 SDR_UI_FILES = \
-		tcl_libs.o \
 		tcl_generic.o \
 		tcl_www.o \
 		tcl_new.o \
@@ -107,8 +106,8 @@ $(SDR_UI_FILES): tcl2c
 parsed_plugins.tcl: ../src/plugin2tcl.tcl
 	tclsh8.0 ../src/plugin2tcl.tcl
 
-libs.tcl: $(TK_LIBRARY_FILES)
-	cat $(TK_LIBRARY_FILES) | sed '/^[      ]*source[       ]/d' > libs.tcl
+#libs.tcl: $(TK_LIBRARY_FILES)
+#	cat $(TK_LIBRARY_FILES) | sed '/^[      ]*source[       ]/d' > libs.tcl
 
 uweb: $(WWWOBJS)
 	$(CC) -ggdb -o uweb $(WWWOBJS) $(LIBS)

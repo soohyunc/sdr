@@ -182,7 +182,9 @@ int announce_error(int code, char *command)
 int ui_create_interface()
 {
   int i;
+#ifdef WIN32
   announce_error(Tcl_VarEval(interp, tcl_libs, 0), "tcl_libs");
+#endif
 
   /*
    * Set the geometry of the main window, if requested.

@@ -2,6 +2,10 @@
 <B><pre>
 
 2.5.8
+  - Unix version now uses Tcl/Tk from our CVS. This is Tcl/Tk 8.0.3 modified
+    to remove all the path searching and include the initialisation files in
+    the binary. Should solve the numerous problems with Tcl which people have
+    reported (it works for rat and nte, why not sdr too?)
   - Fix font sizes in the calendar (was hardcoded pixel sizes, now measures
     the font to get the correct value).
   - Assorted fixes to authentication code
