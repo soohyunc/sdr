@@ -203,7 +203,8 @@ int bus_send_new_app()
   pid=getpid();
   in.s_addr=hostaddr;
   sprintf(msg, "LCB/1.0\nsdr instance %u %s %s %s",
-	  (unsigned int)pid, username, inet_ntoa(in), display);
+	  (unsigned int)pid, username, inet_ntoa(in),
+	  display ? display : "(none)");
 /*  printf("%s\n", msg);*/
   return(bus_send(msg, strlen(msg)));
 }
