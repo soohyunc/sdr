@@ -93,7 +93,7 @@ set sdrversion "v2.6.2"
 set titlestr "Multicast Session Directory $sdrversion"
 
 proc initialise_resources {} {
-    global gui
+    global gui tcl_platform
     if {$gui=="NO_GUI"} { return }
     #Tk4.0 standard bg
     option add *background gray85 
@@ -132,12 +132,22 @@ proc initialise_resources {} {
     }
 
 
+if {$tcl_platform(platform) == "unix"} {
     option add *infoFont   -*-helvetica-medium-r-normal--*-100-*-*-*-*-iso8859-1 
     option add *headerFont -*-helvetica-bold-r-normal--*-140-*-*-*-*-iso8859-1 
     option add *largeFont  -*-helvetica-bold-r-normal--*-240-*-*-*-*-iso8859-1 
     option add *mediumFont -*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1 
     option add *font       -*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1 
     option add *italfont   -*-helvetica-bold-o-normal--*-120-*-*-*-*-iso8859-1 
+} else {
+	option add *font		-*-helvetica-medium-r-normal--14-*-iso8859-1
+	option add *infoFont	-*-helvetica-medium-r-normal--12-*-iso8859-1 
+	option add *largeFont	-*-helvetica-bold-r-normal--24-*-iso8859-1
+	option add *mediumFont	-*-helvetica-bold-r-normal--12-*-iso8859-1
+	option add *italfont	-*-helvetica-bold-o-normal--12-*-iso8859-1
+	option add *headerFont	-*-helvetica-bold-r-normal--14-*-iso8859-1
+}
+
     set tmp 0
     catch {set tmp [label .test -font [option get . font Sdr]];destroy .test}
     if {$tmp==0} {
