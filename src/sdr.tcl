@@ -3790,7 +3790,7 @@ proc user_hook {} {
 
 #set where to read config files from
 if {$tcl_platform(platform) == "windows"} {
-    set_resource Sdr.sdrHome [glob ~]/sdr
+    option add *sdrHome ~/sdr widgetDefault
 } else {
     set_resource Sdr.sdrHome [glob ~]/.sdr
 }
