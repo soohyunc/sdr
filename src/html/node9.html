@@ -1,0 +1,22 @@
+<HEAD>
+<TITLE> Administrative Scope</TITLE>
+</HEAD>
+<BODY>
+<H2><A NAME=SECTION00042000000000000000> Administrative Scope</A></H2>
+<P>
+Administrative Scope uses different ranges of multicast addresses to
+constrain multicast traffic to a particular region.  To configure an
+administrative scope zone, all the multicast routers bordering that
+zone must be configured to be a boundary to that zone for a range of
+multicast addresses.  Unlike TTL scope, if a conference is on a scoped
+multicast address, traffic sources outside the scope zone will not be
+able to inject traffic into the conference as administrative scope
+zone boundaries are bi-directional.  A particular scope zone has a
+range of multicast addresses, a default TTL, and a name.  Users of
+administrative scope zones only need to know the zone name (e.g.
+``United Kingdom'') to be able to scope their conference correctly -
+the TTL and the address are allocated by sdr.
+<P>
+Currently there is no automatic way for sdr to learn about the
+relevant scope zones - this must be configured on a per-site basis.
+</BODY>

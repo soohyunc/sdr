@@ -1,0 +1,15 @@
+CC=gcc -g
+INCLUDES=-I/usr/openwin/include -I/cs/research/mice/speedy/common/sun4/include
+LIB_DIR=/cs/research/mice/speedy/common/sun4/lib
+LIBS=	$(LIB_DIR)/libtk41.a $(LIB_DIR)/libtcl75.a \
+	-L/usr/openwin/lib -lX11 \
+	-lm
+
+LIBRARY_TCL = $(LIB_DIR)/tcl7.5
+LIBRARY_TK = $(LIB_DIR)/tk4.1
+CFLAGS=$(INCLUDES) -DSUNOS4 -Wall -DNEEDSTRERROR -DCANT_MCAST_BIND
+all::	sdr
+install:
+	cp ./sdr /cs/research/mice/speedy/common/sun4/bin/sdr
+	chmod 755 /cs/research/mice/speedy/common/sun4/bin/sdr
+

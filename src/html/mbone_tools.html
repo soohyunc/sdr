@@ -1,0 +1,156 @@
+<h2>What hardware platforms support the audio and video applications?</h2>
+
+    Most of the applications have been ported to the DEC 5000, DEC
+    Alpha, HP 9000/700, SGI Indy and Indigo, and Sun SPARCstation.
+    Some applications are also supported on IBM RS/6000 and on Intel
+    486 platforms running BSD UNIX.  No additional hardware is
+    required to receive audio and video on those systems that have
+    audio built in because the rest is done in software.  To send
+    audio requires a microphone; to send video requires a camera and
+    video capture device which are only built-in on a few of the
+    systems.  For example, the VideoPix card has been used on the
+    SPARC, but is no longer for sale.  The newer SunVideo card is
+    supported under Solaris 2.x, but there is no device driver for
+    SunOS 4.1.x (at least not yet).  See the descriptions of video
+    applications below for a list of the capture boards supported by
+    each program.  
+<p>
+    For the camera, any camcorder with a video output will do.  The
+    wide-angle range is most important for monitor-top mounting.
+    There is also a small (about 2x2x5 inches) monochrome CCD camera
+    suitable for desktop video conference applications available for
+    around $200 from Howard Enterprises Inc, 545 Calles San Pablo,
+    Camarillo, CA 93102, phone 805-383-7444.  Subjectively, it seems
+    to give a picture somewhat less crisp than a typical camcorder,
+    but sufficient for 320x240 resolution software video algorithms.
+    There is also a color model and an infrared one for low light,
+    with an IR LED for illumination.
+
+<h2>What operating system support is required?</h2>
+
+    You can run the audio and video applications point-to-point
+    between two hosts using normal unicast addresses and routing, but
+    to conference with multiple hosts, each host must run an operating
+    system kernel with IP multicast support.  IP multicast invokes
+    Ethernet multicast to reach multiple hosts on the same subnet; to
+    link multiple local subnets or to connect to the MBONE you need a
+    multicast router as described above.
+<p>
+    IP multicast is included in the standard IRIX kernels for SGI
+    machines, in Solaris 2.3 and later, and in OSF/1 2.0.  You can
+    pick up free IP multicast software and add it to AIX 3.2, HP-UX,
+    SunOS 4.1.x and Ultrix as described above.  For PC machines
+    running DOS or Windows, IP multicast support is included in the
+    current release of the PCTCP package from FTP Software, but the
+    application programs are still in development.  No IP multicast
+    support is available yet for NeXT or Macintosh.
+<p>
+    The IP multicast kernel software releases for AIX, HP-UX, SunOS,
+    and Ultrix include a patch for the module in_pcb.c.  This patch
+    allows demultiplexing of separate multicast addresses so that
+    multiple copies of vat can be run for different conferences at the
+    same time.
+<p>
+    If you run a SunOS 4.1.x kernel, you should make sure that the
+    kernel audio buffer size variable is patched from the standard
+    value of 1024 to be 160 decimal to match the audio packet size for
+    minimum delay.  The IP multicast software release includes patched
+    versions of the audio driver modules, but if for some reason you
+    can't use them, you can use adb to patch the kernel as shown
+    below.  These instructions are for SunOS 4.1.1 and 4.1.2; change
+    the variable name to amd_bsize for 4.1.3, or Dbri_recv_bsize for
+    the SPARC 10:
+<pre>
+	adb -k -w /vmunix /dev/mem
+	audio_79C30_bsize/W 0t160	(to patch the running kernel)
+	audio_79C30_bsize?W 0t160	(to patch kernel file on disk)
+	<Ctrl-D>
+</pre>
+    If the buffer size is incorrect, there will be bad breakup when
+    sound from two sites gets mixed for playback.
+
+<h2>What is the data rate produced by the audio and video applications?</h2>
+
+    The audio coding provided by the built-in audio hardware on most
+    systems produces 64 Kb/s PCM audio, which consumes 68-78 Kb/s on
+    the network with packet overhead.  The audio applications
+    implement software compression for reduced data rates (36 Kb/s
+    ADPCM, 17 Kb/s GSM, and 9 Kb/s LPC including overhead).
+<p>
+    For the slow-frame-rate video prevalent on the MBONE, the
+    compression, decompression and display are all done in software.
+    The data rate is typically 25-128 Kb/s, with the maximum
+    established by a bandwidth limit slider.  Higher data rates may be
+    used with a small TTL to keep the traffic within the local area.
+    Support for hardware compression boards is in development.
+
+<h2>Where can I get the audio applications?</h2>
+
+    The most popular application on the MBONE is the LBL audio tool
+    "vat".  A beta release of vat is available by anonymous FTP from
+    ftp.ee.lbl.gov in the directory conferencing/vat where you will
+    find tar files for the various systems supported:
+<pre>
+	decalpha-vat.tar.Z	DEC Alpha
+	decmips-vat.tar.Z	DEC 5000
+	hp-vat.tar.Z		HP 9000/700
+	i386-vat.tar.Z		intel 386/486 BSD
+	sgi-vat.tar.Z		SGI Indy, Indigo
+	sun-vat.dyn.tar.Z	SPARC, dynamic libraries
+	sun-vat.tar.Z		SPARC, static libraries
+</pre>
+    Included in the vat tar files are a binary and a manual entry.
+    The authors, Van Jacobson and Steve McCanne, say the source will
+    be released "soon".  Either SPARC version will run SunOS 4.1.x.
+    The dynamically linked version works better than the statically
+    linked version on Solaris 2 since it will adhere to the name
+    service policy that the user has configured.  There is a problem
+    with vat in unicast mode on Solaris 2.3 (it works fine in
+    multicast mode).  This will be fixed in the next Solaris release.
+    In the mean time, there is a work around for the problem available
+    by FTP from playground.sun.com in the tar file
+    pub/solaris2/unicast-vat-workaround.tar.
+<p>
+    MBone software for Digital Alpha workstations running OSF/1 V2.0 
+    and newer is available at
+<pre>
+	http://chocolate.pa.dec.com/mbone
+	ftp://chocolate.pa.dec.com/mbone
+</pre>
+    In addition, a beta release of both binary and source for the
+    UMass audio tool NEVOT, written by Henning Schulzrinne, is
+    available by anonymous FTP from gaia.cs.umass.edu in the
+    pub/hgschulz/nevot directory (the filename may change from version
+    to version).  NEVOT runs on the SPARCstation and on the SGI
+    Indigo and Indy.  NEVOT supports both the vat protocol and RTP
+    protocol.
+
+<h2>What hardware and software is required to receive video?</h2>
+
+    The video we used for the July 1992 IETF was the DVC (desktop
+    video conferencing) program from BBN, written by Paul Milazzo and
+    Bob Clements.  This program has since become a product, called
+    PictureWindow.  Contact picwin-sales@bbn.com for more information.
+<p>
+    For the November 1992 IETF and several events since then, we have
+    used two other programs.  The first is the "nv" (network video)
+    program from Ron Frederick at Xerox PARC, available from
+    parcftp.xerox.com in the file pub/net-research/nv.tar.Z.  An 8-bit
+    visual is recommended to see the full image resolution, but nv
+    also implements dithering of the image for display on 1-bit
+    visuals (monochrome displays).  Shared memory will be used if
+    present for reduced processor load, but display to remote X
+    servers is also possible.  On the SPARCstation, the VideoPix card
+    is required to originate video.  Sources are to available,
+    as are binary versions for the SGI Indigo and DEC 5000 platforms.
+<p>
+    Also available from INRIA is the IVS program written by Thierry
+    Turletti and Christian Huitema.  It uses a more sophisticated
+    compression algorithm, a software implementation of the H.261
+    standard.  It produces a lower data rate, but because of the
+    processing demands the frame rate is much lower and the delay
+    higher.  System requirements: SUN SPARCstation or SGI Indigo,
+    video grabber (VideoPix Card for SPARCstations), video camera,
+    X-Windows with Motif or Tk toolkit.  Binaries and sources are
+    available for anonymous ftp from avahi.inria.fr in the file
+    pub/videoconference/ivs.tar.Z or ivs_binary_sparc.tar.Z.

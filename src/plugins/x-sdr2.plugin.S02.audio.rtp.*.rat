@@ -1,0 +1,148 @@
+media:audio
+tool:rat
+proto:RTP/AVP
+protoname:RTP
+
+#macro definition for default packetisation time
+@define:ptime
+{
+  attr:ptime
+  {
+    attrvalue:20
+    attrvalue:40
+    {
+      def:true
+    }
+    attrvalue:80
+  }
+}
+fmt:0
+{
+  fmtname:PCM
+  flags:-f pcm
+  @expand:ptime
+}
+fmt:5
+{
+  fmtname:DVI
+  flags:-f dvi
+  @expand:ptime
+}
+fmt:3
+{
+  fmtname:GSM
+  flags:-f gsm
+}
+fmt:7
+{
+  fmtname:LPC
+  flags:-f lpc
+}
+
+#macro definition for redundancy attributes
+@define:redundancy
+{
+  attr:rtpred1
+  {
+    attrname:Primary Encoding
+    attrvalue:0
+    {
+      attrvaluename:PCM
+      macro:PRIMARY
+      {
+        value:-f pcm
+      }
+    }
+    attrvalue:5
+    {
+      attrvaluename:DVI
+      def:true
+      macro:PRIMARY
+      {
+        value:-f dvi
+      }
+    }
+  }
+  attr:rtpred2
+  {
+    attrname:Secondary Encoding
+    attrvalue:5
+    {
+      attrvaluename:DVI
+      def:true
+      macro:SECONDARY
+      {
+        value:/dvi
+      }
+    }
+    attrvalue:7
+    {
+      attrvaluename:LPC
+      macro:SECONDARY
+      {
+        value:/lpc
+      }
+    }
+  }
+  @expand:ptime
+}
+
+#prefered payload type for redundancy
+fmt:121
+{
+  fmtname:Redundancy
+  flags:-pt 121/redundancy
+  @expand:redundancy
+  attr:rtpmap
+  {
+    hidden:true
+    attrvalue:121 red/8000
+    {
+      def:true
+    }
+  }
+}
+
+#cope with dynamic payload types for redundancy
+fmt:*(DYNAMIC)
+{
+  hidden:true
+  withattr:rtpmap:$(DYNAMIC) red/8000
+  withattr:rtpmap:$(DYNAMIC) L16/8000
+  withattr:rtpmap:$(DYNAMIC) L16/16000
+  attr:rtpmap
+  {
+    attrvalue:$(DYNAMIC) red/8000
+    {
+      flags:-pt $(DYNAMIC)/rtp_redundancy
+    }
+    attrvalue:$(DYNAMIC) L16/8000
+    {
+      flags:-f $(DYNAMIC) -pt $(DYNAMIC)/L16/8000
+    }
+    attrvalue:$(DYNAMIC) L16/8000/2
+    {
+      flags:-f $(DYNAMIC) -pt $(DYNAMIC)/L16/8000/2
+    }
+    attrvalue:$(DYNAMIC) L16/16000
+    {
+      flags:-f $(DYNAMIC) -pt $(DYNAMIC)/L16/16000
+    }
+    attrvalue:$(DYNAMIC) L16/16000/2
+    {
+      flags:-f $(DYNAMIC) -pt $(DYNAMIC)/L16/16000/2
+    }
+  }
+}
+
+#attr:rtpmap
+#{
+#  macro:RTPMAP
+#  {
+#    value:$(RTPMAP) -rtp $(VALUE)
+#  }
+#}
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:$(PRIMARY)$(SECONDARY)
+flags:$(ADDRESS)/$(PORT)

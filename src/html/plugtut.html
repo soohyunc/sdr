@@ -1,0 +1,174 @@
+<head>
+<title>Writing sdr plugins</title>
+</head>
+<body>
+<h1>Writing sdr plugins</h1>
+Sdr plug-in configuration files follow a strict format of grouped
+attribute:value pairs with one attribute value pair per line.  Leading
+whitespace is ignored. Whitespace in the value part of an
+attribute:value pair is significant. 
+
+<h2>Compulsory fields</h2>
+
+For a format or tool definition
+file, the following attributes are compulsory and should be in the
+following order:
+<PRE>
+  media:<I>media</I>
+  proto:<I>protocol</I>
+  tool:<I>tool-name</I>
+</PRE>
+See the SDP specification for definitions of <I>media</I> and
+<I>protocol</I>.  <I>Tool-name</I> is the name of the tool you wish to
+be started to send/receive this session.  
+<H2>Optional header fields</h2>
+<h3>protoname</h3>
+As the protocol will often not be very meaning full to humans, these may be 
+followed by further definition:
+<PRE>
+  protoname:<I>human readable versions of protocol</I>
+</PRE>
+Protoname is used at configure menus and labels on the user interface.
+<h3>create</h3>
+Most plugins define media and formats that you wish to be able to announce.
+However, some may be just for backwards compatibility so you can receive
+them but do not wish to announce them.  If this is the case, you can use
+the <I>create</I> field to specify that you don't wish this plugin to contribute to the session creation menus and options:
+<PRE>
+  create:no
+</PRE>
+
+<h2>Format definitions</h2>
+
+After these definitions should come one or more format definitions.
+The minimal form of a format definition is:
+<PRE>
+  fmt:<I>format</I>
+</PRE>
+See the SDP specification for a more complete definition of what is meant
+by a <I>format</I>.
+<P>
+More normally however a format definition will require additional configuration, and this can be done as follows:
+<PRE>
+  fmt:<I>format</I>
+  {
+      fmtname:<I>human readable version of format</I>
+      flags:<I>command line flags for tool with this format</I>
+  }
+</PRE>
+
+<h2>Media Attributes</h2>
+Both media and session definitions can contain optional attributes.
+These can be configured in the plugin on a per-tool or a per-format
+basis.
+<P>
+Attributes can be of two types - either with a set of values, or just on/off.
+<P>
+On-off attributes can be configured as follows:
+<PRE>
+  attr:<I>attribute name</I>
+  {
+      attrname:<I>human readable version of attribute</I>
+      flags:<I>command line flags for tool with this attribute</I>
+  }
+</PRE>
+Attributes with a set of values can be configured as follows:
+<PRE>
+  attr:<I>attribute name</I>
+  {
+      attrname:<I>human readable version of attribute</I>
+      attrvalue:<I>one possible value of attribute</I>
+      {
+         attrvaluename:<I>human readable version of this attribute vale</I>
+         flags:<I>command line flags for tool with this attribute and value</I>
+      }
+      attrvalue:<I>another possible value of attribute</I>
+      {
+         attrvaluename:<I>human readable version of this attribute vale</I>
+         flags:<I>command line flags for tool with this attribute and value</I>
+      }
+  }
+</PRE>
+Either type of attribute may be used within a format definition (if the attribute is format specific) or after all the format definitions are complete (if the attribute is independant of the format).
+<P>
+This mechanism assumes you can explicitly list all the values of an attribute.
+Whilst this is often the case, it is not always so, and sdr plugins also allow the use of the <i>macro</i> and <i>value</i> definitions to allow flexible passing of attribute values directly to the media tool.  See below for more details.
+
+<h3>noattr</h3>
+Occasionally you want to specify a behaviour to apply when an attribute is <b>not</b> present.  To do this you use the <I>noattr</I> definition as follows:
+<pre>
+  noattr:<I>attribute name</I>
+  {
+      flags:<I>command line flags for tool if this attribute is missing</I>
+  }
+</pre>
+A <I>noattr</I> definition must follow the equivalent <I>attr</i> definition.
+<h2>Flags and Variables</h2>
+The <i>flags</i> definition specifies a section of the command line that
+will be used to start the media tool if this plugin is matched.  It can
+be used in attribute and format definitions and also after all the definitions
+are complete to finish the command line.  A simple example is:
+<PRE>
+  media:audio
+  proto:RTP/AVP
+  tool:rat
+  fmt:pcm
+  {
+    flags:-f pcm
+  }
+  fmt:dvi
+  {
+    flags:-f dvi
+  }
+  flags:-t $(TTL)
+  flags:$(ADDRESS)/$(PORT)
+</PRE>
+<P>
+For an rtp session with pcm format audio on address 224.2.3.4 and port 3456
+with ttl 1, this would start the rat tool as follows:
+<PRE>
+  rat -f pcm -t 1 224.2.3.4/3456
+</PRE>
+As can be seen above, <I>flags</I> definitions can include variables
+that will be expanded when the session is started.  As complete list of
+these variables is:
+<UL>
+<LI>$(ADDRESS)  - the address to send/recv to
+<LI>$(PORT)  - the transport port to send/recv on
+<LI>$(TTL)  - the ttl for multicast sessions
+<LI>$(PROTO) - the value of the protocol field
+<LI>$(FMT)  - the value of the format field
+<LI>$(SESSNAME)  - the name of the session
+<LI>$(CHAN)  - the channel number for LBL's conference bus
+<LI>$(YOUREMAIL)  - the email address of the person running sdr
+</UL>
+<h2>Macros</h2>
+In cases where the value of an attribute must be passed directly to the 
+media tool, the above mechanisms are sometimes not sufficient.  To make
+this mechanism more flexible, sdr plugins provide a very simple macro facility.
+An example is:
+<PRE>
+media:audio
+proto:vat
+tool:vat
+fmt:pcm
+attr:id
+{
+  macro:ID
+  {
+    value:/$(VALUE)
+  }
+}
+flags:$(ADDRESS)/$(PORT)$(ID)
+</PRE>
+In this case, the session attribute attribute "id" needs to be passed to vat at the end of the command line.  The special variable $(VALUE) is given the value of the "id" attribute, and this is substitutes in the string given in the "value" definition.  The resulting string is stored in the $(ID) variable, and expanded in the same way normal variables are when the tool is run.  If there is no "id" attribute in this particular session, then the $(ID) variable is set to the empty string.
+<p>
+For example, a session with address/port 224.5.6.7/5432 and no id field would be started as:
+<pre>
+vat 224.5.6.7/5432
+</pre>
+and a session with the id atribute 1244 would have $(ID) defined as "/1234" and would be started as:
+<pre>
+vat 224.5.6.7/5432/1234
+</pre>
+</BODY>

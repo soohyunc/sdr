@@ -1,0 +1,54 @@
+<head>
+<title>Sdr Plug-In Modules</title>
+<h1>Sdr Plug-In Modules</h1>
+</head>
+<body>
+Sdr can be configured to support new tools by means of plug-in modules
+which define the media, protocol and formats supported by a tool,
+along with long-form names for these formats and the flags that are
+needed to start up the tool.
+<P>
+Sdr will read files in "/usr/local/etc/sdr/plugins" and
+"~/.sdr/plugins" and will search for files whose name begins
+"sdr2.plugin.".  The naming convention for plugins is
+"sdr2.plugin.<I>sequence.media.protocol.format.tool</I>" where for
+convenience, <I>format</I> is often wildcarded when the plugin file
+contains many formats.
+<P>
+New media can also defined in this manner but this should not be done 
+without prior discussion on the mailing list "remconf@es.net" to avoid
+undesirable proliferation of media definitions for what really should be
+protocols or formats.
+<P>
+Sdr has built in definitions for the following:
+<UL>
+<LI>audio rtp pcm vat
+<LI>audio rtp dvi vat
+<LI>audio rtp gsm vat
+<LI>audio rtp lpc vat
+<LI>audio vat pcm vat
+<LI>audio vat dvi vat
+<LI>audio vat gsm vat
+<LI>audio vat lpc vat
+<LI>audio rtp pcm rat
+<LI>audio rtp dvi rat
+<LI>audio rtp gsm rat
+<LI>audio rtp lpc rat
+<LI>video rtp h261 vic
+<LI>video rtp nv vic
+<LI>video rtp jpeg vic
+<LI>video rtp cellB vic
+<LI>video rtp nv nv
+<LI>whiteboard udp wb wb
+<LI>text udp nt nt
+</UL>
+If you wish to add new protocols,formats or tools you'll need to
+create an appropriate sdr plugin and distribute it to anyone you wish
+to participate in your session.
+<h2>Further information</h2>
+For further information on plugins, see:
+<UL>
+<LI>The <a href=help:plugtut>sdr plugin manual</a>
+<LI>The <a href=http://www-mice.cs.ucl.ac.uk/mice/sdr/plugins/>plugins built into sdr</>
+</UL>
+</body>

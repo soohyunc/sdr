@@ -1,0 +1,18 @@
+<HEAD>
+<TITLE> Media Descriptions</TITLE>
+</HEAD>
+<BODY>
+<H2><A NAME=SECTION00032000000000000000> Media Descriptions</A></H2>
+<P>
+Media descriptions are the main reason for describing a session, as they allow the receiver of an announcement to start the correct media tools directly from sdr with all the correct flags and settings to join the conference.
+Sdr allows you to create conferences with up to one media tool of each of the following types:
+<UL><LI>	audio
+<LI>	video
+<LI>	whiteboard (including shared editors)
+<LI>	text
+</UL>
+In fact sdr  can receive and start sessions with more than one of each media, but the standard interface does not permit the creation of such sessions in an effort to make the session creation interface simpler to use.
+To include a media in your session, select the media by clicking on the left ``X&quot; button
+When a media is selected, a default media format will be selected, along with default addresses, transport protocol and ports.  The media format and transport protocol can be changed using the relevant pull down menus.  The address and port are allocated in such a way that they should avoid clashes with other scheduled sessions - the addresses sdr  provides should normally be used, although user specified ones can be substituted if required.  In particular, ports are chosen such that rate-limiting in Mbone routers will preferentially forward audio rather than video when a multicast tunnel is congested.
+If everyone you expect to participate in your session is likely to wish to receive all the media you have selected, then using one multicast address for all your media is appropriate.  If some receivers are likely to not wish to receive some media - for example some sites have insufficient bandwidth to receive video - then selecting one multicast address per media is appropriate as this permits unwanted traffic to be pruned back from these low bandwidth participant sites.
+</BODY>

@@ -1,0 +1,7 @@
+media:audio
+proto:Xing
+tool:swplayer
+create:no
+fmt:MPEG
+flags:xdma://$(ADDRESS):$(PORT)/
+#fmtname:MPEG-1 Layer 2 compressed audio

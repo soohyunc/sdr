@@ -1,0 +1,10 @@
+<HEAD>
+<TITLE> Secure Announcements</TITLE>
+</HEAD>
+<BODY>
+<H1><A NAME=SECTION00060000000000000000> Secure Announcements</A></H1>
+<P>
+Although the purpose of sdr is to advertise sessions, not all sessions should be advertised publicly.  However, it is important that even secret sessions use the same announcement mechanism, so that their bandwidth usage can be taken into account, and so that their multicast addresses are not inadvertently re-used.  Thus Sdr permits secure sessions to be advertised, by announcing them twice - once unencrypted with just the bandwidth, contact info and multicast addresses, and once encrypted with all of the information including encryption keys for the media tools.  Secure sessions do not appear in Sdr's listing of sessions unless the correct encryption key has been inserted.
+<P>
+Sdr allows a session to be created as ``public'' or ``private''.  To create a private session, sdr must have been pre-configured with a set of private group names and their encryption keys.  Normally this keys will have been exchanged using privacy enhanced electronic mail.  When the user selects ``private'', the list of the groups the user has keys for is displayed, and the user can select a group.  The encryption keys for these groups are not displayed on the interface at any time, and they are themselves stored encrypted in a file.  Thus if a user wants sdr to receive or send encrypted sessions, they must enter a password to sdr to allow it to decrypt this key file.
+</BODY>

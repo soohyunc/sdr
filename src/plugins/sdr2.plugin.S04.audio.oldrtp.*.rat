@@ -1,0 +1,39 @@
+media:audio
+tool:rat
+proto:rtp
+create:no
+fmt:pcm
+{
+  flags:-f pcm
+}
+fmt:pcm2
+{
+  flags:-f pcm
+}
+fmt:pcm4
+{
+  flags:-f pcm
+}
+fmt:dvi
+{
+  flags:-f dvi
+}
+fmt:dvi2
+{
+  flags:-f dvi
+}
+fmt:dvi4
+{
+  flags:-f dvi
+}
+fmt:gsm
+{
+  flags:-f gsm
+}
+fmt:lpc4
+{
+  flags:-f lpc
+}
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)

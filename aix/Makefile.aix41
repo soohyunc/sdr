@@ -1,0 +1,15 @@
+CC=cc -O
+INCLUDES=-I/usr/include/X11 -I/usr/local/include
+LIB_DIR=/usr/local/lib
+LIBS=	$(LIB_DIR)/libtk4.1.a $(LIB_DIR)/libtcl7.5.a \
+	-L/usr/lib/X11 -lX11 \
+	-lm -lld
+
+LIBRARY_TCL = $(LIB_DIR)/tcl7.5
+LIBRARY_TK = $(LIB_DIR)/tk4.1
+CFLAGS=$(INCLUDES) -DAIX41 -DCANT_MCAST_BIND -qarch=com
+all::	sdr
+install:
+	cp ./sdr /usr/local/bin
+	chmod 755 /usr/local/bin/sdr
+

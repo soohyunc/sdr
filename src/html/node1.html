@@ -1,0 +1,51 @@
+<HEAD>
+<TITLE> The Session Announcement Model</TITLE>
+</HEAD>
+<BODY>
+<H1><A NAME=SECTION00010000000000000000> The Session Announcement Model</A></H1>
+<P>
+Sdr uses an announcement protocol called the Session Directory
+Announcement Protocol.  In its simplest form, this involved
+periodically multicasting a session announcement packet describing a
+particular session.  To receive SDAP, a receiver simply listens on a
+well known multicast address and port.  Sessions are described using the
+Session Description Protocol (described below).  If a receiver
+receives a session announcement packet it simply decodes the SDP
+message, and then can display the session information for the user.
+The interval between repeats of the same session description message
+depends on the number of sessions being announced (each sender at a
+particular scope can hear the other senders in the same scope) such
+that the bandwidth being used for session announcements of a
+particular scope is kept approximately constant.
+<P>
+If a receiver has been listening for a set time, and fails to hear a
+session announcement, then the receiver can conclude that the session
+has been deleted and no longer exists.  The set period is based on the
+receivers estimate of how often the sender should be sending, and is
+(arbitrarily) set to ten times the estimated send period.  It is
+possible for network partitions to force inadvertent deletion of
+sessions, but inadvertent deletion due to packet loss is extremely
+unlikely.  In any event, such a deleted session will be reinstated as
+soon as the network partition is resolved and another announcement
+packet is received.
+<P>
+To allow relatively quick startup and display of long-lived sessions,
+sdr keeps a local (per user) cache of sessions.  Upon startup, sdr
+reads this cache, and displays those which have not yet reached their
+expiry time.  This cache also holds sessions created by its owner, and
+upon sdr startup, these sessions start to be re-announced.  Note that
+with this simple model, a user must have a copy of sdr running for a
+session created by that user to be announced and to not time-out at
+receivers.
+<P>
+Extensions to SDAP not currently implemented involve allowing other
+local copies of sdr to make proxy announcements of a session when its
+originator is not announcing it.  Also other copies of sdr can serve
+as cache servers, so that upon startup, a copy of sdr queries any
+other locally running copies of sdr to update the entries in its local
+cache.  This can be extended by having an sdr daemon running
+continuously at a site and performing both the proxy announcement and
+proxy receiver tasks - however the daemon is not essential for sdr to
+be used - it simply provides an improvement is performance.
+<P>
+</BODY>

@@ -1,0 +1,16 @@
+CC=gcc -ggdb
+INCLUDES=-I/homes/mjh/include
+LIB_DIR=/homes/mjh/lib
+LIBS=	$(LIB_DIR)/libtk4.1.a $(LIB_DIR)/libtcl7.5.a \
+	-L/usr/openwin/lib -lX11 \
+	-lm
+
+LIBRARY_TCL = $(LIB_DIR)/tcl7.5
+LIBRARY_TK = $(LIB_DIR)/tk4.1
+CFLAGS=$(INCLUDES) -DCANT_MCAST_BIND -Wall -D__alpha -DALPHA -DNORANDPROTO \
+	-DNEED_REUSEPORT
+all::	sdr
+install:
+	cp ./sdr /homes/mjh/bin/sdr
+	chmod 755 /homes/mjh/bin/sdr
+

@@ -1,0 +1,10 @@
+media:text
+proto:udp
+tool:nt
+fmt:nt
+{
+  fmtname:UCL NT
+}
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)

@@ -1,0 +1,2 @@
+#!/bin/sh
+cat Makefile.aix41 ../src/Makefile.template > Makefile

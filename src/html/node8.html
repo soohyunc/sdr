@@ -1,0 +1,27 @@
+<HEAD>
+<TITLE> TTL Scope</TITLE>
+</HEAD>
+<BODY>
+<H2><A NAME=SECTION00041000000000000000> TTL Scope</A></H2>
+<P>
+TTL Scope is constrained by the ``Time To Live&quot; (TTL) field in the IP
+packets a multicast application sends.  An application sends its data
+with a fixed TTL.  Each multicast router that the data traverses
+decreases the TTL on the packets by one.  Each multicast router also
+has a threshold associated with each multicast capable interface or multicast
+tunnel.  If the TTL on the data packets arriving at a router is lower
+that the threshold of the interface or tunnel, then the packet is not
+forwarded out of that interface.
+<P>
+The multicast tunnels comprising the Mbone are configured so that it
+is possible to constrain a conference to a particular region of the
+Mbone by careful setting of the TTL.  Thus the multicast tunnels in
+Europe are generally configured with the following thresholds:
+<UL><LI>	Low Speed Tunnels: 128
+<LI>	Intercontinental: 64
+<LI>	International (within Europe): 48
+<LI>	Between institutions: 16-32 depending on the links involved
+<LI>	Within an institution: 1-16
+</UL>
+Thus if I'm sending from the UK, and want my traffic to reach Europe only, I would send with a TTL of 63, which would traverse the international tunnels but not the intercontinental ones.
+</BODY>

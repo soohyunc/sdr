@@ -1,0 +1,2 @@
+#!/bin/sh
+cat Makefile.sunOS4 ../src/Makefile.template > Makefile
