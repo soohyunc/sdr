@@ -1,3 +1,7 @@
+# Pick one of the following...
+include ../src/Makefile.template.clear
+#include ../src/Makefile.template.crypt
+
 TK_LIBRARY_FILES = \
                 $(LIBRARY_TCL)/init.tcl \
                 $(LIBRARY_TK)/tk.tcl \
@@ -25,7 +29,7 @@ SDR_UI_FILES = \
 		tcl_sip.o \
 		tcl_sdp.o \
 		tcl_sdr.o \
-		tcl_cache.o
+		tcl_cache.o 
 
 SDR_HELP_FILES = \
 	mbone_faq.ehtml \
@@ -66,8 +70,7 @@ OBJS= \
 	tkUnixInit.o  \
 	ui_fns.o  \
 	ui_init.o  \
-	www_fns.o \
-	sanitised.o
+	www_fns.o 
 
 .SUFFIXES: .ehtml .html .tcl $(.SUFFIXES)
 
@@ -88,9 +91,9 @@ GWOBJS=sdr_gw_listen.o compat.o
 SERVOBJS=sdr_server.o compat.o store_entries.o server_http.o server_form.o server_parser.o server_html.o server_scope.o server_init.o generate_ids.o server_send.o
 SIP_SERVER_OBJS=sip_server.o sip_common.o
 
-sdr: $(OBJS) $(SDR_UI_FILES)
+sdr: $(OBJS) $(ENCOBJS) $(SDR_UI_FILES) $(SDR_UI_FILES_CRYPT)
 	rm ../src/tcl_modules.h; \
-	$(CC) $(CFLAGS) $(OBJS) $(SDR_UI_FILES) \
+	$(CC) $(CFLAGS) $(OBJS) $(ENCOBJS) $(SDR_UI_FILES) $(SDR_UI_FILES_CRYPT) \
 	-o sdr $(LIBS)
 
 sip_server: $(SIP_SERVER_OBJS)
@@ -100,7 +103,7 @@ $(SDR_HELP_FILES): tcl2c
 $(SDR_UI_FILES): tcl2c
 
 parsed_plugins.tcl: ../src/plugin2tcl.tcl
-	tclsh7.6 ../src/plugin2tcl.tcl
+	tclsh8.0 ../src/plugin2tcl.tcl
 
 libs.tcl: $(TK_LIBRARY_FILES)
 	cat $(TK_LIBRARY_FILES) | sed '/^[      ]*source[       ]/d' > libs.tcl
@@ -149,10 +152,7 @@ www_ui_init.o:	../src/www_ui_init.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/www_ui_init.c
 ui_init.o:	../src/ui_init.c ../src/sdr.h ../src/tcl_modules.h
 	$(CC) -I. $(CFLAGS) -c ../src/ui_init.c
-../src/tcl_modules.h:	../src/tcl_nocrypt_modules.h
-	echo "/*DO NOT MODIFY THIS MODULE*/" > ../src/tcl_modules.h
-	echo "/*This module is automatically derived from tcl_nocrypt_modules.h*/" >> ../src/tcl_modules.h
-	cat ../src/tcl_nocrypt_modules.h >> ../src/tcl_modules.h
+
 tkUnixInit.o:	../src/tkUnixInit.c
 	$(CC) $(CFLAGS) -c ../src/tkUnixInit.c
 ui_fns.o:	../src/ui_fns.c ../src/sdr.h
@@ -173,13 +173,6 @@ iohandler.o:	../src/iohandler.c
 	$(CC) $(CFLAGS) -c ../src/iohandler.c
 sdr_help.o:     ../src/sdr_help.c $(SDR_HELP_FILES)
 	$(CC) $(CFLAGS) -I. -c ../src/sdr_help.c
-sanitised.o:     ../src/sanitised.c
-	$(CC) $(CFLAGS) -I. -c ../src/sanitised.c
-tcl_cache.c:	../src/cache.tcl
-../src/cache.tcl:   ../src/cache_nocrypt.tcl
-	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
-	echo "#This module is automatically derived from cache_nocrypt.tcl" >> ../src/cache.tcl
-	cat ../src/cache_nocrypt.tcl >> ../src/cache.tcl
 
 ../src/html/changes.html: ../src/CHANGES
 	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/changes.html
@@ -198,5 +191,6 @@ clean:
 	- rm -f Makefile
 	- rm -f *.o
 	- rm -f *.ehtml
-	- rm -f libs.tcl parsed_plugins.tcl sdr tcl2c tcl_cache.c
+	- rm -f libs.tcl parsed_plugins.tcl sdr sip_server tcl2c tcl_cache.c
+	- rm -f ../src/tcl_modules.h ../src/cache.tcl ../src/html/bugs.html ../src/html/changes.html
 

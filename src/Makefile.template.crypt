@@ -1,215 +1,11 @@
-clean:
-	rm -f *.o
-	rm -f *.ehtml
-	rm -f *.c
-	rm -f *.tcl
-	rm -f sdr tcl2c
-	rm -f Makefile
+SDR_UI_FILES_CRYPT = tcl_sap_crypt.o
+ENCOBJS            = crypt.o md5.o sap_crypt.o qfDES.o polluted.o
+ENCINCLUDES        = -I../src/qfdes
 
-TK_LIBRARY_FILES = \
-                $(LIBRARY_TCL)/init.tcl \
-                $(LIBRARY_TK)/tk.tcl \
-                $(LIBRARY_TK)/bgerror.tcl \
-                $(LIBRARY_TK)/button.tcl \
-                $(LIBRARY_TK)/dialog.tcl \
-                $(LIBRARY_TK)/entry.tcl \
-                $(LIBRARY_TK)/focus.tcl \
-                $(LIBRARY_TK)/listbox.tcl \
-                $(LIBRARY_TK)/menu.tcl \
-                $(LIBRARY_TK)/palette.tcl \
-                $(LIBRARY_TK)/scale.tcl \
-                $(LIBRARY_TK)/tearoff.tcl \
-                $(LIBRARY_TK)/text.tcl \
-                $(LIBRARY_TK)/optMenu.tcl $(LIBRARY_TK)/scrlbar.tcl
-
-SDR_UI_FILES = \
-		tcl_libs.o \
-		tcl_generic.o \
-		tcl_www.o \
-		tcl_new.o \
-		tcl_start_tools.o \
-		tcl_parsed_plugins.o \
-		tcl_plugins.o \
-		tcl_sip.o \
-		tcl_sdp.o \
-		tcl_sdr.o \
-		tcl_cache.o \
-		tcl_sap_crypt.o
-
-SDR_HELP_FILES = \
-	mbone_faq.ehtml \
-	mbone_tools.ehtml \
-	bugs.ehtml \
-	changes.ehtml \
-	intro.ehtml \
-	node1.ehtml \
-	node2.ehtml \
-	node3.ehtml \
-	node4.ehtml \
-	node5.ehtml \
-	node6.ehtml \
-	node7.ehtml \
-	node8.ehtml \
-	node9.ehtml \
-	node10.ehtml \
-	node11.ehtml \
-	node12.ehtml \
-	node13.ehtml \
-	node14.ehtml \
-	node15.ehtml \
-	plugins.ehtml \
-	plugtut.ehtml
-
-OBJS= \
-	bitmaps.o  \
-	bus.o  \
-	compat.o  \
-	generate_ids.o  \
-	iohandler.o \
-	random.o  \
-	sd_listen.o  \
-	sdr_help.o  \
-	sip.o  \
-	sip_common.o \
-	sip_register.o \
-	tkUnixInit.o  \
-	ui_fns.o  \
-	ui_init.o  \
-	www_fns.o \
-	polluted.o
-
-ENCOBJS=crypt.o md5.o sap_crypt.o
-QFDES=qfDES.o
-QFINCLUDES=-I../src/qfdes
-
-.SUFFIXES: .ehtml .html .tcl $(.SUFFIXES)
-
-VPATH = ../src:../src/html
-
-tcl_%.c: %.tcl
-	rm -f $@; $(TCL2C) tcl_$* < $< > $@
-tcl_%.o: tcl_%.c
-	$(CC) -c $<
-
-%.ehtml: %.html
-	rm -f $@; $(TCL2C) $* < $< > $@
-
-TCL2C = ./tcl2c
-
-WWWOBJS=www_fns.o www_ui.o www_ui_init.o www_main_ui.o www_main.o libs.o compat.o tclBasic.o generic_ui.o
-GWOBJS=sdr_gw_listen.o compat.o
-SERVOBJS=sdr_server.o compat.o store_entries.o server_http.o server_form.o server_parser.o server_html.o server_scope.o server_init.o generate_ids.o server_send.o
-SIP_SERVER_OBJS=sip_server.o sip_common.o
-
-sdr: $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) 
-	rm ../src/tcl_modules.h; \
-	$(CC) $(CFLAGS) $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) \
-	-o sdr $(LIBS)
-
-sip_server: $(SIP_SERVER_OBJS)
-	$(CC) $(CFLAGS) $(SIP_SERVER_OBJS) -o sip_server $(SIP_SERVER_LIBS)
-
-$(SDR_HELP_FILES): tcl2c
-$(SDR_UI_FILES): tcl2c
-
-parsed_plugins.tcl: ../src/plugin2tcl.tcl
-	tclsh ../src/plugin2tcl.tcl
-
-libs.tcl: $(TK_LIBRARY_FILES)
-	cat $(TK_LIBRARY_FILES) | sed '/^[      ]*source[       ]/d' > libs.tcl
-
-uweb: $(WWWOBJS)
-	$(CC) -ggdb -o uweb $(WWWOBJS) $(LIBS)
-sdr_gw: $(GWOBJS)
-	$(CC) -ggdb -o sdr_gw $(GWOBJS) $(LIBS)
-sdr_server: $(SERVOBJS)
-	 $(CC) -ggdb -o sdr_server $(SERVOBJS) $(LIBS)
-sd_listen.o:	../src/sd_listen.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sd_listen.c
-sip.o:	../src/sip.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sip.c
-sip_common.o:	../src/sip_common.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sip_common.c
-sip_server.o:   ../src/sip_server.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sip_server.c
-sip_register.o:	../src/sip_register.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sip_register.c
-bus.o:	../src/bus.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/bus.c
-sdr_gw_listen.o:	../src/sdr_gw_listen.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sdr_gw_listen.c
-sdr_gw_init.o:	../src/sdr_gw_init.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/sdr_gw_init.c
-sdr_server.o: ../src/sdr_server.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/sdr_server.c
-server_http.o: ../src/server_http.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_http.c
-server_html.o: ../src/server_html.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_html.c
-server_init.o: ../src/server_init.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_init.c
-server_parser.o: ../src/server_parser.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_parser.c
-server_form.o: ../src/server_form.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_form.c
-server_scope.o: ../src/server_scope.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_scope.c
-server_send.o: ../src/server_send.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_send.c
-store_entries.o: ../src/store_entries.c  ../src/sdr.h ../src/store_entries.h
-	 $(CC) $(CFLAGS) -c ../src/store_entries.c
-www_ui_init.o:	../src/www_ui_init.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/www_ui_init.c
-ui_init.o:	../src/ui_init.c ../src/sdr.h ../src/tcl_modules.h
-	$(CC) -I. $(CFLAGS) -c ../src/ui_init.c
-../src/tcl_modules.h:	../src/tcl_crypt_modules.h
-	echo "/*DO NOT MODIFY THIS MODULE*/" > ../src/tcl_modules.h
-	echo "/*This module is automatically derived from tcl_crypt_modules.h*/" >> ../src/tcl_modules.h
-	cat ../src/tcl_crypt_modules.h >> ../src/tcl_modules.h
-tkUnixInit.o:	../src/tkUnixInit.c
-	$(CC) $(CFLAGS) -c ../src/tkUnixInit.c
-ui_fns.o:	../src/ui_fns.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/ui_fns.c
-generate_ids.o:	../src/generate_ids.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/generate_ids.c
-www_fns.o:	../src/www_fns.c ../src/sdr.h
-	$(CC) $(CFLAGS) -c ../src/www_fns.c
-www_main.o:	../src/www_main.c
-	$(CC) $(CFLAGS) -c ../src/www_main.c
-bitmaps.o:	../src/bitmaps.c
-	$(CC) $(CFLAGS) -c ../src/bitmaps.c
-compat.o:	../src/compat.c
-	$(CC) $(CFLAGS) -c ../src/compat.c
-random.o:	../src/random.c
-	$(CC) $(CFLAGS) -c ../src/random.c
-iohandler.o:	../src/iohandler.c
-	$(CC) $(CFLAGS) -c ../src/iohandler.c
-sdr_help.o:     ../src/sdr_help.c $(SDR_HELP_FILES)
-	$(CC) $(CFLAGS) -I. -c ../src/sdr_help.c
-sanitised.o:     ../src/sanitised.c
-	$(CC) $(CFLAGS) -I. -c ../src/sanitised.c
-../src/cache.tcl:   ../src/cache_crypt.tcl
-	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
-	echo "#This module is automatically derived from cache_crypt.tcl" >> ../src/cache.tcl
-	cat ../src/cache_crypt.tcl >> ../src/cache.tcl
-
-../src/html/changes.html: ../src/CHANGES
-	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/changes.html
-	echo "<!-- This file is automatically derived from CHANGES -->" >> ../src/html/changes.html
-	cat ../src/CHANGES >> ../src/html/changes.html
- 
-../src/html/bugs.html:  ../src/BUGS
-	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/bugs.html
-	echo "<!-- This file is automatically derived from BUGS -->" >> ../src/html/bugs.html
-	cat ../src/BUGS >> ../src/html/bugs.html
-
-# Encryption stubs...
 polluted.o:     ../src/polluted.c
 	$(CC) $(CFLAGS) -DDEBUG -I. -c ../src/polluted.c
 sap_crypt.o:	../src/sap_crypt.c ../src/sap_crypt.h
 	$(CC) $(CFLAGS) -c ../src/sap_crypt.c
-
-# Encryption/DES code...
 crypt.o: ../src/crypt.c ../src/crypt.h ../src/qfDES.h
 	$(CC) $(CFLAGS) -c ../src/crypt.c
 md5.o: ../src/md5.c ../src/md5.h
@@ -220,6 +16,14 @@ qfDES_memory.o: ../src/qfDES_memory.c
 	$(CC) $(CFLAGS) -c ../src/qfDES_memory.c
 qfDES_key.o: ../src/qfDES_key.c
 	$(CC) $(CFLAGS) -c ../src/qfDES_key.c
-	
-tcl2c:	../src/tcl2c.c
-	$(CC) -o tcl2c ../src/tcl2c.c
+
+../src/cache.tcl:   ../src/cache_crypt.tcl
+	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
+	echo "#This module is automatically derived from cache_crypt.tcl" >> ../src/cache.tcl
+	cat ../src/cache_crypt.tcl >> ../src/cache.tcl
+
+../src/tcl_modules.h:	../src/tcl_crypt_modules.h
+	echo "/*DO NOT MODIFY THIS MODULE*/" > ../src/tcl_modules.h
+	echo "/*This module is automatically derived from tcl_crypt_modules.h*/" >> ../src/tcl_modules.h
+	cat ../src/tcl_crypt_modules.h >> ../src/tcl_modules.h
+
