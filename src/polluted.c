@@ -1148,8 +1148,8 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   sap_hdr = (struct sap_header *)addata->sap_hdr;
 
   if( sap_hdr == NULL) {
-
     sap_hdr = (struct sap_header *)malloc(sap_hdr_len);
+	memset(sap_hdr, 0, sap_hdr_len);
     sap_hdr->version  = 1;
     sap_hdr->authlen  = auth_len /4;	
     sap_hdr->enc      = 0;
@@ -1345,6 +1345,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
   if (bp == NULL) {
     bp=malloc(sap_hdr_len);
+	memset(bp, 0, sap_hdr_len);
     bp->version  = 1;
     bp->authlen  = auth_len /4;	
     bp->enc      = 1;
