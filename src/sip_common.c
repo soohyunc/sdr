@@ -40,7 +40,7 @@
 #include "dns.h"
 #include "prototypes.h"
 #include <tcl.h>
-#define DEBUG
+/* #define DEBUG */
 #define MAXINVITES 20
 
 extern int sip_udp_rx_sock;
@@ -125,7 +125,9 @@ int sip_send(char *msg, int len, struct sockaddr_in *dst, unsigned char ttl)
   if(usedsock!=-1) {
       sock=usedsock;
   } else {
+#ifdef DEBUG
     printf("new socket\n");
+#endif
     sock=freesock;
     sockets[sock]=socket( AF_INET, SOCK_DGRAM, 0 );
     no_of_socks++;
@@ -156,7 +158,9 @@ int sip_send(char *msg, int len, struct sockaddr_in *dst, unsigned char ttl)
     if (connect(sockets[sock], (struct sockaddr *)dst, 
 		sizeof(struct sockaddr_in))<0) {
       perror("connect");
+#ifdef DEBUG
       fprintf(stderr, "Dest Address problem\n");
+#endif
       return(-1);
     }
     if (setsockopt(sockets[sock], SOL_SOCKET, SO_REUSEADDR,
