@@ -1,0 +1,96 @@
+#
+#  Copyright (c) 1991-1993 Regents of the University of California.
+#  All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. All advertising materials mentioning features or use of this software
+#    must display the following acknowledgement:
+#	This product includes software developed by the Computer Systems
+#	Engineering Group at Lawrence Berkeley Laboratory.
+# 4. Neither the name of the University nor of the Laboratory may be used
+#    to endorse or promote products derived from this software without
+#    specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# @(#) $Header: /home/Public/miscell/CVS_repository/sdr/win32/makefile.vc.template,v 1.1 1998-03-05 16:38:54 ucackha Exp $ (LBL)
+#
+
+ZIP = c:\progra~1\winzip\winzip32 
+
+# Uncomment this line to compile an optimized (with no debug symbols)
+# version of the program.
+NODEBUG=1
+
+APPVER=4.0
+TOOLS32       = d:\progra~1\devstudio\vc
+cc32 = $(TOOLS32)\bin\cl -I$(TOOLS32)\include
+rc32 = d:\progra~1\devstudio\sharedide\bin\rc
+link32 = $(TOOLS32)\bin\link
+
+TARGETOS=WIN95
+!include <ntwin32.mak>
+
+ALL = sdr
+all:	$(ALL)
+
+RCDIR=.../tk8.0/win/rc
+GENERICDIR	= .../tk8.0/generic
+
+tk.res:
+	$(rc32) -fo $@ -r -i $(GENERICDIR) $(RCDIR)/tk.rc
+
+.cc.obj:
+	$(cc32) $(cdebug) $(cflags) $(cvars) $(CFLAGS) -o $@ -FR$*.sbr -Tp $<
+
+.c.obj:
+	$(cc32) $(cdebug) $(cflags) $(cvars) $(CFLAGS) -o $@ -FR$*.sbr $<
+
+BSC32= bscmake
+BSC32_FLAGS=/nologo /n
+
+INCLUDE_TK = -I.../tk8.0/win -I.../tk8.0/generic
+INCLUDE_TCL = -I.../tcl8.0/win -I.../tcl8.0/generic
+INCLUDE_X11 = -I.../tk8.0/xlib
+
+LIB_TK = .../tk8.0/win/tk80.lib
+LIB_TCL = .../tcl8.0/win/tcl80.lib
+
+LIBS = $(LIB_TK) $(LIB_TCL)
+INCLUDES = $(INCLUDE_TK) $(INCLUDE_TCL) $(INCLUDE_X11) $(MD_INC)
+BFLAGS = -D_Windows -DVC_EXTRALEAN $(INCLUDES)
+CFLAGS = $(BFLAGS) -DWIN32 -DCANT_MCAST_BIND -DNORANDPROTO
+
+sdr: sdr.exe
+
+sdr.exe: $(OBJS) tk.res
+	$(link32) $(linkdebug) /warn:3 $(guilflags) $(OBJS) tk.res $(LIBS)\
+		$(guilibs) wsock32.lib winmm.lib /out:$@
+
+sdr.bsc:  $(SBR)
+    $(BSC32) @<<
+  $(BSC32_FLAGS) /o$@ $(SBR)
+<<
+
+clean:
+	-del *.obj
+	-del *.sbr
+	-del tcl2c.exe
+

@@ -401,7 +401,12 @@ int write_crypted_file(char *filename, char *data, int len, char *key)
   strcpy(tmpfilename, filename);
   strcat(tmpfilename, ".tmp");
   file=fopen(tmpfilename, "w");
+
+#ifdef WIN32
+  chmod(tmpfilename, S_IREAD|S_IWRITE);
+#else
   chmod(tmpfilename, S_IRUSR|S_IWUSR);
+#endif
 
   /*make very sure we've really succeeded in writing this...*/
   if (file==NULL) return -1;
