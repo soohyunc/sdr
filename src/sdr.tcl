@@ -20,7 +20,7 @@ catch {set lang $env(LANG)}
 proc debug {str} {
     global debug1
     if {$debug1} {
-	putlogfile $str
+	puts $str
     }
 }
 
@@ -611,6 +611,7 @@ proc add_to_list {} {
     global starttime endtime showwhich phone email uri rctr repeat 
     global createtime modtime createaddr sessvars trust recvkey
     global debug1
+    global logext
 #AUTH
   global asym_cur_keyid
   global sess_auth_status
@@ -622,7 +623,7 @@ proc add_to_list {} {
   global sess_enc_message
   global asympse
 #end
-
+    set logext 0
     if {$debug1 == 1} {
 	putlogfile "add_to_list $advertid"
     }
@@ -891,7 +892,7 @@ proc add_to_display_list {aid list} {
 }
 #AUTH
 proc list_session {aid lastix list} {
-    global sessbox ldata ifstyle
+    global sessbox ldata ifstyle logext
          #puts "$ldata($aid,session)"
         set newname $ldata($aid,session)
         if  {$ldata($aid,trust)!="sip"} {
@@ -965,7 +966,7 @@ proc list_session {aid lastix list} {
 }
 
 proc relist_session {aid lastix list} {
-    global sessbox ldata showwhich
+    global sessbox ldata showwhich logext
     putlogfile "relist_session"
     if {[listing_criteria $aid $showwhich]!=1} {
 	#this session just became unshown - better redisplay everything.
@@ -2575,7 +2576,7 @@ proc start_recorder {aid fname rname} {
 }
 
 proc get_uri {uri} {
-    global webtype webclient
+    global webtype webclient logext
     case $webtype {
 	sendmosaic {
 	    putlogfile "Sending to Browser"
