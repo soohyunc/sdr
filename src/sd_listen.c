@@ -321,9 +321,10 @@ int load_cache_entry(
     int ttl;
     int edlen;
     int hdr_len, has_encryption=0, has_authentication=0, has_security=0; 
-    int newlength=0, auth_len=0, data_len,new_len, newlen1, enc_data_len;
+    int newlength=0, auth_len=0, data_len=0,new_len, newlen1, enc_data_len=0;
     int enc_des=0;
     int irand=0;
+    int retval = TCL_OK;
 
     unsigned long  origsrc, src, endtime=0;
     time_t t;
@@ -381,7 +382,7 @@ int load_cache_entry(
     if (strcmp(argv[2], "crypt")==0) {
 
       if (strcmp(get_pass_phrase(), "")==0) {
-        return TCL_OK;
+        goto out;
       }
       len=load_crypted_file(argv[1], buf, get_pass_phrase());
       buf[len]='\n';
@@ -397,14 +398,16 @@ int load_cache_entry(
         enc_fd=fopen(argv[1],"rb");
 
         if (enc_fd==NULL) {
-          return -1;
+          retval = -1;
+	  goto out;
         }
 
         stat(argv[1], &sbuf);
         if (sbuf.st_size > MAXADSIZE) {
           writelog(printf("file %s too big\n",argv[1]);)
           fclose(enc_fd);
-          return -1;
+          retval = -1;
+	  goto out;
         }
 
         encbuf = (char *)malloc(sbuf.st_size);
@@ -419,7 +422,7 @@ int load_cache_entry(
 
         enc_fd=fopen(argv[1], "r");
         if (enc_fd==NULL) {
-          return TCL_OK;
+          goto out;
         }
         len=fread(buf, 1, MAXADSIZE, enc_fd);
         buf[len]='\0';
@@ -433,7 +436,8 @@ int load_cache_entry(
 
     if (strncmp(buf, "n=", 2) != 0) {
      fprintf(stderr, "sdr:corrupted cache file: %s\n", argv[1]);
-     return 1;
+     retval = 1;
+     goto out;
     }
 
 /* read buffer into variables */
@@ -602,7 +606,8 @@ int load_cache_entry(
 
 	  if (new_len>MAXADSIZE) {
 	    fprintf(stderr,"Sdr error: buffer too large %d\n",new_len);
-	    return -1;
+	    retval = -1;
+	    goto out;
 	  }
 
 /* the following will copy the stuff following "z= " to newbuf */ 
@@ -719,7 +724,8 @@ int load_cache_entry(
 /* we have the key but need the keyname for sending */
 
             if (find_keyname_by_key(key, keyname) != 0) {
-              return -1;
+              retval = -1;
+	      goto out;
             }
 
             if ( enc_des == 1) {
@@ -772,7 +778,8 @@ int load_cache_entry(
 
 	if (new_len> MAXADSIZE) {
 	  fprintf(stderr, "Sdr error: buffer too large %d\n",new_len);
-	  return -1;
+	  retval = -1;
+	  goto out;
 	}
 
 /* the following will copy the stuff following "z= " to newbuf */
@@ -901,7 +908,8 @@ int load_cache_entry(
 	      writelog(printf("lce: encstatus failed. Corrupted data ?\n");)
               Tcl_VarEval(interp, "enc_pgp_cleanup  ",   nrandstr, NULL);
               Tcl_VarEval(interp, "enc_pkcs7_cleanup  ", nrandstr, NULL);
-	      return -1;
+	      retval = -1;
+	      goto out;
             } 
 
             memset(encstatus,0,ENCSTATUSLEN);
@@ -957,7 +965,8 @@ int load_cache_entry(
                 strcpy(authtype,"cx50");
               } else {
 	        printf("lce: unknown authtype (%d) in auth header",auth_hdr->auth_type);
-                return -1;
+                retval = -1;
+		goto out;
               }
 
 /* call the appropriate check_authentication routine */
@@ -1001,7 +1010,8 @@ int load_cache_entry(
 
               } else {
                 writelog(printf("lce: unknown version (%d) in auth header\n",auth_hdr->version);)
-                return -1;
+                retval = -1;
+		goto out;
               }
 
 	    } else {
@@ -1055,10 +1065,20 @@ int load_cache_entry(
                      authstatus, enctype, encstatus, addata); 
             }
           } else {
-            return -1;
+            retval = -1;
+	    goto out;
           }
       }
 
+out:
+      free(new_data);
+      free(authstatus);
+      free(authtype);
+      free(authmessage);
+      free(encstatus);
+      free(enctype);
+      free(encmessage);
+      free(encstatus_p);
       return TCL_OK;
 }
 
@@ -1468,6 +1488,7 @@ void recv_packets(ClientData fd)
     if ((length = recvfrom(rxsock[ix], (char *) buf, MAXADSIZE, 0,
 		       (struct sockaddr *)&from, (int *)&fromlen)) < 0) {
       perror("recv error");
+      free(buf);
       return;
     }
 
@@ -1508,7 +1529,7 @@ void recv_packets(ClientData fd)
     if (length < 30) {
       if (debug1==TRUE) 
 	fprintf(stderr,"unacceptably short announcement received and ignored\n");
-      return;
+      goto out;
     }
 
 /* Ignore announcements with later SAP versions than we can cope with */
@@ -1516,7 +1537,7 @@ void recv_packets(ClientData fd)
     if (bp->version > 1) {
       if (debug1==TRUE) 
 	fprintf(stderr,"announcement with version>1 received and ignored\n");
-      return;
+      goto out;
     }
 
 /* Due to lack of space the authlen in the header was length/4 - recalculate */
@@ -1557,7 +1578,7 @@ void recv_packets(ClientData fd)
 
       if (enc_p->version != 1) {
         writelog(printf("recv_pkts: error: enc_p->version = %d\n",enc_p->version);)
-        return;
+        goto bad;
       }
 
 /* skip timeout */
@@ -1576,7 +1597,7 @@ void recv_packets(ClientData fd)
           if (check_encryption(enc_p,data,length,enc_asym_keyid,encmessage,ENCMESSAGELEN,addata, enctype) != 0) {
             strcpy(encstatus_p,"failed");
             writelog(printf("recv_pkts: PGP decryption failed\n");)
-            return;
+            goto bad;
           } else {
             strcpy(encstatus_p,"success");
             has_encryption = 1;
@@ -1602,7 +1623,7 @@ void recv_packets(ClientData fd)
           } else {
             encstatus_p="failed";
             writelog(printf("recv_pkts: PKCS7 decryption failed\n");)
-            return;
+            goto bad;
           }
           break;
 
@@ -1612,7 +1633,7 @@ void recv_packets(ClientData fd)
           if (decrypt_announcement( data, &length, recvkey) != 0) {
             writelog(printf("recv_pkts: DES decryption failed\n");)
             strcpy(encstatus_p,"failed");
-            return;
+            goto bad;
           } else {
             strcpy(encstatus_p,"success");
             addata->encrypt = 1;
@@ -1633,7 +1654,7 @@ void recv_packets(ClientData fd)
 
           default:
             writelog(printf("recv_pkts: error: unknown enc_type = %d\n",enc_p->enc_type);)
-            return;
+            goto bad;
 
         }
 
@@ -1641,7 +1662,7 @@ void recv_packets(ClientData fd)
 
         if ( (encstatus_p==NULL) || (strcmp(encstatus_p,"failed")==0)) {
           fprintf(stderr, "recv_pkts: encstatus_p NULL or failed\n");
-          return;
+          goto bad;
         }
 
         strcpy(encstatus,encstatus_p);
@@ -1656,7 +1677,7 @@ void recv_packets(ClientData fd)
             length = addata->sapenc_p->txt_len;
           } else {
             writelog(printf("recv_pkts: decrypted buffer not v=...");)
-            return;
+            goto bad;
           }
         }
 
@@ -1699,7 +1720,7 @@ void recv_packets(ClientData fd)
 
       if (auth_hdr->version != 1) {
         writelog(printf("recv_pkts: error: unknown auth_hdr->version = %d\n",auth_hdr->version);)
-        return;
+        goto bad;
       }
 
 /* check on the type of authentication used              */
@@ -1715,7 +1736,7 @@ void recv_packets(ClientData fd)
          strcpy(authtype, "cx50");
        } else {
          writelog(printf("recv_pkts: bad auth_type=%d\n",auth_hdr->auth_type);)
-         return;
+         goto bad;
        }
 
 /* set up the addata->authinfo */
@@ -1783,7 +1804,7 @@ void recv_packets(ClientData fd)
       if (bp->compress==1) {
 	if (bp->version != 0) {
 	    writelog(printf("compressed announcement & vers != 0!\n"));
-	    return;
+	    goto bad;
 	}
 	writelog(printf("recv+pkts: compress=1 & vers == 0, process anyway\n"));
 	bp->compress = 0;
@@ -1792,8 +1813,8 @@ void recv_packets(ClientData fd)
 /* debugging info - leave in for the moment */
 
       writelog(printf("recv_packets: calling parse_entry\n");)
-      writelog(printf(" advertid=%s length=%d, src=%lu, hfrom=%lu\n",
-         aid,length,src,hfrom);)
+      writelog(printf(" no advertid yet length=%d, src=%lu, hfrom=%lu\n",
+         length,src,hfrom);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
          rx_sock_addr[ix],rx_sock_port[ix],(int)tv.tv_sec,recvkey);)
       writelog(printf(" auth type=%s, status=%s, keyid=%s\n",
@@ -1806,19 +1827,20 @@ void recv_packets(ClientData fd)
 /* if someone else is repeating our announcements, be careful not to       */
 /* re-announce their modified version ourselves                            */
 
+      strcpy(aid, "BAD");
       if (src == hfrom || src != hostaddr) {
         writelog(printf("calling parse_entry with trust = trusted\n");)
 	endtime=parse_entry(aid, data, length, src, hfrom,
 	    rx_sock_addr[ix], rx_sock_port[ix],
 	    tv.tv_sec, "trusted", recvkey, authtype, authstatus,
-	    authtmp, asym_keyid,enctype,encstatus_p,enctmp,
+	    &authtmp, asym_keyid,enctype,encstatus_p,&enctmp,
             enc_asym_keyid,authmessage,encmessage) ;
 	} else {
           writelog(printf("calling parse_entry with trust = untrusted\n");)
 	  endtime=parse_entry(aid, data, length, src, hfrom,
 	    rx_sock_addr[ix], rx_sock_port[ix],
 	    tv.tv_sec, "untrusted", recvkey, authtype, authstatus,
-	    authtmp, asym_keyid,enctype,encstatus_p,enctmp,
+	    &authtmp, asym_keyid,enctype,encstatus_p,&enctmp,
             enc_asym_keyid,encmessage,authmessage);
 	}
 
@@ -1859,6 +1881,7 @@ void recv_packets(ClientData fd)
              addata->end_time = endtime;
 	     addata->sap_hdr = malloc(sizeof(struct sap_header));
              memcpy(addata->sap_hdr, bp, sizeof(struct sap_header));
+	     addata->next_ad = NULL;
 	     if(first_ad==NULL) {
 	       first_ad=addata;
 	       last_ad=addata;
@@ -1898,11 +1921,22 @@ void recv_packets(ClientData fd)
 
 /* free some variables */
 
+out:
       free(buf);
       free(debugbuf);
-      
+      free(enctype);
+      free(encmessage);
       free(encstatus_p);
-
+      return;
+bad:
+      if (addata->sapenc_p)
+	free(addata->sapenc_p);
+      if (addata->authinfo)
+	free(addata->authinfo);
+      if (addata->sap_hdr)
+	free(addata->sap_hdr);
+      free(addata);
+      goto out;
 }
 
 static void set_time(const char* var, int i, time_t t)
@@ -2013,7 +2047,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     if (strncmp(data, "v=", 2)!=0) {
       if (length==0) {
-        return((unsigned long)-1);
+        goto errorleap;
       }
       if (debug1) {
         fprintf(stderr, "doesn't start with v=\n");
@@ -2309,8 +2343,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                           if (debug1) {
                             printf("Mediakey too long - it has been truncated\n");
                           }
-                          strcpy(mediakey[mediactr],(char *)"\0");
-                          strncat(mediakey[mediactr],fullkey,MAXKEYLEN-1);
+                          strncpy(mediakey[mediactr],fullkey,MAXKEYLEN-1);
+			  mediakey[mediactr][MAXKEYLEN-1] = '\0';
                         } else {
                           strcpy(mediakey[mediactr],fullkey);
                         }
@@ -2475,7 +2509,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       if (debug1==TRUE) {
 	fprintf(stderr, "No channel field received!\n");
       }
-      return((unsigned long)-1);
+      goto errorleap;
     }
 
     if(strlen(chan[0])>TMPSTRLEN) {
@@ -2487,7 +2521,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     if (chan[0]!=NULL) {
 	sscanf(chan[0], "%s %s %s", in, ip, tmpstr);
-        if (check_net_type(in,ip)<0) return (unsigned long)-1;
+        if (check_net_type(in,ip)<0) goto errorleap;
 	ttl=extract_ttl(tmpstr);
     } else {
 	tmpstr[0]='\0';
@@ -2543,7 +2577,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	    if(i!=0) {
 		if (debug1==TRUE)
 		  fprintf(stderr, "Illegal infinite session with multiple time fields\n");
-		return (unsigned long)-1;
+		goto errorleap;
 	      }
 	    strcpy(var, "tfrom(0)");
 	    if(Tcl_SetVar(interp, var, "0", TCL_GLOBAL_ONLY)==NULL)
@@ -2581,7 +2615,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     };
     sscanf(orig, "%s %s %s %s %s %s", creator, sessid, sessvers, in, ip, 
 	   createaddr);
-    if (check_net_type(in,ip)<0) return (unsigned long)-1;
+    if (check_net_type(in,ip)<0) goto errorleap;
 
     Tcl_SetVar(interp, "creator",    creator,    TCL_GLOBAL_ONLY);
     Tcl_SetVar(interp, "sessvers",   sessvers,   TCL_GLOBAL_ONLY);
@@ -2705,7 +2739,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       }
       sscanf(chan[i], "%s %s %s", in, ip, tmpstr);
 
-      if (check_net_type(in,ip)<0) return (unsigned long)-1;
+      if (check_net_type(in,ip)<0) goto errorleap;
       medialayers = extract_layers(tmpstr);
       mediattl    = extract_ttl(tmpstr);
       if (mediattl>ttl) ttl=mediattl;
@@ -2720,6 +2754,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       if ((kctr>0) && (mediakey[i] != NULL) ) {
         warn_tcl_special_chars(mediakey[i]);
         Tcl_SetVar(interp, "mediakey", mediakey[i], TCL_GLOBAL_ONLY);
+	free(mediakey[i]);
       } else {
         Tcl_SetVar(interp, "mediakey", "", TCL_GLOBAL_ONLY);
       }
@@ -2756,8 +2791,12 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	  fprintf(stderr, "add_to_list failed for session %s:\n%s\n",
 			 session, interp->result);
       }
+    if (debug1)
+	free(data2);
     return timemax;
 errorleap:
+    if (debug1)
+	free(data2);
     return 0;
 }
 
@@ -3109,7 +3148,9 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
 /* store_data_to_announce sets everything up for symm and clear etc */
 
     hdr_len = 0;
-    addata->sapenc_p = NULL;
+    if (sapenc_p)
+      free(sapenc_p);
+    addata->sapenc_p = sapenc_p = NULL;
     if (store_data_to_announce(addata, adstr, keyname)==-1) {
       free(addata->aid);
       free(addata);
