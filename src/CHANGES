@@ -1,9 +1,14 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
-2.6.X? ?? 1999
+2.6.2 ?? 1999
   - Strip trailing CR from domain name on Solaris when reading from
     /etc/resolv.conf; this solves the "can't advertise session" problem.
+  - Revert the rat plugin to that from sdr-2.4a7, which is suitable for
+    rat-3.0.x. We'll distribute later plugins with rat separately, since
+    trying to merge them into sdr will only cause confusion for users of
+    the old rat, who can't access any of the new features the plugin 
+    provides.
 
 2.6.1 K.Hasler@cs.ucl.ac.uk 30 Mar 1999
   - solaris/irix/windows release
