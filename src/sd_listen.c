@@ -241,7 +241,7 @@ int sd_listen(char *address, int port, int addr_fam,
 
     if (addr_fam == IPv6) {
 #ifdef HAVE_IPv6
-        inet6_addr(address, &group6);
+		inet_pton(AF_INET6, address, &group6);
         memset((char *)&name6, 0, sizeof (name6));
         name6.sin6_family = AF_INET6;
         name6.sin6_addr = in6addr_any;
@@ -421,7 +421,7 @@ int sd_tx_ipv6(char *address, int port, int *txsock, int *no_of_socks)
         no_of_socks=&zero;
     }
     
-    inet6_addr(address, &group);
+	inet_pton(AF_INET6, address, &group);
 
     if((txsock[*no_of_socks]=socket( AF_INET6, SOCK_DGRAM, 0 )) < 0) {
         perror("socket");
@@ -657,7 +657,7 @@ int load_cache_entry(
     } else {
         addr_fam = IPv6;
 #ifdef HAVE_IPv6
-        if (inet6_addr(origsrc, &origsrc_v6)) {
+        if (inet_pton(AF_INET6, origsrc, &origsrc_v6)) {
             if (IPV6_ADDR_EQUAL(&origsrc_v6, &hostaddr_v6)) {
                 src_equals_host = 1;
             } else {

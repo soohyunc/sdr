@@ -202,7 +202,7 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
     //printf("in generate addr: scope: %d, netmask: %d\n", scope, netmask);
 
     if (baseaddr==NULL) {
-        inet6_addr(SAPv6_DEFAULT, newaddr);    // ffoe::2:8000
+		inet_pton(AF_INET6, SAPv6_DEFAULT, newaddr);    // ffoe::2:8000
         mask = SAPv6_DEFAULT_MASK;             // 113 bits   
     } else {
         memcpy(newaddr, baseaddr, IPV6_ADDR_LEN);

@@ -230,7 +230,7 @@ int ui_generate_v6_address(dummy, interp, argc, argv)
       printf("ui_generate_v6_address: no args???\n");
       IN6_pADDR_COPY(&in, generate_v6_address(NULL, 0, NULL));
   } else {
-        inet6_addr(argv[1], &in);
+      inet_pton(AF_INET6, argv[1], &in);
       generate_v6_address(&in, atoi(argv[2]), &in2);
   }   
   
