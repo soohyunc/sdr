@@ -1812,7 +1812,16 @@ void recv_packets(ClientData fd)
 /*This version of sdr can't deal with compressed payloads*/
 
       if (bp->compress==1) {
-	return;
+/* But if you goof up the bit packing a normal advert can look compressed.
+ * If version = 0, ignore the compressed flag because it was not defined in
+ * version 0, and assume that it's a badly packed "version = 1".
+ */
+	if (bp->version != 0) {
+	    writelog(printf("compressed announcement & vers != 0!\n"));
+	    return;
+	}
+	writelog(printf("compressed announcement & vers == 0, processing anyway\n"));
+	bp->compress = 0;
       }
 
 /* if someone else is repeating our announcements, be careful    */
