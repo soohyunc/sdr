@@ -133,64 +133,67 @@ proc write_cache {} {
 proc write_cache_entry {aid filename security} {
     global ldata rtp_payload
 
-    #if there's no sap_addr specified, this was not an announced session
-    #so don't cache it - probably it was a SIP session.
+#  if there's no sap_addr specified, this was not an announced session
+#  so don't cache it - probably it was a SIP session.
+
     set sap_addr ""
     catch {set sap_addr $ldata($aid,sap_addr)}
     if {$sap_addr==""} return
 
-    set source [dotted_decimal_to_decimal $ldata($aid,source)]
+    set source    [dotted_decimal_to_decimal $ldata($aid,source)]
     set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
     set lastheard $ldata($aid,lastheard)
-    set sap_port $ldata($aid,sap_port)
-    set trust $ldata($aid,trust)
-    set key $ldata($aid,key)
-   set key $ldata($aid,key)
-    set auth $ldata($aid,authtype)
-    set enc $ldata($aid,enctype)
+    set sap_port  $ldata($aid,sap_port)
+    set trust     $ldata($aid,trust)
+    set key       $ldata($aid,key)
+    set auth      $ldata($aid,authtype)
+    set enc       $ldata($aid,enctype)
+
+# set k1 (auth ?) - why is it 1 if not asymmetric ?
+
     if {$ldata($aid,asym_keyid) !=""} {
-    set k1  $ldata($aid,asym_keyid) 
+      set k1  $ldata($aid,asym_keyid) 
     } else {
-    set k1 "1"
+      set k1 "1"
     }
+
+# set k1 (enc ?) - why is it 1 if not asymmetric ?
+
     if {$ldata($aid,enc_asym_keyid) !=""} {
-    set k2  $ldata($aid,enc_asym_keyid) 
+      set k2  $ldata($aid,enc_asym_keyid) 
     } else {
-    set k2 "2"
+      set k2 "2"
     }
-set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust $auth $enc  $ldata($aid,authstatus) $ldata($aid,encstatus) $k1 $k2 \nk=$key\n[make_session $aid]"
+
+    set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust $auth $enc  $ldata($aid,authstatus) $ldata($aid,encstatus) $k1 $k2 \nk=$key\n[make_session $aid]"
+
     switch $security {
-        clear {
-              if {$auth!="none"} {
-              append adstr "\nz=\n"
-              write_authentication $filename $adstr [string length $adstr] $aid
-              } else {
-              set file [open $filename w+]
-              puts $file $adstr
-              close $file
-              }
-            }
-       symm   {
-                append adstr "\nz=\n"
-                write_encryption $filename $adstr [string length $adstr] $aid $auth $enc
-              }
-        crypt {
-               if {$auth!="none" } {
-               append adstr "\nz=\n"
-               }
-              write_crypted_file $filename $adstr [string length $adstr] $aid $auth
-              }
+
+      clear {
+        if {$auth!="none"} {
+          append adstr "\nz=\n"
+          putlogfile "write_cache_entry - calling write_authentication"
+          write_authentication $filename $adstr [string length $adstr] $aid
+        } else {
+          set file [open $filename w+]
+          puts $file $adstr
+          close $file
+        }
+      }
+
+      symm   {
+        append adstr "\nz=\n"
+        putlogfile "write_cache_entry - calling write_encryption"
+        write_encryption $filename $adstr [string length $adstr] $aid $auth $enc
+      }
+
+      crypt {
+        if {$auth!="none" } {
+          append adstr "\nz=\n"
+        }
+        putlogfile "write_cache_entry - calling write_crypted_file"
+        write_crypted_file $filename $adstr [string length $adstr] $aid $auth
+      }
+
      }
 }
-
-
-#    set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust\nk=$key\n[make_session $aid]"
-    #if {$security=="clear"} {
-	#set file [open $filename w+] 
-	#puts $file $adstr
-        #close $file
-    #} else {
-         #write_crypted_file $filename $adstr [string length $adstr]
-    #}
-##}
-
