@@ -37,13 +37,15 @@
 
 #include "sdr.h"
 #include "sip.h"
+
 #ifndef WIN32
 #include <arpa/nameser.h>
 #include <resolv.h>
+#include <sys/uio.h>
 #endif
+
 #include "dns.h"
 #include "prototypes.h"
-#include <sys/uio.h>
 #include <tcl.h>
 #define DEBUG
 #define MAXINVITES 20
