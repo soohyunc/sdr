@@ -1,5 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.5a4 E.Whelan@cs.ucl.ac.uk
+  - modified so that a privacy header is used in the case of symmetric 
+    encryption. 
+  - increased version number as old version with no header will not
+    interoperate.
+
 2.5a3 mjh@isi.edu, 1998/04/21
   Fixed SIP bug when inviting to public sessions
   Fixed SIP URL syntax
