@@ -3612,8 +3612,8 @@ void convert_vars(char *ptr, char *dest) {
 
     while (*ptr!='\0') {
         if (*ptr=='$') {
-			/* find the separator - not one of these.... */
-            pos=strspn(ptr,"$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+			/* find the separator - legal tcl variable characters: */
+            pos=strspn(ptr,"$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
 			/* make copy of tcl variable, in case there's more */
             strcpy (cpy,ptr);
             if (*(cpy+pos)!='\0') *(cpy+pos)='\0';
