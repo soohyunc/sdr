@@ -25,7 +25,7 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_sap_crypt};
 
-#define MAX_UI_FN 29
+#define MAX_UI_FN 30
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -55,9 +55,10 @@ const char *ui_fn_name[MAX_UI_FN]=
   "add_key",
   "delete_key",
   "find_key_by_name",
+  "find_keyname_by_key",
   "load_keys",
   "save_keys",
-  "write_crypted_file",
+  "write_crypted_file"
 };
 
 void *ui_fn[MAX_UI_FN]=
@@ -88,7 +89,8 @@ void *ui_fn[MAX_UI_FN]=
   ui_add_key,
   ui_delete_key,
   ui_find_key_by_name,
+  ui_find_keyname_by_key,
   ui_load_keys,
   ui_save_keys,
-  ui_write_crypted_file,
+  ui_write_crypted_file
 };
