@@ -282,7 +282,7 @@ int ui_createsession(dummy, interp, argc, argv)
        }
      }
   }
-  else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx509")==0 )
+  else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 )
    {
        if(!generate_x509_authentication_info(data,strlen(data), authstatus, irand,authmessage)) {
 	Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
@@ -369,7 +369,7 @@ int ui_createsession(dummy, interp, argc, argv)
         addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
         store_authentication_in_memory(addata , argv[7], irand);
   }
-  else { if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx509")==0 )
+  else { if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 )
    {
       new_len=gen_new_data(data,new_data,argv[6],addata);
       irand = (random()&0xffff);
