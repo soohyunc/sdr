@@ -806,7 +806,10 @@ proc list_session {aid lastix list} {
 	#wish there was a better was to add a tag to the right margin
 	$sessbox($list) insert [expr $lastix+1].0 "$ldata($aid,session)                                             \n"
     }
+    # PCs will crash here if the scrollbar is being used at the same time.....
+    .f2.sb configure -command ""
     $sessbox($list) tag add t$aid [expr $lastix+1].0  [expr $lastix+1].end
+    .f2.sb configure -command ".f2.lb yview"
     $sessbox($list) tag bind t$aid <1> "toggle_popup $aid"
     $sessbox($list) tag bind t$aid <2> "start_all $aid"
     $sessbox($list) tag bind t$aid <3> "hide_session $aid"
