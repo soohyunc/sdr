@@ -2,6 +2,10 @@
  * crypt.h
  *
  */
+#ifdef WIN32
+typedef unsigned char u_char;
+typedef unsigned int u_int;
+#endif
 
 #define CRYPT
 
