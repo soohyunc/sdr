@@ -4214,11 +4214,6 @@ if {([file isfile [glob -nocomplain ~]/.sdr.tcl]) && !([file isfile [resource sd
     exec mv [glob -nocomplain ~]/.sdr.tcl [glob -nocomplain [resource sdrHome]]/sdr.tcl
 }
 
-add_admin "Local Scope" 239.255.255.255 9875 239.255.0.0 16 15
-add_admin "Region (ttl 63)" 224.2.127.254 9875 224.2.128.0 17 63
-add_admin "World (ttl 127)" 224.2.127.254 9875 224.2.128.0 17 127
-add_ttl_scope 224.2.127.254 9875 224.2.128.0 17
-
 set flag 1
 catch {source "/usr/local/etc/sdr/sdr.tcl";set flag 0}
 if {($flag)&&([file isfile /usr/local/etc/sdr/sdr.tcl])} {
@@ -4264,6 +4259,13 @@ foreach media $medialist {
     set send($media) 0
 }
 set send([lindex $medialist 0]) 1
+
+# add_admin     name           sap_addr     sap_port   base_addr  netmask ttl
+add_admin "Local Scope"     239.255.255.255   9875    239.255.0.0   16    15
+add_admin "Region (ttl 63)" 224.2.127.254     9875    224.2.128.0   17    63
+add_admin "World (ttl 127)" 224.2.127.254     9875    224.2.128.0   17    127
+# add_admin                    sap_addr     sap_port   base_addr  netmask ttl
+add_ttl_scope               224.2.127.254     9875    224.2.128.0   17
 
 #create the interface
 build_interface first
