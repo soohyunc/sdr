@@ -268,3 +268,14 @@ int ui_find_key_by_name(dummy, interp, argc, argv)
   sprintf(interp->result, "{%s}", key);
   return TCL_OK;
 }
+int ui_find_keyname_by_key(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  char keyname[MAXKEYLEN];
+  find_keyname_by_key(argv[1], keyname);
+  sprintf(interp->result, "{%s}", keyname);
+  return TCL_OK;
+}
