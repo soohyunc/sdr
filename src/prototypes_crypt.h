@@ -1,6 +1,6 @@
 /* sap_crypt.c */
 int encrypt_announcement(char *srcbuf, char **dstbuf, int *length, char *key);
-int add_privacy_header(char *buf, int auth, struct priv_header *sapenc_p);
+int add_privacy_header(char *buf, int auth, struct priv_header *sapenc_p, int addr_fam);
 int decrypt_announcement(char *buf, int *len, char *recvkey);
 int load_crypted_file(char *filename, char *buf, char *key);
 
@@ -54,8 +54,8 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type,
 
 /* polluted.c */
 
-int gen_new_data(char *adstr,char *new_data, char *keyname,struct advert_data *addata );
-int gen_new_auth_data(char *buf,char *newbuf,struct sapv4_header *bp,int auth_len,int len);
+int gen_new_data(char *adstr,char *new_data, char *keyname,struct advert_data *addata, int addr_fam );
+int gen_new_auth_data(char *buf,char *newbuf,struct sap_header *bp,int auth_len,int len, int addr_fam);
 int write_authentication(char *filename, char *data, int len, char *advertid);
 int write_encryption(char *filename,  char *data, int len, char *auth_type, char *enc_type, char *advertid);
 

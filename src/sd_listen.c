@@ -900,7 +900,7 @@ int load_cache_entry(
 /* call gen_new_auth_data to create new_data buffer. Basically this copies */
 /* the sap packet but sets bp->msgid=0 and skips the authentication header */
       
-          newlength = gen_new_auth_data(newbuf,new_data,(struct sapv4_header *)bp,auth_len,newlen1);
+          newlength = gen_new_auth_data(newbuf,new_data,(struct sap_header *)bp,auth_len,newlen1, addr_fam);
           
 /* check the authentication */
           
@@ -1121,7 +1121,7 @@ int load_cache_entry(
 /* and skips the authentication header                                  */
 
             if (auth_len != 0) {
-              newlength=gen_new_auth_data(newbuf,new_data,(struct sapv4_header *)bp,auth_len,newlen1);
+              newlength=gen_new_auth_data(newbuf,new_data,(struct sap_header *)bp,auth_len,newlen1, addr_fam);
             }
 
 /* check the encryption */
@@ -1344,7 +1344,7 @@ int main(argc, argv)
 int argc;
 char *argv[];
 {
-    int i;
+    int i, aerr;
     int inChannel;
     struct in_addr in;
     struct hostent *hstent;
@@ -1386,6 +1386,7 @@ char *argv[];
     hints.ai_family = PF_INET6;
     hints.ai_flags = AI_CANONNAME;
 
+	aerr=getaddrinfo(hostname, NULL, &hints, &result);
     if (getaddrinfo(hostname, NULL, &hints, &result) == 0) {
         struct sockaddr_in6 *sin6;
         sin6 = (struct sockaddr_in6 *) result->ai_addr;
@@ -2094,7 +2095,7 @@ void recv_packets(ClientData fd)
 /* fill new_data with original packet but set msg_id=0 and remove the */
 /* auth_hdr because of signature. Dunno why set msgid=0               */
 
-      newlength = gen_new_auth_data(debugbuf,new_data,(struct sapv4_header *)bp,auth_len,orglength);
+      newlength = gen_new_auth_data(debugbuf,new_data,(struct sap_header *)bp,auth_len,orglength, addr_fam);
 
 /* check the version of the authentication header */
 
