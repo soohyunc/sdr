@@ -1980,9 +1980,10 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     char *tag, *mediakey[MAXMEDIA], *fullkey=NULL;
     char tmpstr[TMPSTRLEN]="", fmt[TMPSTRLEN]="", proto[TMPSTRLEN]="",
          heardfrom[TMPSTRLEN]="", origsrc[TMPSTRLEN]="", creator[TMPSTRLEN]="",
-         sessvers[TMPSTRLEN]="", sessid[TMPSTRLEN]="", 
+         sessvers[TMPSTRLEN]="", sessid[TMPSTRLEN]="", portstr[TMPSTRLEN]="",
          createaddr[TMPSTRLEN]="", in[TMPSTRLEN]="", ip[TMPSTRLEN]="";
-    int ttl, mediattl, medialayers, code, port, origlen;
+    char *p;
+    int ttl, mediattl, medialayers, code, port, origlen, nports;
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
     struct in_addr source;
     struct in_addr maddr;
@@ -2521,8 +2522,9 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     if (chan[0]!=NULL) {
 	sscanf(chan[0], "%s %s %s", in, ip, tmpstr);
-        if (check_net_type(in,ip)<0) goto errorleap;
 	ttl=extract_ttl(tmpstr);
+        if (check_net_type(in,ip,tmpstr)<0)
+          goto errorleap;
     } else {
 	tmpstr[0]='\0';
 	ttl=0;
@@ -2613,9 +2615,29 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	fprintf(stderr, "Unacceptably long originator field received\n");
       orig[TMPSTRLEN-1]='\0';
     };
-    sscanf(orig, "%s %s %s %s %s %s", creator, sessid, sessvers, in, ip, 
-	   createaddr);
-    if (check_net_type(in,ip)<0) goto errorleap;
+    if (sscanf(orig, "%s %s %s %s %s %s", creator, sessid, sessvers, in, ip, 
+	   createaddr) != 6) {
+      if (debug1)
+	fprintf(stderr, "o= line doesn't have 6 fields\n");
+      goto errorleap;
+    }
+    if (check_net_type(in,ip,createaddr)<0)
+      goto errorleap;
+    for (p = sessid; *p; p++)
+      if (!isdigit(*p)) {
+	if (debug1)
+	  fprintf(stderr, "non-digit in session ID\n");
+	dump(data2, origlen);
+	goto errorleap;
+      }
+    for (p = sessvers; *p; p++)
+      if (!isdigit(*p)) {
+	if (debug1)
+	  fprintf(stderr, "non-digit in session version\n");
+	dump(data2, origlen);
+	goto errorleap;
+      }
+
 
     Tcl_SetVar(interp, "creator",    creator,    TCL_GLOBAL_ONLY);
     Tcl_SetVar(interp, "sessvers",   sessvers,   TCL_GLOBAL_ONLY);
@@ -2717,7 +2739,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	  fprintf(stderr, "Unacceptably long media field received\n");
 	media[i][TMPSTRLEN-1]='\0';
       }
-      sscanf(media[i], "%s %d %s %s", tmpstr, &port, proto, fmt);
+      if (sscanf(media[i], "%s %s %s %s", tmpstr, portstr, proto, fmt) != 4) {
+	if (debug1==TRUE)
+	  fprintf(stderr, "Media description doesn't have 4 fields\n");
+	goto errorleap;
+      }
+      nports = 1;
+      sscanf(portstr, "%d/%d", &port, &nports);
       Tcl_SetVar(interp, "media", tmpstr, TCL_GLOBAL_ONLY);
 
       splat_tcl_special_chars(vars[i]);
@@ -2725,6 +2753,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
       sprintf(namestr, "%d", port);
       Tcl_SetVar(interp, "port", namestr, TCL_GLOBAL_ONLY);
+      sprintf(namestr, "%d", nports);
+      Tcl_SetVar(interp, "nports", namestr, TCL_GLOBAL_ONLY);
 
       splat_tcl_special_chars(proto);
       Tcl_SetVar(interp, "proto", proto, TCL_GLOBAL_ONLY);
@@ -2739,9 +2769,10 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       }
       sscanf(chan[i], "%s %s %s", in, ip, tmpstr);
 
-      if (check_net_type(in,ip)<0) goto errorleap;
       medialayers = extract_layers(tmpstr);
       mediattl    = extract_ttl(tmpstr);
+      if (check_net_type(in,ip,tmpstr)<0)
+        goto errorleap;
       if (mediattl>ttl) ttl=mediattl;
       sprintf(namestr, "%d", mediattl);
       Tcl_SetVar(interp, "mediattl", namestr, TCL_GLOBAL_ONLY);
@@ -2820,8 +2851,11 @@ int extract_layers(char *addrstr)
   return(atoi(layersstr+1));
 }
 
-int check_net_type(char *in, char *ip)
+int check_net_type(char *in, char *ip, char *addr)
 {
+  int j1, j2, j3, j4;
+  char c;
+
   if (strncmp(in, "IN", 2)!=0)
     {
       if (debug1==TRUE)
@@ -2834,6 +2868,30 @@ int check_net_type(char *in, char *ip)
 	fprintf(stderr, "sdr: expected address type IP4, got %s\n", ip);
       return -1;
     }
+  if (addr != NULL &&
+      (sscanf(addr, "%d.%d.%d.%d%c", &j1, &j2, &j3, &j4, &c) != 4 ||
+       inet_addr(addr) == -1)) {
+    int isok = 0;
+    char *p;
+
+    /* It's not a valid numeric address.
+     * RFC2327 says that the other possibility is a FQDN, defined as
+     *   4*(alpha-numeric|"-"|".")
+     * Instead, we just ensure that it has an alpha in it.
+     * ("Be generous in what you accept.")
+     */
+    for (p = addr; *p; p++) {
+      if (isalpha(*p)) {
+	isok = 1;
+	break;
+      }
+    }
+    if (!isok) {
+      if (debug1)
+	fprintf(stderr, "sdr: illegal IP address %s\n", addr);
+      return -1;
+    }
+  }
   return 0;
 }
 
