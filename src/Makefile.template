@@ -180,7 +180,16 @@ tcl_cache.c:	../src/cache.tcl
 	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
 	echo "#This module is automatically derived from cache_nocrypt.tcl" >> ../src/cache.tcl
 	cat ../src/cache_nocrypt.tcl >> ../src/cache.tcl
-	
+
+../src/html/changes.html: ../src/CHANGES
+	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/changes.html
+	echo "<!-- This file is automatically derived from CHANGES -->" >> ../src/html/changes.html
+	cat ../src/CHANGES >> ../src/html/changes.html
+ 
+../src/html/bugs.html:  ../src/BUGS
+	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/bugs.html
+	echo "<!-- This file is automatically derived from BUGS -->" >> ../src/html/bugs.html
+	cat ../src/BUGS >> ../src/html/bugs.html
 
 tclBasic.o:	
 	gcc -c -O -ggdb -I/cs/research/mice/speedy/common/src/pub/tcl7.3 -I. -DNO_GETWD=1 -DHAVE_UNISTD_H=1 -DNO_UNION_WAIT=1 -DNEED_MATHERR=1       -DTCL_LIBRARY=\"/cs/research/mice/speedy/common/hpux/lib/tcl\" /cs/research/mice/speedy/common/src/pub/tcl7.3/tclBasic.c
