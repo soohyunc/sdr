@@ -19,8 +19,8 @@ makefile.mak: makefile.vc.template
 	echo "OBJS = win32.obj $(OBJS:.o=.obj) $(ENCOBJS:.o=.obj) $(SDR_UI_FILES:.o=.obj) $(SDR_UI_FILES_CRYPT:.o=.obj)" > makefile.mak
 	cat makefile.vc.template >> makefile.mak
 
-../winsdr.tar: $(SDR_UI_C_FILES) $(SDR_HELP_FILES) $(SDR_UI_C_FILES_CRYPT) makefile.mak ../src/tcl_modules.h ../src/cache.tcl ../src/html/bugs.ehtml ../src/html/changes.ehtml
-	-ln -s ../src/*.[ch] ../src/*.xbm ../src/cache.tcl ../src/html/bugs.ehtml ../src/html/changes.ehtml .
+../winsdr.tar: $(SDR_UI_C_FILES) $(SDR_HELP_FILES) $(SDR_UI_C_FILES_CRYPT) makefile.mak ../src/tcl_modules.h ../src/cache.tcl
+	-ln -s ../src/*.[ch] ../src/*.xbm ../src/cache.tcl .
 	tar cfh ../winsdr.tar makefile.mak *.[ch] *.xbm *.ehtml 
 
 clean:
