@@ -805,8 +805,6 @@ proc fix_up_plugin_rule {rule} {
 	    if {[llength $tmp]==2} {
 		set varname [lindex $tmp 0]
 		set rest [lindex $tmp 1]
-		puts "newrule: $newrule"
-		puts "rest: $rest"
 		switch $varname {
 		    TTL {
 			set newrule "$newrule\$ttl$rest"
