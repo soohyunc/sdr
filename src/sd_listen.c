@@ -44,7 +44,7 @@
 
 
 #define MULTICAST
-/*#define DEBUG*/
+/* #define DEBUG */
 
 #include <locale.h>
 #include <signal.h>
@@ -2021,7 +2021,11 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
   ttl=1;
 #endif
 
-  buf=(char *)malloc(sizeof(struct sap_header)+len+4);
+/* in the following malloc the 1st 4 is for timeout and the */
+/* second 4 is for the DES privacy header (always 32 bits)  */
+/* this needs changing when we start using PGP etc          */
+
+  buf=(char *)malloc(sizeof(struct sap_header)+len+4+4);
   len+=build_packet(buf, adstr, len, encrypt);
 
 #ifdef WIN32

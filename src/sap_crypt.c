@@ -37,6 +37,7 @@
 #include "crypt.h"
 #include "md5.h"
 #include "prototypes.h"
+#include "prototypes_crypt.h"
 
 struct keydata* keylist;
 char passphrase[MAXKEYLEN];
@@ -47,7 +48,7 @@ extern Tcl_Interp *interp;
 extern int _fmode=_O_BINARY;
 #endif
 
-/*#define DEBUG*/
+/* #define DEBUG */
 
 int set_pass_phrase(char *newphrase)
 {
@@ -74,24 +75,73 @@ int encrypt_announcement(char *srcbuf, char **dstbuf, int *length,
   return 0;
 }
 
+int parse_privhdr(char *buf, int *len, char *recvkey)
+{
+  struct enc_header *enchead;
+  struct priv_header *priv_hdr=NULL;
+  char *tmpbuf;
+  int hdrlen, padlen, rc;
+
+  tmpbuf=(char *)malloc(*len);
+  memcpy(tmpbuf,buf,*len);
+
+  enchead=(struct enc_header *)tmpbuf;
+#ifdef DEBUG
+  printf("timeout: %d\n", enchead->timeout);
+#endif
+
+/* deal with the privacy header */
+  priv_hdr = (struct priv_header *) (tmpbuf + sizeof(struct enc_header) );
+
+#ifdef DEBUG
+  printf("Privacy Header received: version = %d, padding = %d, enctype = %d, hdr_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, (u_int)priv_hdr->hdr_len);
+#endif
+
+/* check version of privacy header - only deal with it if it is version 1 */
+  if (priv_hdr->version != 1) {
+    fprintf(stderr, "Privacy Header version should be 1. It is %d.\n",priv_hdr->version);
+    return -1;
+  }
+
+  hdrlen = ((int)priv_hdr->hdr_len) *4 ;
+  padlen = (int)(tmpbuf[sizeof(struct enc_header)+hdrlen-1]);
+
+#ifdef DEBUG
+  printf("privacy header: hdrlen = %d and padlen = %d\n",hdrlen, padlen);
+#endif
+
+  switch (priv_hdr->enctype) {
+    case DES:
+      *len -= sizeof(struct enc_header) + hdrlen;
+      rc =  (decrypt_announcement(tmpbuf+sizeof(struct enc_header)+hdrlen, len, recvkey));
+      memcpy(buf,tmpbuf+sizeof(struct enc_header)+hdrlen,*len);
+      free(tmpbuf); 
+      return rc;
+
+    case DES3: case PGP: case PKCS7: default:
+#ifdef DEBUG
+      fprintf(stderr,"Unsupported Privacy Header type %d (1:3DES,2:PGP,3:PKCS#7)\n",priv_hdr->enctype);
+#endif
+      return -1;
+  }
+
+}
+
 int decrypt_announcement(char *buf, int *len, char *recvkey)
 {
   char key[MAXKEYLEN];
   char *dstbuf, *origbuf;
-  struct enc_header *enchead;
   struct keydata *tmpkey=keylist;
   int length=0;
 #ifdef DEBUG
   int i;
 #endif
 
+/* should now have buf pointing to start of encrypted payload */
+/* and len being the length of this payload                   */
+
   origbuf=malloc(*len);
   memcpy(origbuf,buf,*len);          /* decrypt splats buffer so save it */
-  enchead=(struct enc_header *)buf;
-
-#ifdef DEBUG
-  printf("timeout: %d\n", enchead->timeout);
-#endif
 
 /* No longer have key id so loop through all keys trying to decrypt buffer */
 
@@ -111,11 +161,11 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
     dstbuf=malloc(*len);
 
 #ifdef DEBUG
-    printf("pre-decrypt     len: %d\n", *len-4);
+    printf("pre-decrypt     len: %d\n",*len);
 #endif
-    length=Decrypt(buf+4, dstbuf, (*len)-4);
+    length=Decrypt(buf,dstbuf,*len);
 #ifdef DEBUG
-    printf("post-decrypt length: %d\n", length);
+    printf("post-decrypt length: %d\n",length);
     for(i=0;i<16;i++)
       printf("%d,", dstbuf[i]);
     printf("\n");
@@ -130,6 +180,7 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
         strncpy(recvkey, key, MAXKEYLEN);
         memcpy(buf, dstbuf, *len);
         buf[*len]='\0';
+        free(origbuf);
         return 0;
       }
     } 
@@ -139,7 +190,7 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 /* if reach here then decryption has failed */
   return -1;
 }
- 
+
 int get_sdr_home(char str[])
 {
 #ifdef WIN32

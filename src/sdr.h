@@ -180,8 +180,25 @@ struct sap_header {
 
 struct enc_header {
   u_int timeout;
-  u_int random;
 };
+
+struct priv_header {
+#ifdef DIFF_BYTE_ORDER
+  u_int enctype:4;
+  u_int padding:1;
+  u_int version:3;
+#else
+  u_int version:3;
+  u_int padding:1;
+  u_int enctype:4;
+#endif
+  u_int hdr_len:8;
+};
+ 
+#define   DES 0
+#define  DES3 1
+#define   PGP 2
+#define PKCS7 3
 
 typedef unsigned int hash_t;
 
