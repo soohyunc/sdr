@@ -35,5 +35,18 @@ typedef struct connection_s {
   int port;
 } connection;
 
+
+/* Funtions in sip.c */
 int sip_close_tcp_connection(char *callid);
+
+/* Funtions in sip_common.c */
 int sip_send_tcp_reply_to_fd(int fd, char *msg);
+
+
+/* maryann's debug define, see mdebug.h */
+#define MDEBUG_FLAG 0x0 
+//#define MDEBUG_FLAG 0x3 /* combination SIP and REG (sip register) levels */
+
+
+
+
