@@ -162,16 +162,16 @@ struct advert_data {
 };
   
 struct sap_header {
-#if BYTE_ORDER == BIG_ENDIAN
-  u_int version:3;
-  u_int type:3;
-  u_int enc:1;
+#ifdef DIFF_BYTE_ORDER
   u_int compress:1;
+  u_int enc:1;
+  u_int type:3;
+  u_int version:3;
 #else
-  u_int compress:1;
-  u_int enc:1;
-  u_int type:3;
   u_int version:3;
+  u_int type:3;
+  u_int enc:1;
+  u_int compress:1;
 #endif
   u_int authlen:8;
   u_int msgid:16;
