@@ -9,7 +9,7 @@ SIP_SERVER_LIBS=-lm -lnsl -ldl -lsocket -lresolv
 
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
 LIBRARY_TK = $(LIB_DIR)/tk8.0
-CFLAGS=$(INCLUDES) -DSYSV -DSOLARIS -DCANT_MCAST_BIND -Wall -DNORANDPROTO
+CFLAGS=$(INCLUDES) -DSYSV -DSOLARIS -DCANT_MCAST_BIND -Wall -DNORANDPROTO -DAUTH
 all::	sdr 
 install:
 	rm /usr/local/bin/sdr
