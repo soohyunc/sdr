@@ -965,8 +965,6 @@ int gen_new_auth_data(char *buf,
   char *newbuf=NULL, *sbuf=NULL;
   int newlen, lenrest;
 
-  printf("entered gen_new_auth_data\n");
-
   writelog(printf("entered gen_new_auth_data\n");)
 
 /* copy bp to bp1, setting bp->msgid=0 */
