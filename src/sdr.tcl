@@ -1246,7 +1246,7 @@ proc make_rpt_time {secs} {
 proc reshow_sessions {spec} {
     global ldata fullnumitems fullix items ix sessbox sesslists ifstyle
     foreach box [array names sessbox] {
-	if {![winfo exists sessbox($box)]} continue
+	if {[winfo exists sessbox($box)]} continue
 
 	if {$ifstyle(list)=="normal"} {
 	    $sessbox($box) configure -spacing1 4
@@ -1303,7 +1303,6 @@ proc resort_sessions {} {
     }
     reshow_sessions $showwhich
 }
-
 
 set typevalue(test)      -1
 set typevalue(meeting)    1
