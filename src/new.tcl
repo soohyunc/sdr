@@ -2114,7 +2114,7 @@ proc create_proto_menu {win mname layersmname fmtmname fmtlist media} {
 	    -value $item \
 	    -command "reset_media_attrs;\
                       $mname configure -text \[get_proto_name $item\];\
-                      set_fmt_menu $win $layersmname $item $fmtmname \
+                      set_fmt_menu $win $fmtmname $layersmname $item \
                          \[get_media_fmts $media $item\] $media;\
                       setmediamode $media $win 1 0"
     }
