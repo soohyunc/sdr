@@ -1,11 +1,18 @@
 <H1>Sdr changes log</H1>
 <pre>
+3.0 K.Hasler/E.Whelan 22 Aug 2000
+  - new 'application' media type for session directories
+  - fixed byte ordering of headers on intel machines
+  - fixed IP6 address allocation for unix IP6 stacks
+  - Authentication and encryption code fixed to allow for extra space
+    for IPv6 addresses
+  - Added IPv6 flags to configure scripts "--enable-ipv6"
 
-2.10 K.Hasler 6 Dec 1999
+3.0 K.Hasler 6 Dec 1999
   - changed use of option get to use the resource procs in generic.tcl
   - store_address now returns if it already has the address.
 
-2.10 C.Perkins 16 Nov 1999
+3.0 C.Perkins 16 Nov 1999
   - Remove TTL scoping option
 
 2.9 K.Hasler 26 Oct 1999
