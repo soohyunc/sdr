@@ -3,15 +3,15 @@ set uriix -1
 set cacheduris {}
 set cachedata {}
 
-option add Sdr.web.h1font "-*-times-bold-r-normal--*-240-*" widgetDefault
-option add Sdr.web.h2font "-*-times-bold-r-normal--*-180-*" widgetDefault
-option add Sdr.web.h3font "-*-times-bold-r-normal--*-140-*" widgetDefault
-option add Sdr.web.h4font "-*-times-bold-r-normal--*-140-*" widgetDefault
-option add Sdr.web.bfont "-*-times-bold-r-normal--*-140-*" widgetDefault
-option add Sdr.web.ifont "-*-times-medium-i-normal--*-140-*" widgetDefault
-option add Sdr.web.addressfont "-*-times-medium-i-normal--*-140-*" widgetDefault
-option add Sdr.web.normalfont "-*-times-medium-r-normal--*-140-*" widgetDefault
-option add Sdr.web.prefont "-*-courier-medium-r-normal--*-120-*" widgetDefault
+set_resource Sdr.web.h1font "-*-times-bold-r-normal--*-240-*" 
+set_resource Sdr.web.h2font "-*-times-bold-r-normal--*-180-*"
+set_resource Sdr.web.h3font "-*-times-bold-r-normal--*-140-*"
+set_resource Sdr.web.h4font "-*-times-bold-r-normal--*-140-*" 
+set_resource Sdr.web.bfont "-*-times-bold-r-normal--*-140-*" 
+set_resource Sdr.web.ifont "-*-times-medium-i-normal--*-140-*" 
+set_resource Sdr.web.addressfont "-*-times-medium-i-normal--*-140-*" 
+set_resource Sdr.web.normalfont "-*-times-medium-r-normal--*-140-*" 
+set_resource Sdr.web.prefont "-*-courier-medium-r-normal--*-120-*" 
 
 proc webdisp {uri} {
     global urilist uriix

@@ -24,8 +24,11 @@ catch {set lang $env(LANG)}
 proc debug {str} {
     global debug1 tcl_platform
     if {$debug1} {
-		if {$tcl_platform(platform)=="windows"} {Debug $str}
-		else {puts $str}
+		if {$tcl_platform(platform)=="windows"} {
+            Debug $str
+        } else {
+            puts $str
+        }
     }
 }
 
@@ -123,9 +126,10 @@ proc setcw {w} {
 }
 
 proc initialise_resources {} {
-    wm withdraw .
     global gui tcl_platform
     if {$gui=="NO_GUI"} { return }
+    wm withdraw .
+
     #Tk4.0 standard bg
     option add *background gray85 
     #Use same colours as vat
@@ -190,8 +194,16 @@ if {$tcl_platform(platform) == "unix"} {
         option add *italfont 8x13bold 100
     }
 
-
-
+    set fh [font metrics -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1 -linespace]
+    set fw [font measure -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1 m]
+    set font -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1
+    set tmp 0
+    catch {set tmp [label .test -font $font];destroy .test}
+    if {$tmp==0} {
+        set font 8x13
+        set fh 13
+        set fw 8
+    }
 
     #fix odd little bug in tk4.0 Entry deletion
     bind Entry <Delete> {
@@ -253,7 +265,11 @@ proc scroll_to_session {key list} {
 proc build_interface {first {dirName {}}} {
     global tcl_platform ifstyle gui sessbox 
     global logfile argv0 argv geometry
+
+    init_session_list [cw].norm [cw].f2.lb
+	init_session_list [cw].priv [cw].f4.lb
     if {$gui=="NO_GUI"} { return }
+
     log "Sdr started by [getusername] at [getreadabletime]"
     set lb $ifstyle(labels)
     global titlestr
@@ -296,7 +312,7 @@ proc build_interface {first {dirName {}}} {
   	    -selectforeground [resource activeForeground] \
   	    -selectbackground [resource activeBackground] \
   	    -highlightthickness 0
-	init_session_list [cw].norm [cw].f2.lb
+
   
 	scrollbar [cw].f2.sb -command "[cw].f2.lb yview" \
   		-background [resource scrollbarForeground] \
@@ -316,7 +332,7 @@ proc build_interface {first {dirName {}}} {
 		-selectforeground [resource activeForeground] \
 		-selectbackground [resource activeBackground] \
 		-highlightthickness 0
-	init_session_list [cw].priv [cw].f4.lb
+
 	scrollbar [cw].f4.sb -command "[cw].f4.lb yview" \
 	    -background [resource scrollbarForeground] \
 	    -troughcolor [resource scrollbarBackground] \
@@ -879,7 +895,9 @@ proc clear_session_state {aid} {
 }
 
 proc display_session {aid code} {
-    global ldata session
+    global ldata session gui
+    if {$gui=="NO_GUI"} { return }
+
     debug "display_session $aid $code"
     if {$code == 0} {
 	#we haven't heard an announcement of this session before
@@ -3683,18 +3701,6 @@ proc launch_directory {addr port ttl dirName} {
 }
 
 
-set fh [font metrics -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1 -linespace]
-set fw [font measure -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1 m]
-set font -adobe-courier-bold-r-normal--*-120-*-*-m-*-iso8859-1
-set tmp 0
-catch {set tmp [label .test -font $font];destroy .test}
-if {$tmp==0} {
-    set font 8x13
-    set fh 13
-    set fw 8
-}
- 
-
 for {set i 1} {$i <= 31} {incr i} {
     set ending($i) "th"
 }
@@ -4440,7 +4446,7 @@ proc sdr_toplevel {win title {iconname {}}} {
 
 #set where to read config files from
 if {$tcl_platform(platform) == "windows"} {
-    option add *sdrHome ~/sdr 
+    set_resource Sdr.sdrHome ~/sdr
 } else {
     set_resource Sdr.sdrHome [glob ~]/.sdr
 }
