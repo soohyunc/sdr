@@ -79,7 +79,7 @@ proc getreadabletime {} {
     return [clock format [clock seconds] -format {%H:%M, %d/%m/%y}]
 }
 
-set sdrversion "v2.5.7"
+set sdrversion "v2.5.8"
 set titlestr "Multicast Session Directory $sdrversion"
 
 proc initialise_resources {} {
