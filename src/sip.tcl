@@ -6,8 +6,13 @@ set qpurp {"Group Chat" "Small Meeting" "Large Meeting"}
 #set qpmway {0 1 1 1}
 set qpmway {1 1 1}
 proc qcall {} {
-    global scope qdurs qdurt qpurp qpmway medialist send
+    global scope qdurs qdurt qpurp qpmway medialist send youremail
     catch {destroy .qc}
+    if {$youremail==""} {
+	enter_phone_details qcall
+	return 
+    }
+    
     toplevel .qc
     wm title .qc "Sdr: Quick Call"
     posn_win .qc
@@ -248,6 +253,36 @@ proc sip_list_invitees {wname aid} {
     }
 }
 
+proc sip_map_url_to_addr {location} {
+    #if it was a URL other than a SIP one, this doesn't work...
+
+    if {[string compare [string range $location 0 5] "sip://"]==0} {
+	#it's a SIP URL
+	#trim the URL
+	set location [string range $location 6 end]
+	set param [string first ";" $location]
+	if {$param>=0} {
+	    #there was a parameter to the URL.
+	    #we don't understand parameters, so trim it off and continue
+	    #in the hope this is OK.
+	    set location [string range $location 0 [expr $param - 1]]
+	}
+    }
+
+    set username [string trimleft [lindex [split $location "@"] 0] " "]
+    set host [string trimright [lindex [split $location "@"] 1] " "]
+    if {($username=="")||($host=="")} {
+	msgpopup "Invalid Address" "Addresses must be of the form \"username@host\""
+	return 0
+    }
+    set addr [lookup_host $host]
+    if {$addr=="0.0.0.0"} {
+	msgpopup "Invalid Address" "The hostname $host is not known"
+	return 0
+    }
+    return $addr
+}
+
 proc send_sip {dstuser user aid id win addr} {
     #dstuser is where the message is currently destined
     #user is the SIP name of the user at that location
@@ -256,21 +291,13 @@ proc send_sip {dstuser user aid id win addr} {
 
     global youremail no_of_connections sip_request_status sip_requests
     global sip_request_count sip_request_user sdrversion
-    set username [string trimleft [lindex [split $dstuser "@"] 0] " "]
-    set host [string trimright [lindex [split $dstuser "@"] 1] " "]
-    if {($username=="")||($host=="")} {
-	msgpopup "Invalid Address" "Addresses must be of the form \"username@host\""
-	return 0
-    }
-    if {[string compare $addr "0"]==0} {
-        set addr [lookup_host $host]
-    } else {
+
+    if {$addr!=0} {
         set addr [lookup_host $addr]
+    } else {
+	set addr [sip_map_url_to_addr $dstuser]
     }
-    if {$addr=="0.0.0.0"} {
-	msgpopup "Invalid Address" "The hostname $host is not known"
-	return 0
-    }
+    if {$addr==0} {return 0}
 
     if {[lsearch $sip_requests $id]!=-1} {
 	if {($sip_request_status($id)=="unknown") &&
@@ -292,6 +319,10 @@ proc send_sip {dstuser user aid id win addr} {
 	    ($sip_request_status($id)=="declined")} {
 		return 0
 	    }
+	if {($sip_request_status($id)=="hungup")} {
+	    sip_send_bye $dstuser $user $id
+	    return 0
+	}
 	incr sip_request_count($id)
     }
     if {$id==0} {
@@ -319,6 +350,57 @@ proc send_sip {dstuser user aid id win addr} {
 	}
     }
     return 0
+}
+
+proc sip_send_ack {dstuser origuser id} {
+    global youremail sdrversion sip_requests sip_request_status
+    if {[lsearch $sip_requests $id]!=-1} {
+	if {($sip_request_status($id)=="progressing") || \
+		($sip_request_status($id)=="ringing") || \
+		($sip_request_status($id)=="unknown") || \
+		($sip_request_status($id)=="connected")} {
+	    #the call is in progress or already connected
+	    set addr [sip_map_url_to_addr $dstuser]
+	    set msg "ACK $dstuser SIP/2.0"
+	    set msg "$msg\r\nVia: SIP/2.0/UDP [gethostaddr]"
+	    set msg "$msg\r\nCall-ID:$id"
+	    set msg "$msg\r\nFrom:$youremail"
+	    set msg "$msg\r\nTo:$origuser"
+	    set msg "$msg\r\nUser-Agent:sdr/$sdrversion\r\n"
+	    sip_send_msg $msg $addr
+	} else {
+	    #the call is not in a useful state - either the far end
+	    #confused us, or we hung up.
+	    sip_send_bye $dstuser $origuser $id
+	}
+    } else {
+	#we have no record of this call
+	sip_send_bye $dstuser $origuser $id
+    }
+}
+
+proc sip_send_bye {dstuser origuser id} {
+    global youremail sdrversion sip_requests sip_request_status
+    if {[lsearch $sip_requests $id]!=-1} {
+	#for some reason we're sending a bye but still have call state
+	#clear it out
+	#catch {unset sip_request_status($id)}
+    }
+    set addr [sip_map_url_to_addr $dstuser]
+    set msg "BYE $dstuser SIP/2.0"
+    set msg "$msg\r\nVia: SIP/2.0/UDP [gethostaddr]"
+    set msg "$msg\r\nCall-ID:$id"
+    set msg "$msg\r\nFrom:$youremail"
+    set msg "$msg\r\nTo:$origuser"
+    set msg "$msg\r\nUser-Agent:sdr/$sdrversion\r\n"
+    puts "------\nSending to $addr:\n$msg\n"
+    sip_send_msg $msg $addr
+}
+
+proc sip_hang_up {id} {
+    global sip_request_status
+    set sip_request_status($id) hungup
+    sip_clear_connection_ui $id
 }
 
 set sip_requests {}
@@ -353,6 +435,9 @@ proc sip_user_pending {user id aid win} {
     pack $f.l1 -side left
     label $f.l2 -text "?" -width 10
     pack $f.l2 -side left
+    button $f.hangup -text "Hang up" -command "sip_hang_up $id" \
+	    -borderwidth 1 -relief raised -highlightthickness 0
+    pack $f.hangup -side left
     return 0
 }
 
@@ -372,8 +457,10 @@ proc sip_session_status {id status} {
 set sip_invites {}
 proc sip_user_alert {msg} {
     global sip_invites sip_invite_status
+    puts $msg
     set lines [split $msg "\n"]
     set cur-to [lindex [lindex $lines 0] 1]
+    set request [lindex [lindex $lines 0] 0]
     set path ""
     set srcuser ""
     set dstuser ""
@@ -409,45 +496,93 @@ proc sip_user_alert {msg} {
 	}
     }
     debug "ct=$ct"
-    if {[string compare $ct "application/sdp"]!=0} {
-	return 0
-    }
-    foreach line $lines {
-	set line [string trim $line "\r"]
-	set lparts [split $line "="]
-	switch [lindex $lparts 0] {
-	    s {
-		set sname [join [lrange $lparts 1 end] "="]
+    puts "request: >$request<"
+    switch $request {
+	"INVITE" {
+	    if {[string compare $ct "application/sdp"]!=0} {
+		return 0
 	    }
-	}
-    }
+	    foreach line $lines {
+		set line [string trim $line "\r"]
+		set lparts [split $line "="]
+		switch [lindex $lparts 0] {
+		    s {
+			set sname [join [lrange $lparts 1 end] "="]
+		    }
+		}
+	    }
 
 #    puts here
-    if {[lsearch $sip_invites $id]==-1} {
-	#it's a new invite
-	set sip_invites "$sip_invites $id"
+	    if {[lsearch $sip_invites $id]==-1} {
+		#it's a new invite
+		set sip_invites "$sip_invites $id"
+		
+		#shouldn't really pass the SIP header to the SDP parser
+		#but it doesn't break anything
+		sip_inform_user $id $srcuser $dstuser $path $sname $msg $cseq
 
-	#shouldn't really pass the SIP header to the SDP parser
-	#but it doesn't break anything
-	sip_inform_user $id $srcuser $dstuser $path $sname $msg $cseq
-
-	set sip_invite_status($id) ringing
-	sip_ringing_user $id $srcuser $dstuser $path $cseq
-    } else {
-	switch $sip_invite_status($id) {
-	    ringing {
+		set sip_invite_status($id) ringing
 		sip_ringing_user $id $srcuser $dstuser $path $cseq
-	    }
-	    refused {
-		set aid [parse_sdp $msg]
-		sip_refuse_invite $aid
-	    }
-	    accepted {
-		set aid [parse_sdp $msg]
-		sip_accept_invite $aid
+	    } else {
+		switch $sip_invite_status($id) {
+		    ringing {
+			sip_ringing_user $id $srcuser $dstuser $path $cseq
+		    }
+		    refused {
+			set aid [parse_sdp $msg]
+			sip_refuse_invite $aid
+		    }
+		    accepted {
+			set aid [parse_sdp $msg]
+			sip_accept_invite $aid
+		    }
+		}
 	    }
 	}
+	"BYE" {
+	    sip_handle_bye $id
+	}
+	"ACK" {
+	    sip_handle_ack $id
+	}
+	default {
+	    sip_send_method_unsupported $id $srcuser $dstuser $path $cseq
+	}
     }
+}
+
+proc sip_handle_bye {id} {
+    global sip_invites sip_invite_status
+    puts "[array names sip_invite_status]"
+    puts "sip_handle_bye $sip_invite_status($id)"
+    if {[lsearch $sip_invites $id]!=-1} {
+	if {$sip_invite_status($id)=="connected"} {
+	    #Ooops, the caller hung up after we sent our response
+	    #notify the user and stop sending retransmissions of 
+	    #our 200 response
+	} elseif {($sip_invite_status($id)=="unknown") || \
+		($sip_invite_status($id)=="progressing") || \
+		($sip_invite_status($id)=="ringing")} {
+	    #The caller hung up before we could get an answer from
+	    #the user
+	    #stop making all the noise and clear up
+	    puts b
+	    timeout_ringing $id
+	} else {
+	    #it's not clear what happened here, but set the call to
+	    #declined anyway
+	    set sip_invite_status($id) declined
+	}
+    } else {
+	#a bye for a call we have no knowledge of can be safely ignored
+    }
+}
+
+proc sip_handle_ack {id} {
+    #since we're optimists we assume that when we send a 200 response 
+    #the caller won't have hung up.  All we do is stop sending
+    #retransmissions of our 200 response 
+    
 }
 
 proc sip_inform_user {id srcuser dstuser path sname sdp cseq} {
@@ -548,14 +683,28 @@ proc sip_send_refuse_invite {id srcuser dstuser path cseq} {
     sip_send_msg $msg [lrange $path end end]
 }
 
+proc sip_send_method_unsupported {id srcuser dstuser path cseq} {
+    set msg "SIP/2.0 501 Not Implemented"
+    set msg "$msg\r\n$path"
+    set msg "$msg\r\nCall-ID:$id"
+    set msg "$msg\r\nFrom:$srcuser"
+    set msg "$msg\r\nTo:$dstuser"
+    if {$cseq!=""} {
+	set msg "$msg\r\nCseq:$cseq"
+    }
+    set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
+    sip_send_msg $msg [lrange $path end end]
+}
+
 proc sip_success {msg} {
+    global sip_requests
     set lines [split $msg "\n"]
-#    puts $msg
+    puts $msg
     set path ""
     set srcuser ""
     set dstuser ""
+    set origuser ""
     set ct ""
-    set ch ""
     foreach line $lines {
 	set line [string trim $line "\r"]
 	if {$line==""} {break}
@@ -568,7 +717,7 @@ proc sip_success {msg} {
 		set srcuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    TO {
-		set dstuser [string trim [join [lrange $lparts 1 end] ":"]]
+		set origuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    VIA {
 		if {$path==""} {
@@ -581,7 +730,7 @@ proc sip_success {msg} {
 		set ct [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    LOCATION {
-		set ch [string trim [join [lrange $lparts 1 end] ":"]]
+		set dstuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	}
     }
@@ -596,7 +745,12 @@ proc sip_success {msg} {
 	    }
 	}
     }
-    sip_connection_succeed $id "$dstuser accepts your invitation"
+    if {[lsearch $sip_requests $id]==-1} {	
+	sip_send_bye $dstuser $origuser $id
+    } else {
+	sip_send_ack $dstuser $origuser $id
+	sip_connection_succeed $id "$dstuser accepts your invitation"
+    }
 }
 
 proc sip_status {msg} {
@@ -904,28 +1058,30 @@ proc sip_update_request_dst {mode aid id location} {
 }
 
 proc sip_connection_fail {id msg} {
-    global sip_request_status sip_requests sip_request_win
+    global sip_request_status sip_requests
     if {[lsearch $sip_requests $id]==-1} {
 #        puts a
         return 0
     }
     msgpopup "Connection attempt unsuccessful" $msg
+    sip_clear_connection_ui $id
+    set sip_request_status($id) declined
+}
+
+proc sip_clear_connection_ui {id} {
+    global sip_request_win
     set lid [join [split $id "."] "-"]
     set f $sip_request_win($id).$lid
     catch {pack forget $f}
-    set sip_request_status($id) declined
 }
 
 proc sip_connection_succeed {id msg} {
     global sip_request_status sip_requests sip_request_win sip_request_aid
-    if {[lsearch $sip_requests $id]==-1} {
-#        puts a
-        return 0
-    }
     msgpopup "Connection attempt Successful" $msg
     set lid [join [split $id "."] "-"]
     set f $sip_request_win($id).$lid
     catch {$f.l2 configure -text "connected"}
+    catch {pack forget $f.hangup}
     set sip_request_status($id) connected
     add_to_display_list  $sip_request_aid($id) priv
 }
@@ -1013,14 +1169,22 @@ proc add_to_call_list {aid} {
 	}
 	pack .calls.f.cp.cancel -side right -fill x -expand true
     }
-    label .calls.f.f.from.l$aid -text $sessdetails($aid,srcuser)
-    pack .calls.f.f.from.l$aid -side bottom
-    label .calls.f.f.purpose.l$aid -text "unknown"
-    pack .calls.f.f.purpose.l$aid -side bottom
-    label .calls.f.f.time.l$aid -text \
-	    [clock format $sessdetails($aid,time) -format "%H:%M %a %d %b"]
-    pack .calls.f.f.time.l$aid -side bottom
-    lappend sip_call_list $aid
+    if {[winfo exists .calls.f.f.from.l$aid]==0} {
+	label .calls.f.f.from.l$aid -text $sessdetails($aid,srcuser)
+	pack .calls.f.f.from.l$aid -side bottom
+	label .calls.f.f.purpose.l$aid -text "unknown"
+	pack .calls.f.f.purpose.l$aid -side bottom
+	label .calls.f.f.time.l$aid -text \
+		[clock format $sessdetails($aid,time) -format "%H:%M %a %d %b"]
+	pack .calls.f.f.time.l$aid -side bottom
+	lappend sip_call_list $aid
+    } else {
+	#the person recalled with the same call id.  Simply replace the
+	#previous information...
+	.calls.f.f.from.l$aid configure -text $sessdetails($aid,srcuser)
+	.calls.f.f.time.l$aid configure -text \
+		[clock format $sessdetails($aid,time) -format "%H:%M %a %d %b"]
+    }
 }
 
 proc enter_new_address {menu entry} {

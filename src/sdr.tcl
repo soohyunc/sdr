@@ -11,7 +11,7 @@ set yourname ""
 set yourphone ""
 set youremail ""
 set youralias ""
-set sip_server_url "http://buttle.lcs.mit.edu/sip/"
+set sip_server_url "http://north.lcs.mit.edu/sip/"
 set keylist ""
 
 set lang C

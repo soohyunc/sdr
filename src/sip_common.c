@@ -322,7 +322,9 @@ char *sip_get_dstname(char *msg)
 
 int is_a_sip_request(char *msg)
 {
-  return(strncmp(msg, "INVITE ", 7)==0);
+  return((strncmp(msg, "INVITE ", 7)==0) || 
+	 (strncmp(msg, "ACK ", 4)==0) || 
+	 (strncmp(msg, "BYE ", 4)==0));
 }
 
 int is_a_sip_reply(char *msg)

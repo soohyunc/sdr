@@ -32,7 +32,8 @@ proc norm_new {aid} {
     global yourname
     global new_createtime
     if {[string length $yourphone]==0} {
-	enter_phone_details
+	#enter_phone_details will re-run this if it succeeds
+	enter_phone_details "norm_new $aid"
 	return
     }
 
@@ -236,7 +237,7 @@ proc tech_new {aid} {
     global yourname
     global new_createtime
     if {[string length $yourphone]==0} {
-	enter_phone_details
+	enter_phone_details "tech_new $aid"
 	return
     }
 
@@ -1412,7 +1413,7 @@ proc configure_duration_widget {widget flag value} {
     }
 }
 
-proc enter_phone_details {} {
+proc enter_phone_details {cmd} {
     global yourphone youremail yourname
 
     if {($yourname=="" || $youremail=="") && [file exists "~/.RTPdefaults"]} {
@@ -1470,28 +1471,28 @@ These will be given as the defaults when you create a session, but you will stil
 
     frame .phone.f.f3 
     pack .phone.f.f3 -side top -fill x -expand true
-    button .phone.f.f3.ok -text OK -command {\
-        set yourphone [.phone.f.f2.e get];\
-        set youremail [.phone.f.f1.e get];\
-        set yourname [.phone.f.f0.e get];\
-	if {$yourname=={}} {\
-	    errorpopup "Please enter your name" "Please enter your name";\
+
+    button .phone.f.f3.ok -text OK -command "\
+        set yourphone \[.phone.f.f2.e get\];\
+        set youremail \[.phone.f.f1.e get\];\
+        set yourname \[.phone.f.f0.e get\];\
+	if {\$yourname=={}} {\
+	    errorpopup {Please enter your name} {Please enter your name};\
 	    focus .phone.f.f0.e;\
-	    break;\
-	} elseif {$youremail=={}} {\
-	    errorpopup "Please enter your email address" "Please enter your email address";\
+	} elseif {\$youremail=={}} {\
+	    errorpopup {Please enter your email address} {Please enter your email address};\
 	    focus .phone.f.f1.e;\
-	    break;\
-	} elseif {$yourphone=={}} {\
-	    errorpopup "Please enter a phone number" "Please enter your telephone number";\
+	} elseif {\$yourphone=={}} {\
+ 	    errorpopup {Please enter a phone number} {Please enter your telephone number};\
 	    focus .phone.f.f2.e;\
-	    break;\
 	}\
         save_prefs; \
         destroy .phone; \
-        new new}
+	eval $cmd \
+    "
     pack .phone.f.f3.ok -side left -fill x -expand true
-    button .phone.f.f3.cancel -text Cancel -command {destroy .phone}
+    button .phone.f.f3.cancel -text Cancel \
+	    -command {set wait_on_me 0;destroy .phone}
     pack .phone.f.f3.cancel -side left -fill x -expand true
     move_onscreen .phone
 }
