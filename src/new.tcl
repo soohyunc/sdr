@@ -1703,7 +1703,7 @@ proc create {} {
 	return
     }
     set sess "v=0"
-    set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostaddr]"
+    set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
     set sess "$sess\ns=[get_new_session_name .new]"
     if {[get_new_session_name .new]==""} {
 	errorpopup "No Session Name" "You must give the session a name"
@@ -1724,13 +1724,13 @@ proc create {} {
     if {$uri!=""} {
 	set sess "$sess\nu=$uri"
     }
-    set phone [.new.you.f1.e get]
     set email [.new.you.f0.e get]
-    if {$phone!=""} {
-	set sess "$sess\np=$phone"
-    }
+    set phone [.new.you.f1.e get]
     if {$email!=""} {
 	set sess "$sess\ne=$email"
+    }
+    if {$phone!=""} {
+	set sess "$sess\np=$phone"
     }
 
     foreach i {1 2 3} {

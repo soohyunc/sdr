@@ -277,6 +277,16 @@ int ui_gethostaddr(dummy, interp, argc, argv)
   return TCL_OK;
 }
 
+int ui_gethostname(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv; 
+{
+  strcpy(interp->result,hostname);
+  return TCL_OK;
+}
+
 int ui_getpid(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
     Tcl_Interp *interp;                 /* Current interpreter. */

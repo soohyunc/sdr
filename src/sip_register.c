@@ -74,7 +74,7 @@ int sip_register()
   strncpy(emailaddr, 
 	  Tcl_GetVar(interp, "youremail", TCL_GLOBAL_ONLY), 
 	  MAXEMAILLEN);
-  if ((strlen(emailaddr)==0)||(strchr(emailaddr,'@')<0))
+  if ((strlen(emailaddr)==0)||(strchr(emailaddr,'@')==0))
     return -1;
   strncpy(serverurl,
 	  Tcl_GetVar(interp, "sip_server_url", TCL_GLOBAL_ONLY),

@@ -65,7 +65,7 @@ proc getreadabletime {} {
     return [clock format [clock seconds] -format {%H:%M, %d/%m/%y}]
 }
 
-set sdrversion "v2.4a7"
+set sdrversion "v2.4a8"
 set titlestr "Multicast Session Directory $sdrversion"
 
 proc initialise_resources {} {
@@ -584,9 +584,9 @@ proc add_to_list {} {
 	  set interval [parse_rpt_time [lindex $repeat($i,$r) 0]]
 	  if {$interval>0} {
 	      set duration [parse_rpt_time [lindex $repeat($i,$r) 1]]
-	      # If the duration is longer than the interval, then it
+	      # If the duration is longer than or equal to the interval, then it
 	      # effectively means "the whole time".
-	      if {$duration > $interval} {
+	      if {$duration >= $interval} {
 		  # XXX
 		  # Need to increment the start of the session by the
 		  # first offset if it's not 0.

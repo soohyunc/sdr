@@ -25,7 +25,7 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_sap_crypt};
 
-#define MAX_UI_FN 27
+#define MAX_UI_FN 28
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -36,6 +36,7 @@ const char *ui_fn_name[MAX_UI_FN]=
   "createsession",
   "checkaddress",
   "gethostaddr",
+  "gethostname",
   "getusername",
   "ui_stop_session_ad",
   "getdayname",
@@ -67,6 +68,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_createsession,
   ui_check_address,
   ui_gethostaddr,
+  ui_gethostname,
   ui_getusername,
   ui_stop_session_ad,
   ui_getdayname,

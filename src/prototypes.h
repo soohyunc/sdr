@@ -67,6 +67,7 @@ int ui_gettimeofday();
 int ui_createsession(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_getusername(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_gethostaddr(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
+int ui_gethostname(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_getpid(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_stop_session_ad(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 void initnames();

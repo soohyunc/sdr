@@ -365,6 +365,7 @@ int argc;
 char *argv[];
 {
     int i;
+    struct in_addr in;
     struct hostent *hstent;
 
     seedrand();
@@ -388,7 +389,91 @@ char *argv[];
       exit(1);
     }
     memcpy((char *)&hostaddr, (char *)hstent->h_addr_list[0], hstent->h_length);
+
+    /*If the version of the hostname from the lookup contains dots and
+      is longer that the hostname given us by gethostname, it's
+      probably a better bet*/
+    if ((strchr(hstent->h_name,'.')!=NULL)&&
+      (strlen(hstent->h_name)>strlen(hostname))) 
+      strcpy(hostname, hstent->h_name);
+
+    /*If the primary name of the host can't be a FQDN, try any aliases*/
+    if (strchr(hostname, '.')==NULL) {
+      char **a;
+      for(a = hstent->h_aliases; *a != 0; a++)
+      {
+	if (strchr(*a,'.')!=NULL)
+	{
+	  strcpy(hostname, *a);
+	  break;
+	}
+      }
+    }
     
+    if (strchr(hostname, '.')==NULL) {
+      /*OK, none of the aliases worked. Next, we can try to look in
+        /etc/resolv.conf - if this isn't Unix, this won't work*/
+      FILE *dnsconf;
+      dnsconf=fopen("/etc/resolv.conf", "r");
+      if (dnsconf!=NULL)
+      {
+	struct hostent *testhstent;
+	char dnsbuf[256], testbuf[256], *cp;
+	/*at least the file's there...*/
+	while(feof(dnsconf)==0)
+	{
+	  fgets(dnsbuf, 255, dnsconf);
+	  cp=dnsbuf;
+	  /*trim any left whitespace*/
+	  while (((cp[0]==' ')||(cp[0]=='\t'))&&(cp-dnsbuf<255)) cp++;
+	  if (strncmp(cp, "domain", 6)==0)
+	  {
+	    /*the domain is specified*/
+	    cp+=6;
+	    /*trim left whitespace*/
+	    while (((cp[0]==' ')||(cp[0]=='\t'))&&(cp-dnsbuf<255)) cp++;
+	    /*build a name to test*/
+	    strcpy(testbuf, hostname);
+	    strcat(testbuf, ".");
+	    strcat(testbuf, cp);
+	    /*remove trailing whitespace*/
+	    if (strchr(testbuf, ' ')!=NULL)
+	      *strchr(testbuf, ' ')='\0';
+	    if (strchr(testbuf, '\t')!=NULL)
+	      *strchr(testbuf, '\t')='\0';
+	    
+	    /*now we've got a possible name, we need to check this really
+	      is our host*/
+	    testhstent=(struct hostent*)gethostbyname(hostname);
+	    if (testhstent != (struct hostent*) NULL) {
+	      char **a;
+	      for(a = testhstent->h_addr_list; *a != 0; a++)
+	      {
+		if(memcmp((char *)&hostaddr, 
+			  (char *)testhstent->h_addr_list[0], 
+			  testhstent->h_length)==0)
+		{
+		  /*success - the name we resolved gave the address we
+		    already had*/
+		  strcpy(hostname, testbuf);
+		  break;
+		}
+	      }
+	    }
+	    if (strchr(hostname, '.')!=NULL) break;
+	  }
+	}
+      }
+    }
+
+    /*Anyone got any idea what to do if we still haven't obtained a
+      fully qualified domain name by this point?*/
+
+    /*If it still doesn't contain any dots, give up and use the address*/
+    in.s_addr=htonl(hostaddr);
+    if (strchr(hostname, '.')==NULL)
+      strcpy(hostname,(char *)inet_ntoa(in));
+
     hostaddr=ntohl(hostaddr);
     
     /*find the user's username*/

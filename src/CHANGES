@@ -1,5 +1,21 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.4a8 mjh 28th Jan 98
+
+- changed address field in announcements to be FQDN as per new SDP spec.
+
+- added lots of code to try hard to get the FQDN, even when the machine is
+  not well configured.
+
+- fixed longstanding bug where email and phone fields are switched in 
+  announcements.
+
+fenner 20th Jan 98
+
+- I had previously sent you some code to handle duration > interval,
+  e.g. "active every week for 2 weeks".  I noticed today a session that
+  was "active every 2 days for 2 days", which could use the same fix.
+
 2.4a7 mjh
 
 - fixed calendar bug that caused daily times to be not shown for sessions
