@@ -80,23 +80,31 @@ There are many little things on the to-do list.  The main big things are:
 
 1) Even if you don't want to use PGP you still get asked where your keyring is.
 
+   This is fixed now. The first time it asks you for PGP Keyring
+   location just do cancel. (GOLI)
+
 2) On Solaris the authentication sometimes gets lost (we think this is due to 
    a new session arriving whilst the previous one hasn't completed the 
    authentication/encryption routines).
 
 3) On PC - window asking where keyrings are pops up quite often - should be 
    just once.
+   This is fixed (Goli)
 
 4) Louise got the message, after a window appeared asking for her PGPPATH (she 
    doesn't use PGP):
+   The same as 1
 
  > pygmalion.ucaclxc.9:16%The Decryption didnot produce any message 0
  > [1]    Segmentation fault     sdr (core dumped)
+   Donot know what the problem is (GOLI)
 
 5) Andreas got message:
 
   > "the decryption did not produce any message 
   > window name "pgpinfo" already exists in parent
+
+   This is fixed. ON PC the home should be set to c:\sdr (GOLI)
 
 6) Some key generation problems on windows - Alberto said:
 
@@ -104,6 +112,8 @@ There are many little things on the to-do list.  The main big things are:
    generated since sdr call 'xterm' obviously not available on window platform.
    Trying to generate an x509 key, the file generated contain an error since
    'uuencode' is called and not present on the windows platform.
+
+    The key generation only work on Unix not PC (GOLI)
 
 7) Bill fenner gets a core dump on SunOS when trying to create an 
    authenticated session - problem seems to be in check_authentication:
@@ -128,9 +138,14 @@ There are many little things on the to-do list.  The main big things are:
   > Shouldn't this be Tcl_SetVar() instead of depending on tcl returning
   > a pointer to the actual data storage and overwriting it with memcpy?
 
+   Could not compile on Sun4 to find the problem. (GOLI)
+
 8) putlogfile in the tcl files seems to cause problems (Peter Koch)
     (Goli made this change - "puts -> putlogfile" to solve some problems 
     on windows)
+    Change putlogfile to puts for debuging
+
+    This is changed now(GOLI)
 
 9) I think there are a number of memory problems as sdr will be fine for a 
     while then the bounds checking will stop it. Not sure where these problems
@@ -150,6 +165,10 @@ There are many little things on the to-do list.  The main big things are:
   - also if specify pgp enc/auth and don't select key (it doesn't display
     any anyway) get the error "Cannot open c:\mbone\sdr\63920.sig". The file
     "c:\mbone\sdr\63920.txt" is present 
+  
+     set home=c:\sdr on PC (GOLI)
 
+     set PGPPATH in autoexec.bat or when typing it in the popup window
+     give it as unix slash e.g c:/pgpkeyring (GOLI)
 
 </pre>
