@@ -1,12 +1,11 @@
 /*This module is similar to the crypt module used in RAT, except that
   the padding bit is 0x80 in byte 0, rather than 0x20 in RTP.*/
 
-#include <sys/types.h>
-#include <string.h>
+#include "config_unix.h"
+#include "config_win32.h"
 #include "crypt.h"
 #include "qfDES.h"
 #include "md5.h"
-int random(void);
 
 /* Global variables accessible inside this module only */
 #define TRUE 1

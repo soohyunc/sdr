@@ -30,6 +30,10 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+#include "config_unix.h"
+#include "config_win32.h"
+
 #ifdef SYSV
 #ifdef NEVER
 void bzero(str, len)

@@ -2,6 +2,12 @@
 <B><pre>
 
 2.6.2 ?? 1999
+  - Remove qfDES code. We now link with the UCL common multimedia library
+    instead, which had a debugged version of this. You MUST have the package
+    "common" from our CVS server (or from our web-site) to build sdr now.
+  - Add Visual C++ 6.0 project files to allow easy compilation on windows.
+  - Rename plugins to remove the "*" so that CVS can work with them on
+    windows.
   - Strip trailing CR from domain name on Solaris when reading from
     /etc/resolv.conf; this solves the "can't advertise session" problem.
   - Revert the rat plugin to that from sdr-2.4a7, which is suitable for

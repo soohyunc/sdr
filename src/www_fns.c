@@ -196,7 +196,9 @@ int ui_webto(dummy, interp, argc, argv)
       Tcl_SetVar2(interp, "webstatus", NULL, "Connecting...", TCL_GLOBAL_ONLY);
       Tcl_Eval(interp, "webstatus");
       while (Tk_DoOneEvent(TK_DONT_WAIT)) ;
+#ifdef MSG_EOF
 try_again:
+#endif
       if((fd=socket(AF_INET, SOCK_STREAM, 0))<0)
 	{
 	  return www_perror(interp, "socket", errno);

@@ -31,9 +31,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifdef __linux__
-#include <iovec.h>
-#endif
 
 #include "sdr.h"
 #include "sip.h"
@@ -255,8 +252,7 @@ struct in_addr look_up_address(char *hostname)
 	  struct dnshdr *dnsa;
 	  int len;
 	  addr.s_addr=0;
-	  len=res_mkquery(QUERY, hostname, C_IN, T_MX, NULL, NULL, 
-			  NULL, buf, 200);
+	  len=res_mkquery(QUERY, hostname, C_IN, T_MX, NULL, NULL, NULL, buf, 200);
 	  if (len==-1) perror("res_mkquery");
 	  len=res_send(buf, len, ans, 2000);
 	  if (len==-1) perror("res_send");
@@ -537,9 +533,6 @@ int sip_tcp_listen(int port)
     fprintf(stderr, "listen failed!\n");
     return -1;
   }
-#ifdef DEBUG
-  printf("listening on port %d\n", port);
-#endif
   return fd;
 }
 
@@ -1014,7 +1007,6 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
   
   sdr_update_ui();
 
-try_again:
   if((fd=socket(AF_INET, SOCK_STREAM, 0))<0)
   {
     perror("socket");

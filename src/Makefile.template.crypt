@@ -1,6 +1,6 @@
 SDR_UI_FILES_CRYPT = tcl_sap_crypt.o tcl_pgp_crypt.o tcl_pkcs7_crypt.o
-ENCOBJS            = crypt.o md5.o sap_crypt.o qfDES.o polluted.o pgp_crypt.o  pkcs7_crypt.o
-ENCINCLUDES        = -I../src/qfdes
+ENCOBJS            = crypt.o sap_crypt.o polluted.o pgp_crypt.o  pkcs7_crypt.o
+ENCINCLUDES        = 
 
 polluted.o:     ../src/polluted.c
 	$(CC) $(CFLAGS) -I. -c ../src/polluted.c
@@ -10,16 +10,8 @@ pgp_crypt.o:    ../src/pgp_crypt.c ../src/sap_crypt.h
 	$(CC) $(CFLAGS) -c ../src/pgp_crypt.c
 pkcs7_crypt.o:  ../src/pkcs7_crypt.c ../src/sap_crypt.h
 	$(CC) $(CFLAGS) -c ../src/pkcs7_crypt.c
-crypt.o: ../src/crypt.c ../src/crypt.h ../src/qfDES.h
+crypt.o: ../src/crypt.c ../src/crypt.h 
 	$(CC) $(CFLAGS) -c ../src/crypt.c
-md5.o: ../src/md5.c ../src/md5.h
-	$(CC) $(CFLAGS) -c ../src/md5.c
-qfDES.o: ../src/qfDES.c
-	$(CC) $(CFLAGS) -c ../src/qfDES.c
-qfDES_memory.o: ../src/qfDES_memory.c
-	$(CC) $(CFLAGS) -c ../src/qfDES_memory.c
-qfDES_key.o: ../src/qfDES_key.c
-	$(CC) $(CFLAGS) -c ../src/qfDES_key.c
 
 ../src/cache.tcl:   ../src/cache_crypt.tcl
 	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
