@@ -654,6 +654,9 @@ proc set_sess_type {win type} {
 	meeting {
 	    $win.m configure -text Meeting
 	}
+	directory {
+		$win.m configure -text Directory
+	}
 	#secure {
 	#    $win.m configure -text Secure
 	#}

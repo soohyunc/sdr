@@ -1312,7 +1312,8 @@ set typevalue(broadcast)  2
 set typevalue(stest)     -1
 set typevalue(smeeting)   1
 set typevalue(sbroadcast) 2
-#set typevalue(secure)    3
+set typevalue(directory)  3
+#set typevalue(secure)    4
 
 proc compare {aid1 aid2} {
     global ifstyle typevalue ldata
@@ -4357,16 +4358,18 @@ set typedata(icon:broadcast) broadcast
 set typedata(icon:stest) stest
 set typedata(icon:smeeting) smeeting
 set typedata(icon:sbroadcast) sbroadcast
+set typedata(icon:directory) directory
 #AUTH
 #set typedata(icon:secure) secure
 #name mapping allows for internationalisation
 set typedata(name:test) [tt Test]
 set typedata(name:meeting) [tt Meeting]
 set typedata(name:broadcast) [tt Broadcast]
-set typelist {test meeting broadcast}
+set typedata(name:directory) [tt Directory]
+set typelist {test meeting broadcast directory}
 #AUTH
 #set typedata(name:secure) [tt Secure]
-#set typelist {test meeting broadcast secure}
+#set typelist {test meeting broadcast directory secure}
 
 #AUTH
 proc get_type_icon {type authtype enctype} {
