@@ -28,7 +28,11 @@ int init_security()
   strcpy(passphrase, "");
   keylist=NULL;
   get_sdr_home(keyfilename);
+#ifdef WIN32
+  strcat(keyfilename, "\\sdr\\keys");
+#else
   strcat(keyfilename, "/keys");
+#endif
   if (stat(keyfilename, &sbuf)<0) return 0;
   if (sbuf.st_size>0) {
     announce_error(Tcl_GlobalEval(interp, "enter_passphrase"),
