@@ -34,6 +34,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef FREEBSD
+#include <sys/uio.h>
+#endif
+
 #ifdef SYSV
 #include <unistd.h>
 #endif
