@@ -153,8 +153,6 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
     writelog(printf("Padding Length=%d\n", *(authinfo+(auth_len-2)-1));)
   }
  
-  writelog(printf("Key Certificate=%d bytes\n", key_len);)
- 
   /* Extract the signature and key certificate from the packet and
      store in files. */
 
