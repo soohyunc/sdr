@@ -2,15 +2,6 @@ media:video
 proto:RTP/AVP
 protoname:RTP
 tool:vic
-fmt:21
-{
-  fmtname:PVH
-  layers:4
-  macro:DOLAYERS
-  {
-    value:/pvh/$(TTL)/$(LAYERS)
-  }
-}
 fmt:31
 {
   fmtname:H.261
@@ -41,6 +32,42 @@ fmt:25
   macro:DOLAYERS
   {
     value:/celb/$(TTL)
+  }
+}
+
+#prefered dynamic paylaod type for PVH
+fmt:120
+{
+  fmtname:PVH
+  layers:4
+  macro:DOLAYERS
+  {
+    value:/pvh/$(TTL)/$(LAYERS)
+  }
+  attr:rtpmap
+  {
+    hidden:true
+    attrvalue:120 PVH/90000
+    {
+      def:true
+    }
+  }
+}
+ 
+#cope with dynamic payload types for PVH codec
+fmt:*(DYNAMIC)
+{
+  hidden:true
+  withattr:rtpmap:$(DYNAMIC) PVH/90000
+  attr:rtpmap
+  {
+    attrvalue:$(DYNAMIC) PVH/90000
+    {
+	macro:DOLAYERS
+	{
+             value:/pvh/$(TTL)/$(LAYERS)
+        }
+    }
   }
 }
 flags:-t $(TTL)
