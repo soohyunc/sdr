@@ -1104,7 +1104,7 @@ char *argv[];
 
     if ((strchr(hstent->h_name,'.')!=NULL)&&
       (strlen(hstent->h_name)>strlen(hostname))) 
-      printf("024\n");strcpy(hostname, hstent->h_name);
+      strcpy(hostname, hstent->h_name);
 
 /* If the primary name of the host can't be a FQDN, try any aliases */
 
@@ -1443,8 +1443,8 @@ void recv_packets(ClientData fd)
     int fromlen;
     int length=0, orglength=0;
     int has_security=0;
-    int hdr_len=0, *enctmp=NULL, has_encryption=0;
-    int auth_len=0, *authtmp=NULL, found=0, has_authentication=0;
+    int hdr_len=0, enctmp=0, has_encryption=0;
+    int auth_len=0, authtmp=0, found=0, has_authentication=0;
     int newlength=0;
     int irand;
 
@@ -1910,7 +1910,7 @@ static void set_time(const char* var, int i, time_t t)
 	char buf[256]="";
 
 	sprintf(buf,
-          "set %s(%d) [clock format %u -format {%%d %%b %%y %%H:%%M %%Z}]",
+          "set %s(%d) [clock format %u -format {%%d %%b %%Y %%H:%%M %%Z}]",
 	      var, i, (unsigned int)t);
 	Tcl_GlobalEval(interp, buf);
 }
@@ -1985,7 +1985,11 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	if (debug1) {
 	  fprintf(stderr, "Illegal end-of-string character - removed!\n");
         }
-	data[length-1]='\n';
+	if (data[length-2]=='\n') {
+	    length--;
+	} else {
+	    data[length-1]='\n';
+	}
       } else {
 /* someone simply missed off the NL at end of the announcement also illegal */
 /* but again we'll be liberal in what we accept                             */
@@ -2012,7 +2016,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
         return((unsigned long)-1);
       }
       if (debug1) {
-        fprintf(stderr, "No session name field\n");
+        fprintf(stderr, "doesn't start with v=\n");
       }
       dump(data2, origlen);
       goto errorleap;
@@ -2026,7 +2030,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     if(((end=strchr(version, 0x0a)) == NULL)||(debug == 1)) {
       if (debug1)
-	fprintf(stderr, "No end to version name\n");
+	fprintf(stderr, "No end to version\n");
       dump(data2, origlen);
       goto errorleap;
     }
@@ -2042,6 +2046,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     i = 0;
     mediactr=0;  tctr=0;  pctr=0;  ectr=0;  bctr=0;  kctr=0;
+    session=0;
     uctr=0; chan[0]=NULL; chan[1]=NULL; timemax=0;
     vars[0][0]='\0';
 
@@ -2084,14 +2089,14 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         break;
 
                 case 'u':
-                        /* print description */
+                        /* session URI */
                         uri = end+2;
 			uctr++;
                         if ((end=strchr(uri, 0x0a)) == NULL) {
 			  if (debug1)
 			  {
 			    printf("Error decoding URI\n");
-			    printf("Failure at byte %ld\n", (long)desc-(long)version);
+			    printf("Failure at byte %ld\n", (long)uri-(long)version);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2117,7 +2122,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 'e':
-                        /* print originator */
+                        /* print email */
 			if (ectr<MAXPHONE)
 			  {
 			    email[ectr] = end+2;
@@ -2131,7 +2136,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding email address\n");
-			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			    printf("Failure at byte %ld\n", (long)email[ectr]-(long)version);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2141,7 +2146,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 'p':
-                        /* print originator */
+                        /* print phone */
 			if (pctr<MAXPHONE)
 			  {
 			    phone[pctr] = end+2;
@@ -2155,8 +2160,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         if ((end=strchr(phone[pctr], 0x0a)) == NULL) {
 			  if (debug1)
 			  {
-			    printf("Error decoding originator\n");
-			    printf("Failure at byte %ld\n", (long)orig-(long)version);
+			    printf("Error decoding phone\n");
+			    printf("Failure at byte %ld\n", (long)phone[pctr]-(long)version);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2208,7 +2213,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 't':
-                        /* print channel */
+                        /* print time */
 			if (tctr<MAXTIMES)
 			  {
 			    times[tctr] = end+2;
@@ -2233,7 +2238,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 'r':
-                        /* print channel */
+                        /* print repeat */
 			if (rctr[tctr-1] < MAXRPTS)
 			  {
 			    rpt[tctr-1][rctr[tctr-1]] = end+2;
@@ -2268,7 +2273,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  if (debug1)
 			  {
 			    printf("Error decoding key\n");
-			    printf("Failure at byte %ld\n", (long)chan-(long)version);
+			    printf("Failure at byte %ld\n", (long)key[kctr]-(long)version);
 			  }
 			  dump(data2, origlen);
 			  goto errorleap;
@@ -2386,7 +2391,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			break;
                 case 'z':
                         /* signature */
-                        *data_len = (int)( (end+3) - data );
+			if (data_len)
+			  *data_len = (int)( (end+3) - data );
                         length = 0;
                         break;
 
@@ -2394,7 +2400,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         /* unknown */
                         unknown = end+2;
 			if (debug1)
-			  printf("Warqning: unknown option - >%s<\n", end);
+			  printf("Warning: unknown option - >%s<\n", end);
                         if ((end=strchr(unknown, 0x0a)) == NULL) {
 			  if (debug1)
 			  {
@@ -2612,7 +2618,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     Tcl_SetVar(interp, "heardfrom", heardfrom, TCL_GLOBAL_ONLY);
 
     sprintf(namestr,
-       "set timeheard [clock format %u -format {%%d %%b %%y %%H:%%M %%Z}]",
+       "set timeheard [clock format %u -format {%%d %%b %%Y %%H:%%M %%Z}]",
 	    (unsigned int)t);
     Tcl_GlobalEval(interp, namestr);
 
@@ -3359,7 +3365,7 @@ int run_program(char *args) {
     fprintf(stderr, "%s ", nargv[i]);
   fprintf(stderr, "\n");
   perror(nargv[0]);
-  return(0);
+  exit(0);
 }
 #endif
 
