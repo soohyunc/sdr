@@ -34,8 +34,8 @@ int bus_send_new_app();
 int sip_register();
 int sip_send_mcast_register(const char *host, const char *maddr, int port,
                             int ttl, const char *user_data);
-int sip_send_udp_register(const char *host, int port, char *user_data);
-int sip_send_tcp_register(char *host, int port, char *user_data);
+int sip_send_udp_register(const char *host, int port, const char *user_data);
+int sip_send_tcp_register(const char *host, int port, char *user_data);
 
 /*sip_common.c*/
 int sip_send_udp(char *dst, int ttl, int port, char *msg);

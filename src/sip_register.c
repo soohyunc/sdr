@@ -146,13 +146,13 @@ int send_sip_register(char *uridata, char *proxyuri, char *user_data)
     return 0;
 }
 
-int sip_send_mcast_register(char *host, const char *maddr, int port, 
+int sip_send_mcast_register (const char *host, const char *maddr, int port, 
 			    int ttl, const char *user_data)
 {
     return -1;
 }
 
-int sip_send_udp_register(const char *host, int port, char *user_data)
+int sip_send_udp_register(const char *host, int port, const char *user_data)
 {
     return -1;
 }

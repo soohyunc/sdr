@@ -31,7 +31,6 @@
  * SUCH DAMAGE.
  */
 #include "sdr.h"
-#include "generate_ids.h"
 #include "prototypes.h"
 #include "ipv6_macros.h"
 

@@ -45,8 +45,6 @@ static Tk_Window mainWindow;	/* The main window for the application.  If
 				 * NULL then the application no longer
 				 * exists. */
 Tcl_Interp *interp;	/* Interpreter for this application. */
-static Tcl_DString command;	/* Used to assemble lines of terminal input
-				 * into Tcl commands. */
 
 /*
  * Command-line options:

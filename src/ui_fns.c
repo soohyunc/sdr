@@ -224,7 +224,7 @@ int ui_generate_v6_address(dummy, interp, argc, argv)
   struct in6_addr in2;
 
   /* printf("entering ui_generate_v6_address: no of args: %d,  %s %d\n", 
-         argc,argv[1],atoi(argv[2])); /* */
+         argc,argv[1],atoi(argv[2])); */
   
   if (argc==1) {
       printf("ui_generate_v6_address: no args???\n");
@@ -235,7 +235,7 @@ int ui_generate_v6_address(dummy, interp, argc, argv)
   }   
   
   inet_ntop(AF_INET6, &in2, interp->result, INET6_ADDRSTRLEN);
-  /*printf("exiting ui_generate_v6_address: result%s\n", interp->result); /* */
+  /*printf("exiting ui_generate_v6_address: result%s\n", interp->result); */
 #endif /* HAVE_IPv6 */
 
   return TCL_OK;

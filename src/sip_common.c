@@ -948,7 +948,7 @@ invalid_path:
     return -1;
 }
 
-int sip_send_tcp_request(int origfd, char *host, int port, const char *user_data, 
+int sip_send_tcp_request(int origfd, const char *host, int port, char *user_data, 
 			 int wait)
 {
     /*
