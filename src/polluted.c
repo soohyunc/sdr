@@ -376,7 +376,12 @@ int ui_createsession(dummy, interp, argc, argv)
   int addr_len = IPV4_ADDR_LEN;
 
   struct in_addr in;
+#ifdef HAVE_IPv6
   static char source[INET6_ADDRSTRLEN];
+#else
+  static char source[INET_ADDRSTRLEN];
+#endif
+
 /* 
  * Determine protocol family of session, IPv4 or IPv6, by looking at the
  * SAP address contained in argv[3].
@@ -384,9 +389,9 @@ int ui_createsession(dummy, interp, argc, argv)
   if (strncmp("ff", argv[3], 2) == 0){
 #ifdef HAVE_IPv6
       inet_ntop(AF_INET6, &hostaddr_v6, source, INET6_ADDRSTRLEN);
-#endif
       addr_fam = IPv6;
       addr_len = IPV6_ADDR_LEN;
+#endif
   } else {
       in.s_addr=htonl(hostaddr);
 	  strncpy(source, inet_ntoa(in), INET_ADDRSTRLEN);

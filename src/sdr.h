@@ -70,7 +70,9 @@
 #define GUI 1
 #define NO_GUI 0
 
-
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN (16)
+#endif
 
 #ifdef WIN32
 
