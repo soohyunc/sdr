@@ -58,6 +58,7 @@
 
 #include "sdr.h"
 #include "prototypes.h"
+#include "prototypes_crypt.h"
 
 #define MAXMEDIA 10
 #define MAXPHONE 10
@@ -294,11 +295,14 @@ int load_cache_entry(
     int sd_port, len;
     unsigned long  origsrc, src, endtime;
     char aid[80];
-    char key[MAXKEYLEN];
+    char key[MAXKEYLEN], keyname[MAXKEYLEN];
     time_t t;
     int ttl;
     char *k1,*k2;
     
+    strcpy(key,(const char *)"");
+    strcpy(keyname,(const char *)"");
+
 #ifdef DEBUG
     printf("loading cache file (%s): %s\n", argv[1], argv[2]);
 #endif
@@ -345,15 +349,22 @@ int load_cache_entry(
 	  }
 	endtime=parse_entry(aid, p, strlen(p),  origsrc, 
 			    src, sd_addr, sd_port, t, trust, key);
-	if((origsrc==hostaddr)&&(strcmp(trust,"trusted")==0))
-	  {
-	    queue_ad_for_sending(aid, advert, INTERVAL, 
-				 endtime, sd_addr, sd_port, 
-				 (unsigned char)ttl, key);
-	  }
-      }
-    else
-      {
+
+	if ((origsrc==hostaddr)&&(strcmp(trust,"trusted")==0)) {
+
+/* We have the key but need the keyname for queue_ad_for_sending */
+          if (strcmp(key,"")!=0) {
+            if (find_keyname_by_key(key, keyname) != 0) {
+#ifdef DEBUG
+              printf("failed to find keyname for key %s\n",key);
+#endif
+              return -1;
+            }
+          } 
+	  queue_ad_for_sending(aid, advert, INTERVAL, 
+               endtime,sd_addr,sd_port,(unsigned char)ttl, keyname);
+	}
+      } else {
 	fprintf(stderr, "sdr:corrupted cache file: %s\n", argv[1]);
       }
     return TCL_OK;
