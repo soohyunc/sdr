@@ -58,6 +58,10 @@ extern Tcl_Interp *interp;
 #include "broadcast.xbm"
 #include "meeting.xbm"
 #include "test.xbm"
+#include "secure.xbm"
+#include "sbroadcast.xbm"
+#include "smeeting.xbm"
+#include "stest.xbm"
 #include "sdr.xbm"
 
 void init_bitmaps()
@@ -86,5 +90,9 @@ void init_bitmaps()
   Tk_DefineBitmap(interp, Tk_GetUid("broadcast"), broadcast_bits, broadcast_width, broadcast_height);
   Tk_DefineBitmap(interp, Tk_GetUid("meeting"), meeting_bits, meeting_width, meeting_height);
   Tk_DefineBitmap(interp, Tk_GetUid("test"), test_bits, test_width, test_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("sbroadcast"), sbroadcast_bits, sbroadcast_width, sbroadcast_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("smeeting"), smeeting_bits, smeeting_width, smeeting_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("stest"), stest_bits, stest_width, stest_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("secure"), secure_bits, secure_width, secure_height);
   Tk_DefineBitmap(interp, Tk_GetUid("sdr"), sdr_bits, sdr_width, sdr_height);
 }
