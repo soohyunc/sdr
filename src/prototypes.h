@@ -175,7 +175,7 @@ void warn_tcl_special_chars(char *str);
 void read_old_style_cache();
 int extract_ttl(char *addrstr);
 int extract_layers(char *addrstr);
-int check_net_type(char *in, char *ip);
+int check_net_type(char *in, char *ip, char *addr);
 
 /* iohandler.c */
 void linksocket(int fd, int mask, Tcl_FileProc* callback);
