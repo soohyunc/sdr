@@ -3374,6 +3374,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 
   int datalength=0;
   int packetlength=0;
+  int code;
 
 #ifdef WIN32
   int wttl;
@@ -3456,7 +3457,13 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 
 /* send the data out - len should be the full length after build_packet */
 
-  send(tx_sock, buf, len, 0);
+  code = send(tx_sock, buf, len, 0);
+
+/* if debugging check the announcement is sent */
+
+  if (code == -1) {
+    writelog(printf(" \nFailed to send announcement: errno = %d\n\n",errno);)
+  }
 
 /* free up some space */
 
