@@ -143,7 +143,7 @@ proc enc_pgp_get_key_list {win aid} {
 
 proc pgp_check_authentication {irand} {
     update
-    global env
+    global env 
     global recv_asym_keyid
     global recv_authstatus
     global recv_authmessage
@@ -153,11 +153,23 @@ proc pgp_check_authentication {irand} {
     set local_key_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
     set pgpdir "[glob -nocomplain ~]/.pgp"
     if [info exists env(PGPPATH)] {
+       if {[string compare $env(PGPPATH) "none"] == 0 } {
+      		set recv_authstatus "failed"
+      		set recv_asym_keyid "nonenone"
+      		set recv_authmessage "No Key Ring Path"
+                set env(PGPPATH) "none"
+                return 1
+       } else {
       set env(PGPPATH) $env(PGPPATH)
+      }
     } else { 
           if { [file isdirectory $pgpdir ] == 0} {
             if { [ enter_pgp_path] == 0 } {
-                return 0
+      		set recv_authstatus "failed"
+      		set recv_asym_keyid "nonenone"
+      		set recv_authmessage "No Key Ring Path"
+                set env(PGPPATH) "none"
+                return 1
              }
            } else {
             set env(PGPPATH) $pgpdir
@@ -185,6 +197,7 @@ proc pgp_check_authentication {irand} {
     } else {
         if { [ file exists $local_key_file ] } {
         update
+        set oldpgppath $env(PGPPATH)
         catch { unset env(PGPPATH)}
         set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]"
         #putlogfile "NEWPGPPATH $env(PGPPATH)"
@@ -197,6 +210,8 @@ proc pgp_check_authentication {irand} {
      	pgp_InterpretOutput $output pgpresult 1
         #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
         file delete "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
+        catch { unset env(PGPPATH)}
+        set env(PGPPATH) $oldpgppath
      		if {$pgpresult(ok) == 1} {
     set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
       		set recv_authstatus "integrity"
@@ -204,7 +219,7 @@ proc pgp_check_authentication {irand} {
       		set recv_authmessage $mess
     		set recv_asym_keyid $pgpresult(keyid)
 # Ask the user if he wants to add the certificate to the publicKey 
-                catch { unset env(PGPPATH)}
+                #catch { unset env(PGPPATH)}
 set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) "\"to your public key ring"]
                  regsub -all {\"}  $pubkey {} pubkey1
                  pgp_AddCert $local_key_file "Adding Public Key" "$pubkey1"
@@ -218,8 +233,7 @@ set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) 
       		set recv_authmessage $mess
       		}
         
-        catch { unset env(PGPPATH)}
-    #timedmsgpopup "$pgpresult(msg)\n" "$recv_authstatus" 10000 
+       # catch { unset env(PGPPATH)}
   } else {
     set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) pgpresult(keyid) "none" "none" "none" "none" ]
       		set recv_authstatus "failed"
@@ -228,10 +242,6 @@ set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) 
       		set recv_authmessage $mess
      }
  }
- 
-
- 
-    #timedmsgpopup "$pgpresult(msg)"  "$recv_encstatus" 10000
     return 1
 }
 proc pgp_cleanup {irand} {
@@ -511,13 +521,15 @@ proc pgp_create_signature {irand} {
             set env(PGPPATH) $pgpdir
            }
     }
+    putlogfile "PGPPATH $env(PGPPATH)"
     set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on \
         +verbose=0 -u ]
     set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
     set tclcmd [ concat $tclcmd [ list $local_authtxt_file \
         -o $local_authsig_file ] ]
     set result [catch $tclcmd output]
-    #putlogfile "result= $result output= $output"
+    putlogfile "tclcmd= $tclcmd"
+    putlogfile "result= $result output= $output"
  
     # Either bad passphrase, we have not set-up the correct files properly
     # in 'generate_authentication_info, or PGP doesn't work properly...
@@ -635,10 +647,24 @@ proc pgp_check_encryption {irand } {
     set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
     set pgpdir "[glob -nocomplain ~]/.pgp"
     if [info exists env(PGPPATH)] {
+     if {[string compare $env(PGPPATH) "none"] == 0 } {
+                set recv_encstatus "failed"
+                set recv_enc_asym_keyid "nonenone"
+                set recv_encmessage "No Key Ring Path"
+                set env(PGPPATH) "none"
+                return 1
+       } else {
       set env(PGPPATH) $env(PGPPATH)
+      }
     } else { 
           if { [file isdirectory $pgpdir ] == 0} {
             if { [ enter_pgp_path] == 0 } {
+                set recv_encstatus "failed"
+                set recv_enc_asym_keyid "nonenone"
+                set recv_encmessage "No Key Ring Path"
+                set env(PGPPATH) "none"
+                return 1
+
                 return 0
              }
            } else {
@@ -791,7 +817,7 @@ if { $resultkey == 1} {
 		        -o $local_enctxt_file] output $key $irand $interactive]
                } else {
                set recv_encstatus "failed"
-               set recv_enc_asym_keyid "none"
+               set recv_enc_asym_keyid "nonenone"
                set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) "none" "none" "none" "none" "none"] 
                 regsub -all {\"} $pgpresult(msg) {} mess
     		set recv_encmessage $mess
@@ -826,14 +852,14 @@ if { $resultkey == 1} {
             set recv_enc_asym_keyid $pgpresult(keyid)
            } else {
             set recv_encstatus "failed"
-            set recv_enc_asym_keyid "none"
+            set recv_enc_asym_keyid "nonenone"
             set recv_encmessage $pgpresult(msg)
           }
  
      }
   } else {
     set recv_encstatus "failed"
-    set recv_enc_asym_keyid "none"
+    set recv_enc_asym_keyid "nonenone"
     set recv_encmessage "Decryption failed"
     }
     #timedmsgpopup "Decryption= $pgpresult(msg)"  "$recv_encstatus" 10000
@@ -879,7 +905,7 @@ proc pgp_InterpretOutput { in outvar key} {
      } elseif {  [ regexp -nocase {Key ID ([0-9a-f]+)} $in {}  pgpresult(keyid)] == 1} {
           #putlogfile " keyid == $pgpresult(keyid)"
      } else {
-          set pgpresult(keyid) "none"
+          set pgpresult(keyid) "nonenone"
      }
      if { [regexp {user ("[^"]*")} $in {} pgpresult(userid)] == 1} {
 	#putlogfile " USER = $pgpresult(userid) "
@@ -1924,7 +1950,7 @@ proc creat_des_key {} {
 
  
 proc enter_pgp_path {} {
-    global  env .pgpinfo
+    global  env 
     global pgpinfo
     global yourkey yourpin
     catch {destroy $w}
@@ -1961,12 +1987,13 @@ proc enter_pgp_path {} {
     pack $w.f.f3.cancel -side left -fill x -expand true
     grab $w
        tkwait variable pgpinfo(ok)
-       #grab release $w
+       grab release $w
        destroy .pgpinfo
        if { $pgpinfo(ok) == 1} {
 	set env(PGPPATH) $yourkey
           return 1
        } else {
+	set env(PGPPATH) "none"
 	return 0
        }
 }
