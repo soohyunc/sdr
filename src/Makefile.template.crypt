@@ -203,10 +203,6 @@ sanitised.o:     ../src/sanitised.c
 	echo "<!-- This file is automatically derived from BUGS -->" >> ../src/html/bugs.html
 	cat ../src/BUGS >> ../src/html/bugs.html
 
-tclBasic.o:	
-	gcc -c -O -ggdb -I/cs/research/mice/speedy/common/src/pub/tcl7.3 -I. -DNO_GETWD=1 -DHAVE_UNISTD_H=1 -DNO_UNION_WAIT=1 -DNEED_MATHERR=1       -DTCL_LIBRARY=\"/cs/research/mice/speedy/common/hpux/lib/tcl\" /cs/research/mice/speedy/common/src/pub/tcl7.3/tclBasic.c
-
-
 # Encryption stubs...
 polluted.o:     ../src/polluted.c
 	$(CC) $(CFLAGS) -DDEBUG -I. -c ../src/polluted.c
