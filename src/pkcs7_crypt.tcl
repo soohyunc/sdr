@@ -1009,9 +1009,9 @@ proc enter_pse_details {} {
 proc x509state { } {
 	global env
 	if [info exists env(X509STATE)] {
-   	return 0
-	} else {
    	return 1
+	} else {
+   	return 0
 	}
 }
 
