@@ -858,20 +858,23 @@ Specify the smallest scope that will reach the people you want to communicate wi
 		-highlightthickness 0 \
 		-value 127 -command {disable_scope_entry 127}
 
-	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Link Local"] -variable ttl\
+	radiobutton $win.f3.rr.r4 -relief flat -text [tt "IPv6 Link Local"] -variable ttl\
 		-highlightthickness 0 \
 		-value 15 -command {disable_scope_entry 15}
 
-	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Site"] -variable ttl\
+	radiobutton $win.f3.rr.r5 -relief flat -text [tt "IPv6 Site"] -variable ttl\
 		-highlightthickness 0 \
 		-value 63 -command {disable_scope_entry 63}
 
-	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Global"] -variable ttl\
+	radiobutton $win.f3.rr.r6 -relief flat -text [tt "IPv6 Global"] -variable ttl\
 		-highlightthickness 0 \
 		-value 127 -command {disable_scope_entry 127}
 	hlfocus $win.f3.rr.r1
 	hlfocus $win.f3.rr.r2
 	hlfocus $win.f3.rr.r3
+	hlfocus $win.f3.rr.r4
+	hlfocus $win.f3.rr.r5
+	hlfocus $win.f3.rr.r6
 	frame $win.f3.rr.f
 	if {[string compare $aid "new"]==0} {
 	    radiobutton $win.f3.rr.f.r4 -relief flat -variable ttl\
@@ -935,6 +938,9 @@ Specify the smallest scope that will reach the people you want to communicate wi
     pack $win.f3.rr.r1 -side top -anchor w
     pack $win.f3.rr.r2 -side top -anchor w
     pack $win.f3.rr.r3 -side top -anchor w
+    pack $win.f3.rr.r4 -side top -anchor w
+    pack $win.f3.rr.r5 -side top -anchor w
+    pack $win.f3.rr.r6 -side top -anchor w
     pack $win.f3.rr.f -side top -anchor w
     if {$scope=="admin"} {
 	pack unpack $win.f3.rr
@@ -2394,9 +2400,13 @@ proc setmediaflags {media win aid} {
 proc generate_address {args} {
     global zone
     if {[llength $args]==0} {
-	return [ui_generate_address]
+        return [ui_generate_address]
     } elseif {[llength $args]==2} {
-	return [eval "ui_generate_address $args"]
+        if {[string first "ff" [lindex $args 0]] >= 0} {
+            return [eval "ui_generate_v6_address $args"]
+        } else {
+            return [eval "ui_generate_address $args"]
+        }
     } elseif {([llength $args]==3)||([llength $args]==1)} {
 	if {([llength $args]==3)} {
 	    set baseaddr [lindex $args 0]
@@ -2414,25 +2424,27 @@ proc generate_address {args} {
 	    #we check if we really need to generate a new address or
 	    #if the old one is still OK...
 	    global ldata
-	    set pa [split $ldata($aid,tmpmulticast) "."]
-	    #it's simpler to subtract 224 from the msb than fix Tcl's 
-	    #concept of what's positive and what's negative...
-	    set paddr [expr ((((((([lindex $pa 0]-224)*256)\
-				 +[lindex $pa 1])*256)\
-				     +[lindex $pa 2])*256)\
-				     +[lindex $pa 3])]
-	    set ba [split $baseaddr "."]
-	    set baddr [expr ((((((([lindex $ba 0]-224)*256)\
-				 +[lindex $ba 1])*256)\
-				     +[lindex $ba 2])*256)\
-				     +[lindex $ba 3])]
-	    set paddr [expr $paddr >> (32-$netmask)]
-	    set baddr [expr $baddr >> (32-$netmask)]
-	    if {$paddr==$baddr} {
-		#we don't really need to generate a new address in 
-		#these circumstances, so don't do so (avoid confusion).
-		return 1
-	    } else {
+#--- start of commented section  -- This just doesn't work for IPv6 addresses
+#	    set pa [split $ldata($aid,tmpmulticast) "."]
+#	    #it's simpler to subtract 224 from the msb than fix Tcl's 
+#	    #concept of what's positive and what's negative...
+#	    set paddr [expr ((((((([lindex $pa 0]-224)*256)\
+#				 +[lindex $pa 1])*256)\
+#				     +[lindex $pa 2])*256)\
+#				     +[lindex $pa 3])]
+#	    set ba [split $baseaddr "."]
+#	    set baddr [expr ((((((([lindex $ba 0]-224)*256)\
+#				 +[lindex $ba 1])*256)\
+#				     +[lindex $ba 2])*256)\
+#				     +[lindex $ba 3])]
+#	    set paddr [expr $paddr >> (32-$netmask)]
+#	    set baddr [expr $baddr >> (32-$netmask)]
+#	    if {$paddr==$baddr} {
+#		#we don't really need to generate a new address in 
+#		#these circumstances, so don't do so (avoid confusion).
+#		return 1
+#	    } else {
+#--- end of commented section
 		#should really warn the user when we have to do this
 		sdr_toplevel .warn "Warning"
 		frame .warn.f -borderwidth 2 -relief groove
@@ -2462,7 +2474,8 @@ proc generate_address {args} {
 		    unset ldata($aid,tmpmulticast2)
 		    return $ldata($aid,tmpmulticast)
 		}
-	    }
+# MM - fixing the nesting
+#	    }
 	}
     }
 }

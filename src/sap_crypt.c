@@ -448,7 +448,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
   struct  advert_data *get_advert_info();	
   struct auth_info *authinfo=NULL;
   struct auth_header *auth_hdr;
-  struct sap_header *bp=NULL;
+  struct sapv4_header *bp=NULL;
   struct priv_header *priv_hdr=NULL;
 
   char *ap=NULL;
@@ -508,7 +508,8 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
     bp = addata->sap_hdr;
 
     if (bp == NULL) {
-      bp=malloc(sizeof(struct sap_header));
+      bp=malloc(sizeof(struct sapv4_header));
+      memset(bp, 0, sizeof(struct sapv4_header));
       bp->version  = 1;
       bp->authlen  = auth_len /4;
       bp->enc      = 1;
@@ -528,7 +529,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 /* malloc the buffer */
 
     orglen = len;
-    buf = (char *)malloc(len+24+sizeof(struct sap_header)+auth_len+TIMEOUT+des_enc_hdrlen+addata->length);
+    buf = (char *)malloc(len+24+sizeof(struct sapv4_header)+auth_len+TIMEOUT+des_enc_hdrlen+addata->length);
 
 /* copy data to buf - note 1st 24 bytes are for checksum   */
 /* data is "n=......k=keyhere\nv=0......\nZ="              */
@@ -538,8 +539,8 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 
 /* copy sap_header following "Z="   */
 
-    memcpy(buf+24+len, bp,sizeof(struct sap_header));
-    bplen = sizeof(struct sap_header);
+    memcpy(buf+24+len, bp,sizeof(struct sapv4_header));
+    bplen = sizeof(struct sapv4_header);
 
 /* copy authentication header (2nd byte = signature length) */
 

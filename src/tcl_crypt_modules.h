@@ -28,9 +28,9 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_sap_crypt, tcl_pgp_crypt, tcl_pkcs7_crypt, tcl_cli};
 #ifdef AUTH
-#define MAX_UI_FN 40
+#define MAX_UI_FN 42
 #else
-#define MAX_UI_FN 38
+#define MAX_UI_FN 40
 #endif
 
 const char *ui_fn_name[MAX_UI_FN]=
@@ -42,6 +42,7 @@ const char *ui_fn_name[MAX_UI_FN]=
   "createsession",
   "checkaddress",
   "gethostaddr",
+  "get_v6_hostaddr",
   "gethostname",
   "getusername",
   "ui_stop_session_ad",
@@ -76,7 +77,8 @@ const char *ui_fn_name[MAX_UI_FN]=
   "write_authentication",
   "write_encryption",
 #endif
-  "verify_ipv6_stack"
+  "verify_ipv6_stack",
+  "ui_generate_v6_address"
 };
 
 void *ui_fn[MAX_UI_FN]=
@@ -88,6 +90,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_createsession,
   ui_check_address,
   ui_gethostaddr,
+  ui_get_v6_hostaddr,
   ui_gethostname,
   ui_getusername,
   ui_stop_session_ad,
@@ -122,5 +125,6 @@ void *ui_fn[MAX_UI_FN]=
   ui_write_authentication,
   ui_write_encryption,
 #endif
-  ui_verify_ipv6_stack
+  ui_verify_ipv6_stack,
+  ui_generate_v6_address
 };

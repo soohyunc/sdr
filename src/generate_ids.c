@@ -33,6 +33,9 @@
 #include "sdr.h"
 #include "generate_ids.h"
 #include "prototypes.h"
+#include "ipv6_macros.h"
+
+#define IPV6_ADDR_LEN 16
 
 int generate_port(char *media)
 {
@@ -61,36 +64,62 @@ int generate_port(char *media)
 static struct addr_list *first_addr=NULL;
 static struct addr_list *last_addr=NULL;
 
-int store_address(struct in_addr *addr, unsigned long endtime)
+int IPv6AddrEqual(struct in6_addr *a1, struct in6_addr *a2)
+{
+    if (strncmp(a1, a2, 16) == 0)
+        return 1;
+    else
+        return 0;
+}
+
+int store_address(struct in_addr *addr, int addr_fam, unsigned long endtime)
+//int store_address(char *addr, int addr_fam, unsigned long endtime)
 {
   struct addr_list *new_address, *test;
   test=first_addr;
 
   while (test!=NULL) {
-    if (addr->s_addr == test->addr.s_addr) {
-        if (endtime == test->endtime) return 0;
-        delete_address(test);
-        break;
-    }
-    test=test->next;
+      if (addr_fam == IPv6){
+#ifdef HAVE_IPv6
+          if (IPV6_ADDR_EQUAL((struct in6_addr *)addr, &(test->addr6))) {
+//          if (IN6_ADDR_EQUAL(*((struct in6_addr *)addr), test->addr6)) {
+              if (endtime == test->endtime) return 0;
+              delete_address(test, IPv6);
+              break;
+          } 
+#endif
+      } else {
+          if (addr->s_addr == test->addr.s_addr) {
+              if (endtime == test->endtime) return 0;
+              delete_address(test, IPv4);
+              break;
+          }
+      }
+      test=test->next;
   }
 
   new_address=(struct addr_list *)malloc(sizeof(struct addr_list));
-  new_address->addr.s_addr= addr->s_addr;
+  memset(new_address, 0, sizeof(struct addr_list));
+  if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+      IN6_ADDR_COPY(new_address->addr6, 
+                    (*((struct in6_addr*)addr)));
+#endif
+  } else {
+      new_address->addr.s_addr= addr->s_addr;
+  }
   new_address->next=NULL;
   new_address->endtime=endtime;
-  if(first_addr==NULL)
-    {
+  
+  if (first_addr==NULL) {
       first_addr=new_address;
       last_addr=new_address;
       new_address->prev=NULL;
-    }
-  else
-    {
+  } else {
       new_address->prev=last_addr;
       last_addr->next=new_address;
       last_addr=new_address;
-    }
+  }
   return 0;
 }
 
@@ -113,27 +142,34 @@ int delete_address(struct addr_list *test)
   return 0;
 }
 
-int check_address(struct in_addr *addr)
+int check_address(struct in_addr *addr, int addr_fam)
 {
   struct addr_list *test, *tmp;
   struct timeval tv;
+
   test=first_addr;
   gettimeofday(&tv, NULL);
-  while(test!=NULL)
-    {
-      if((test->endtime!=0)&&(test->endtime<tv.tv_sec))
-	{
-	  tmp=test->next;
-	  delete_address(test);
-	  test=tmp;
-	}
-      else
-	{
-	  if(addr->s_addr==test->addr.s_addr)
-	    return FALSE;
-	  test=test->next;
-	}
-    }
+  while(test!=NULL) {
+      if((test->endtime!=0)&&(test->endtime<tv.tv_sec)) {
+          tmp=test->next;
+          delete_address(test, addr_fam);
+          test=tmp;
+      } else {
+          if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+              if(IPV6_ADDR_EQUAL((struct in6_addr *)addr,
+                                &test->addr6)) {
+                  return FALSE;
+              }
+#endif              
+          } else {
+              if(addr->s_addr==test->addr.s_addr) {
+                  return FALSE;
+              }
+          }
+          test=test->next;
+      }
+  }
   return TRUE;
 }
 
@@ -155,7 +191,47 @@ struct in_addr generate_address(struct in_addr *baseaddr, int netmask)
       i=lbl_random();
       newaddr.s_addr &= mask.s_addr;
       newaddr.s_addr |= (i & ~mask.s_addr);
-      if (check_address(&newaddr)==TRUE)
-	return(newaddr);
+      if (check_address(&newaddr, IPv4)==TRUE)
+          return(newaddr);
     }
 }
+
+#ifdef HAVE_IPv6
+struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
+                                     struct in6_addr *newaddr)
+{
+    unsigned long i;
+    u_int mask;
+
+    mask = 128;
+
+    // We ignore a passed in scope, we assume that the baseaddr
+    // designates a scope. If there is no baseaddr, we assume global scope.
+
+    //printf("in generate addr: scope: %d, netmask: %d\n", scope, netmask);
+
+    if (baseaddr==NULL) {
+        inet6_addr(SAPv6_DEFAULT, newaddr);    // ffoe::2:8000
+        mask = SAPv6_DEFAULT_MASK;             // 113 bits   
+    } else {
+        memcpy(newaddr, baseaddr, IPV6_ADDR_LEN);
+    }
+    /* printf("generate_v6_addr: orig addr:%s\n", inet6_ntoa(newaddr)); /* */
+    while(1) {
+        i=lbl_random();
+
+        IN6_NETMASK_IT(*newaddr, mask);
+
+        i = i & ((1 << (128 - netmask)) - 1);
+
+        /* in6_word(newaddr, 3) |= (i);*/
+        newaddr->s6_words[7] |= (i);
+        if (check_address(newaddr, IPv6)==TRUE) {
+            /* printf("generate_v6_addr: newaddr: %s\n", 
+               inet6_ntoa(newaddr)); /**/
+            return(newaddr);
+        }
+    }
+}
+#endif
+

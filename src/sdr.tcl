@@ -2034,8 +2034,18 @@ if {$ifstyle=="norm"} {
   #Is this a session we announced?  If so, let us modify it...
   set username $ldata($aid,creator)
   set mysess 0
-  if {([gethostaddr]==$ldata($aid,source)) && \
-	  ([getusername]==$username) && \
+  set addr_equal 0
+  set addr $ldata($aid,source)
+  if {[string first ":" $addr] >= 0} {
+      if {[get_v6_hostaddr]==$addr} {
+          set addr_equal 1
+      } 
+  } else {
+      if {[gethostaddr]==$addr} {
+          set addr_equal 1
+      }
+  }
+  if {($addr_equal==1) && ([getusername]==$username) && \
           ($ldata($aid,trust)=="trusted")} {
       set mysess 1
       button $win.f3.edit -text [tt "Edit"] -relief raised \
@@ -4202,8 +4212,16 @@ proc dotted_decimal_to_decimal {dd} {
 
 proc make_session {aid {mediavar {}}} {
     global ldata
+
     set msg "v=0"
-    set msg "$msg\no=$ldata($aid,creator) $ldata($aid,sessid) $ldata($aid,sessvers) IN IP4 $ldata($aid,createaddr)"
+
+#check for IPv6    
+	set addr $ldata($aid,0,addr)
+    if {[string first "ff" $addr] >= 0} {
+        set msg "$msg\no=$ldata($aid,creator) $ldata($aid,sessid) $ldata($aid,sessvers) IN IP6 $ldata($aid,createaddr)"
+    } else {
+        set msg "$msg\no=$ldata($aid,creator) $ldata($aid,sessid) $ldata($aid,sessvers) IN IP4 $ldata($aid,createaddr)"
+    }
     set msg "$msg\ns=$ldata($aid,session)"
     set desc $ldata($aid,desc)
     regsub -all "\n" $desc " " desc
@@ -4257,7 +4275,12 @@ proc make_session {aid {mediavar {}}} {
 	set msg "$msg\nm=$media $port $proto $fmt"
 	set addr $ldata($aid,$i,addr)
 	set newttl $ldata($aid,$i,ttl)
-	set msg "$msg\nc=IN IP4 $addr/$newttl"
+#check for IPv6    
+    if {[string first "ff" $addr] >= 0} {
+     set msg "$msg\nc=IN IP6 $addr/$newttl"
+    } else {
+     set msg "$msg\nc=IN IP4 $addr/$newttl"
+    }
         if {[info exists ldata($aid,$i,mediakey)]} {
           set key $ldata($aid,$i,mediakey)
         } else {
@@ -4279,6 +4302,11 @@ proc make_session {aid {mediavar {}}} {
 
 proc valid_mcast_address {addr} {
     if {$addr==""} {return 1}
+
+#BUGBUG: we are not validating IPv6 mcast address.
+    if {[string first "ff" $addr] >= 0} {
+        return 1
+    } 
     set parts [split $addr "."]
     if {[llength $parts]!=4} {
 #	putlogfile "Invalid address format"

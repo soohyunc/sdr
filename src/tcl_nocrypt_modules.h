@@ -23,7 +23,7 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_cli};
 
-#define MAX_UI_FN 28
+#define MAX_UI_FN 29
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -54,7 +54,8 @@ const char *ui_fn_name[MAX_UI_FN]=
   "set_sipalias",
   "getpid",
   "run_program",
-  "verify_ipv6_stack"
+  "verify_ipv6_stack",
+  "ui_generate_v6_address"
 };
 
 void *ui_fn[MAX_UI_FN]=
@@ -86,6 +87,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_set_sipalias,
   ui_getpid,
   ui_run_program,
-  ui_verify_ipv6_stack
+  ui_verify_ipv6_stack,
+  ui_generate_v6_address
 };
 

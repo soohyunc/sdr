@@ -9,6 +9,9 @@ extern Tcl_Interp *interp;
 extern char hostname[];
 extern char username[];
 extern unsigned long hostaddr;
+#if HAVE_IPv6
+extern struct in6_addr hostaddr_v6;
+#endif
 extern int rxsock[];
 extern int no_of_rx_socks;
 extern int doexit;
@@ -88,14 +91,18 @@ int parse_announcement(int enc, char *data, int length,
   /* if someone else is repeating our announcements, be careful
      not to re-announce their modified version ourselves */
 
+/* 
+ * REVIEW -- this entire funtion not called? If so the 'if' statement
+ * below, won't work with IPv6. -- MM 
+*/
  if (src == hfrom || src != hostaddr) {
     parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"trusted",recvkey ,
                 NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
+
   } else {
     parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"untrusted",recvkey,
                 NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
   }
-
   return 0;
 }
 
@@ -104,7 +111,7 @@ int parse_announcement(int enc, char *data, int length,
 /* add - sap header, timeout, auth_hdr and enc_hdr                      */
 /* buf malloced in send_advert(), filled here and sent in send_advert() */
 /*----------------------------------------------------------------------*/
-int build_packet(char *buf, char *adstr, int len, int encrypt, 
+int build_packet(char *buf, char *adstr, int addr_fam, int len, int encrypt, 
                  u_int auth_len, u_int hdr_len, 
                  struct auth_info *authinfo, struct priv_header *sapenc_p)
 {
@@ -115,11 +122,14 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
   int len_add=0;
   int privlen=0;
   int i=0;
+  u_int host;
+  int sap_hdr_len = 0;
 
   writelog(printf(" -- entered build_packet --\n");)
  
 /* set the sap_hdr to point to the start of buf */
-
+     
+  
   bp = (struct sap_header *)buf;
 
 /* set up some basic sap_header fields */
@@ -129,7 +139,21 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
   bp->compress = 0;
   bp->authlen  = auth_len / 4;
   bp->msgid    = 0;
-  bp->src      = (unsigned long)htonl(hostaddr);
+  
+/* Write the v6 or v4 source address in buf */
+  /* bp->src = (unsigned long)htonl(hostaddr); */
+  if (addr_fam == IPv6) {
+      memcpy(buf+sizeof(struct sap_header), (char *) &hostaddr_v6, 16);
+      len_add = SAPV6_HDR_LEN;
+      sap_hdr_len = SAPV6_HDR_LEN;
+      bp->addr     = 1;
+  } else {
+      host = (unsigned long)htonl(hostaddr);
+      memcpy(buf+sizeof(struct sap_header), (char *) &host, 4);
+      len_add = SAPV4_HDR_LEN;
+      sap_hdr_len = SAPV4_HDR_LEN;
+      bp->addr     = 0;
+  }
 
   if ( (hdr_len == 0) && (encrypt == 0) ) {
     bp->enc = 0;
@@ -137,7 +161,7 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
     bp->enc = 1;
   }
 
-  len_add += sizeof(struct sap_header);
+  /* len_add += sizeof(struct sap_header); /* MM */
 
 /* the sap_header has been filled out now so do the auth_header */
 
@@ -145,7 +169,7 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
 
 /* auth header (length is 2 as Goli has signature length as 2nd byte !) */
 
-    auth_hdr = (struct auth_header *)((char *)buf+sizeof(struct sap_header));
+    auth_hdr = (struct auth_header *)((char *)buf+sap_hdr_len);
 
     auth_hdr->version   = authinfo->version;
     auth_hdr->padding   = authinfo->padding;
@@ -174,13 +198,13 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
 /* sap_hdr and auth_hdr filled now so fill the privacy header and data */
 
   if ( (hdr_len == 0) && (encrypt == 0) ) {
-    memcpy(buf+sizeof(struct sap_header)+auth_len, adstr, len);
+    memcpy(buf+sap_hdr_len+auth_len, adstr, len);
   } else {
 
 /* first add the common timeout field - always 0 at the moment */
 
     for (i=0; i<4; i++) {
-      buf[sizeof(struct sap_header)+auth_len+i]=0;
+      buf[sap_hdr_len+auth_len+i]=0;
     }
 
 /* fill in the privacy header */
@@ -191,10 +215,10 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
 /* for DES privlen will be 4 and for asymm it will be the whole thing */
 
     if (sapenc_p == NULL) {
-      memcpy(buf+sizeof(struct sap_header)+auth_len+TIMEOUT+privlen,adstr,len);
+      memcpy(buf+sap_hdr_len+auth_len+TIMEOUT+privlen,adstr,len);
       len_add += TIMEOUT + privlen;
     } else {
-      memcpy(buf+sizeof(struct sap_header)+auth_len+TIMEOUT+ENC_HEADER_LEN,adstr,len);
+      memcpy(buf+sap_hdr_len+auth_len+TIMEOUT+ENC_HEADER_LEN,adstr,len);
       len_add += TIMEOUT + ENC_HEADER_LEN;
     }
 
@@ -309,13 +333,13 @@ int store_data_to_announce(struct advert_data *addata,
   }
 }
 
-/* ---------------------------------------------------------------------- */
-/* ui_createsession - creates the session announcement                    */
-/*                                                                        */
-/* argv[1]=sess; [2]=stoptime; [3]=addr; [4]=port; [5]=ttl; [6]=keyname   */
-/*     [7]=auth_type; [8]=enc_type; [9]=keyid(auth); [10]=keyid(enc)      */
-/*                                                                        */
-/* ---------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------*/
+/* ui_createsession - creates the session announcement                      */
+/*                                                                          */
+/* argv[1]=sess; [2]=stoptime; [3]=sap addr; [4]=port; [5]=ttl; [6]=keyname */
+/*     [7]=auth_type; [8]=enc_type; [9]=keyid(auth); [10]=keyid(enc)        */
+/*                                                                          */
+/* ------------------------------------------------------------------------ */
 int ui_createsession(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
     Tcl_Interp *interp;                 /* Current interpreter. */
@@ -339,6 +363,21 @@ int ui_createsession(dummy, interp, argc, argv)
   int i, *authinfo=0, *encinfo=0;
   int irand, new_len;
   int rc;
+  int addr_fam = IPv4;
+  struct in_addr in;
+  char *source;
+
+/* 
+ * Determine protocol family of session, IPv4 or IPv6, by looking at the
+ * SAP address contained in argv[3].
+ */
+  if (strncmp("ff", argv[3], 2) == 0){
+      source = inet6_ntoa(&hostaddr_v6);
+      addr_fam = IPv6;
+  } else {
+      in.s_addr=htonl(hostaddr);
+      source = inet_ntoa(in);
+  }
 
 /* Clear key */
 
@@ -358,6 +397,7 @@ int ui_createsession(dummy, interp, argc, argv)
   port     = atoi(argv[4]);
   interval = INTERVAL;
 
+
 /* need the copy because parse entry splats the data */
 
   strncpy(data, argv[1], MAXADSIZE);
@@ -373,6 +413,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
     if (addata == NULL) {
       addata=(struct advert_data *)malloc(sizeof (struct advert_data));
+      memset(addata, 0, sizeof (struct advert_data));
       addata->sapenc_p = NULL;
       addata->data     = NULL;
       addata->sap_hdr  = NULL;
@@ -446,6 +487,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
     if(addata == NULL) {
       addata=(struct advert_data *)malloc(sizeof (struct advert_data));
+      memset(addata, 0, sizeof (struct advert_data));
       addata->data     = NULL;
       addata->authinfo = NULL;
       addata->sap_hdr  = NULL;
@@ -486,6 +528,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
     if(addata == NULL) {
       addata=(struct advert_data *)malloc(sizeof (struct advert_data));
+      memset(addata, 0, sizeof (struct advert_data));
       addata->data     = NULL;
       addata->authinfo = NULL;
       addata->sap_hdr  = NULL;
@@ -587,16 +630,17 @@ int ui_createsession(dummy, interp, argc, argv)
   }
 
 /* encryption and authentication has been finished so call parse_entry */
-
-    parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port,
+    parse_entry(aid, data, strlen(data), source, source, argv[3], port,
          tv.tv_sec, "trusted", key, 
          argv[7], authstatus, authinfo, argv[9], 
          argv[8], encstatus,  encinfo,  argv[10], authmessage,encmessage);
  
 /* queue the ad for sending */
-
-    queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, 
-         ttl, argv[6], argv[7], authstatus ,argv[8], encstatus, addata);
+    /* printf("ui_createsession calling queue_ad_4_sending: addr/port %s/%d\n",
+           argv[3], port); /* MM */
+    queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], addr_fam,
+                         port, ttl, argv[6], argv[7], authstatus ,argv[8], 
+                         encstatus, addata);
 
 /* free up some space */
  
@@ -606,8 +650,8 @@ int ui_createsession(dummy, interp, argc, argv)
   free(authstatus);
   free(encmessage);
   free(encstatus);
-
   free(tempptr);
+
   return TCL_OK;
 }
  
@@ -763,7 +807,8 @@ int gen_new_data(char *adstr,
    struct advert_data *addata )
 
 {
-    struct sap_header *bp=NULL;
+/* MM #ifndef HAVE_IPv6 */
+    struct sapv4_header *bp=NULL;
     struct auth_info *authinfo=NULL;
     struct priv_header *sapenc_p=NULL;
 
@@ -833,17 +878,17 @@ int gen_new_data(char *adstr,
 /* clear: addata->encrypt = 0, sapenc_p == NULL */
 
     if ( (addata->encrypt == 0) && (sapenc_p != NULL) ) {          /* asymm */
-      newlen=sizeof(struct sap_header)+TIMEOUT+hdr_len;
+      newlen=sizeof(struct sapv4_header)+TIMEOUT+hdr_len;
     } else if ( (addata->encrypt == 1) && (sapenc_p == NULL)) {    /*  symm */
-      newlen=sizeof(struct sap_header)+TIMEOUT+addata->length+4;
+      newlen=sizeof(struct sapv4_header)+TIMEOUT+addata->length+4;
     } else {                                                       /* clear */
-      newlen=sizeof(struct sap_header)+addata->length;
+      newlen=sizeof(struct sapv4_header)+addata->length;
     }
 
-/* create a new buffer and sap_header */
+/* create a new buffer and sapv4_header */
     
     buf = (char *)malloc(newlen);
-    bp  = (struct sap_header *)malloc(sizeof(struct sap_header));
+    bp  = (struct sapv4_header *)malloc(sizeof(struct sapv4_header));
 
     bp->version  = 1;
     bp->type     = 0;
@@ -853,17 +898,17 @@ int gen_new_data(char *adstr,
     bp->src      = htonl(hostaddr);
 
 /* asymmetric, symmetric and then clear */
-/* copy the sap_header, priv_header and payload to buf */
+/* copy the sapv4_header, priv_header and payload to buf */
 
     if ( (addata->encrypt == 1) || (sapenc_p != NULL) ) { 
       bp->enc = 1;
-      memcpy(buf,bp,sizeof(struct sap_header));
+      memcpy(buf,bp,sizeof(struct sapv4_header));
       free(bp);
 
 /* timeout field - always 0 at the moment */
 
     for (i=0; i<4; i++) {
-      buf[sizeof(struct sap_header)+i]=0;
+      buf[sizeof(struct sapv4_header)+i]=0;
     }
 
 /* add privacy header and data - 0 as we don't want an authentication header */
@@ -873,10 +918,10 @@ int gen_new_data(char *adstr,
 /* add data directly after generic hdr for asymm and after padded for symm */
 
       if (sapenc_p != NULL) {                                    /* asymm */
-        memcpy(buf+sizeof(struct sap_header)+TIMEOUT+ENC_HEADER_LEN,
+        memcpy(buf+sizeof(struct sapv4_header)+TIMEOUT+ENC_HEADER_LEN,
                 addata->data,addata->length);
       } else {                                                   /*  symm */
-        memcpy(buf+sizeof(struct sap_header)+TIMEOUT+privlen,
+        memcpy(buf+sizeof(struct sapv4_header)+TIMEOUT+privlen,
                 addata->data,addata->length);
       }
       
@@ -885,9 +930,9 @@ int gen_new_data(char *adstr,
 /* no encryption was used so just copy the sap_header and the payload */
 
       bp->enc = 0;
-      memcpy(buf,bp,sizeof(struct sap_header));
+      memcpy(buf,bp,sizeof(struct sapv4_header));
       free(bp);
-      memcpy(buf+sizeof(struct sap_header), addata->data, addata->length);   
+      memcpy(buf+sizeof(struct sapv4_header), addata->data, addata->length);   
     }
 
 /* free up some internal variables */
@@ -910,19 +955,21 @@ int gen_new_data(char *adstr,
 /* ------------------------------------------------------------------- */
 int gen_new_auth_data(char *buf, 
                       char *new_data,
-         struct sap_header *bp,
+                      struct sapv4_header *bp,
                       int  auth_len,
                       int  len)
 {
-  struct sap_header *bp1=NULL;
+  struct sapv4_header *bp1=NULL;
   char *newbuf=NULL, *sbuf=NULL;
   int newlen, lenrest;
+
+  printf("entered gen_new_auth_data\n");
 
   writelog(printf("entered gen_new_auth_data\n");)
 
 /* copy bp to bp1, setting bp->msgid=0 */
 
-  bp1 = (struct sap_header *)malloc(sizeof(struct sap_header));
+  bp1 = (struct sapv4_header *)malloc(sizeof(struct sapv4_header));
   bp1->version  = bp->version;
   bp1->type     = bp->type;
   bp1->enc      = bp->enc;
@@ -936,16 +983,16 @@ int gen_new_auth_data(char *buf,
   newlen = len - auth_len;
   newbuf = (char *)malloc(newlen);
 
-/* copy sap_header to start of newbuf and free temporary sap_header */
+/* copy sapv4_header to start of newbuf and free temporary sapv4_header */
 
-  memcpy((char *)newbuf,(char *)bp1,sizeof(struct sap_header));
+  memcpy((char *)newbuf,(char *)bp1,sizeof(struct sapv4_header));
   free(bp1);
 
 /* copy everything else, missing out the auth header */
 
-  lenrest = newlen - sizeof(struct sap_header);
-  sbuf = (char *)buf+sizeof(struct sap_header)+auth_len;
-  memcpy((char *)newbuf+sizeof(struct sap_header),(char *)sbuf,lenrest);
+  lenrest = newlen - sizeof(struct sapv4_header);
+  sbuf = (char *)buf+sizeof(struct sapv4_header)+auth_len;
+  memcpy((char *)newbuf+sizeof(struct sapv4_header),(char *)sbuf,lenrest);
 
 /* copy the whole lot to the new_data buffer and free the work buffer */
 
@@ -964,7 +1011,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   FILE *file=NULL;
 
   struct auth_header auth_hdr;
-  struct sap_header *sap_hdr;
+  struct sapv4_header *sap_hdr;
   struct advert_data *addata=NULL;
   struct advert_data *get_advert_info();
 
@@ -975,6 +1022,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
   int total,newlen,len1;
   int i=0, auth_len=0;
+  int sap_hdr_len=sizeof (struct sapv4_header);
 
 #ifdef WIN32  /* need to sort out the ~ on windows */
   struct stat sbuf;
@@ -1023,10 +1071,10 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
 /* malloc the main buffer */
 
-  total = len + sizeof(struct sap_header) + auth_len + newlen;
+  total = len + sap_hdr_len + auth_len + newlen;
   buf = (char *)malloc(total);
 
-  writelog(printf("write_auth: malloced: len(%d) + sap_hdr(%d) + auth_len(%d) + newlen(%d) = total(%d)\n",len,sizeof(struct sap_header),auth_len,newlen,total);)
+  writelog(printf("write_auth: malloced: len(%d) + sap_hdr(%d) + auth_len(%d) + newlen(%d) = total(%d)\n",len,sap_hdr_len,auth_len,newlen,total);)
 
 /* write the data (starting "n=...v=...Z=\n"to the buffer */
 
@@ -1041,7 +1089,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
   if( sap_hdr == NULL) {
 
-    sap_hdr = (struct sap_header *)malloc(sizeof(struct sap_header));
+    sap_hdr = (struct sap_header *)malloc(sap_hdr_len);
     sap_hdr->version  = 1;
     sap_hdr->authlen  = auth_len /4;	
     sap_hdr->enc      = 0;
@@ -1049,13 +1097,13 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
     sap_hdr->msgid    = 0;
     sap_hdr->src      = htonl(hostaddr);
 
-    memcpy(buf+len,sap_hdr,sizeof(struct sap_header));
-    len += sizeof(struct sap_header);
+    memcpy(buf+len,sap_hdr,sap_hdr_len);
+    len += sap_hdr_len;
     free(sap_hdr);
 
   } else {
-    memcpy(buf+len,sap_hdr,sizeof(struct sap_header));
-    len += sizeof(struct sap_header);
+    memcpy(buf+len,sap_hdr,sap_hdr_len);
+    len += sap_hdr_len;
   }
 
   if (auth_len !=0) {
@@ -1127,6 +1175,8 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 #else
   rename(tmpfilename, filename);
 #endif
+
+/* MM #endif /* ifndef HAVE_IPv6 */
   return 0;
 }
 
@@ -1139,7 +1189,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 int write_encryption(char *afilename, char *data, int len , char *auth_type, char *enc_type,char *advertid)
 {
   FILE *file;
-  struct sap_header *bp=NULL;
+  struct sapv4_header *bp=NULL;
   struct advert_data *addata=NULL;
   struct priv_header *sapenc_p=NULL;
   struct auth_header *auth_hdr=NULL;
@@ -1152,6 +1202,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
   int orglen;
   int packetlength=0;
   struct advert_data *get_advert_info();
+  int sap_hdr_len = sizeof(struct sapv4_header);
 
 #ifdef WIN32  /* need to sort out the ~ on windows */
   struct stat sbuf;
@@ -1195,12 +1246,12 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 /* malloc the output buffer - not we have the plain data followed by the */
 /* full SAP packet                                                       */
 
-  packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+hdr_len;
+  packetlength = sap_hdr_len+auth_len+TIMEOUT+hdr_len;
   buf = (char *)malloc(len+packetlength);
 
 /* debug */
 
-  writelog(printf("write_enc: malloced: len(%d) + sizeof sap_hdr(%d) + auth_len(%d) + T/O(%d) + hdr_len(%d) = %d\n",len,sizeof(struct sap_header),auth_len,TIMEOUT,hdr_len,(len+sizeof(struct sap_header)+auth_len+TIMEOUT+hdr_len));)
+  writelog(printf("write_enc: malloced: len(%d) + sizeof sap_hdr(%d) + auth_len(%d) + T/O(%d) + hdr_len(%d) = %d\n",len,sap_hdr_len,auth_len,TIMEOUT,hdr_len,(len+sap_hdr_len+auth_len+TIMEOUT+hdr_len));)
 
 /* copy plain data to the buffer */
 
@@ -1211,7 +1262,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
   bp = addata->sap_hdr;
 
   if (bp == NULL) {
-    bp=malloc(sizeof(struct sap_header));
+    bp=malloc(sap_hdr_len);
     bp->version  = 1;
     bp->authlen  = auth_len /4;	
     bp->enc      = 1;
@@ -1226,10 +1277,10 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
 /* copy sap header to the buffer */
 
-  memcpy((char *)buf+len,(char *)bp,sizeof(struct sap_header));
+  memcpy((char *)buf+len,(char *)bp,sap_hdr_len);
 
   orglen = len;
-  len += sizeof(struct sap_header);
+  len += sap_hdr_len;
 
 /* copy authentication info to the buffer */
 
@@ -1262,7 +1313,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 /* Now add the timeout field - always 0 at the moment      */
 
   for (i=0; i<4; i++) {
-    buf[orglen+sizeof(struct sap_header)+auth_len+i]=0;
+    buf[orglen+sap_hdr_len+auth_len+i]=0;
   }
   len += TIMEOUT;
 
@@ -1307,5 +1358,8 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 #else
   rename(tmpfilename, filename);
 #endif
+
+/* MM #endif /* ifndef HAVE_IPv6 */
   return 0;
+
 }

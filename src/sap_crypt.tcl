@@ -776,7 +776,14 @@ proc create {} {
 #     puts "create: ttl = $ttl"
 
     set sess "v=0"
-    set sess "$sess\no=[getusername] $new_sessid [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
+    
+#determine if this is an IPv6 announcement, IPv6 mcast addrs begin with "ff"
+    if {[string first ":" $zone(sap_addr,$zone(cur_zone))]>=0} {
+        set sess "$sess\no=[getusername] $new_sessid [unix_to_ntp [gettimeofday]] IN IP6 [gethostname]"
+    } else {
+        set sess "$sess\no=[getusername] $new_sessid [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
+    }
+
     set sess "$sess\ns=[get_new_session_name .new.f.f]"
     if {[get_new_session_name .new.f.f]==""} {
         errorpopup "No Session Name" "You must give the session a name"
@@ -873,7 +880,14 @@ proc create {} {
                 log "user had entered an invalid multicast address"
                 return 0
             }
-            set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
+
+            if {[string first "ff" $zone(sap_addr,$zone(cur_zone))]>=0} {
+                set sess "$sess\nc=IN IP6 [get_new_session_addr $media]/$ttl"
+            } else {
+                set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
+            }
+
+
 	    # Use a lower on-the-wire TTL if it would exceed our zone's:
 	    if {[info exists zone(ttl,$zone(cur_zone))]
 	        && $zone(ttl,$zone(cur_zone)) < $ttl} {
@@ -902,7 +916,6 @@ proc create {} {
         }
     }
 #    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
-
 # if using DES (symmetric) encryption
 
     if {[info exists security]&&($security == "private")} {
@@ -983,7 +996,7 @@ proc create {} {
     if {$validfile==0 && ($enc_type =="pgp" || $enc_type=="x509")} {
         errorpopup "File not created" "Probably public key is missing\
                                      $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "Cnnot create file on SDR home directory"
+        log "Cannot create file on SDR home directory"
         return 0
     }
     update

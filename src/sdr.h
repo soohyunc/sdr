@@ -118,7 +118,12 @@ char *strerror(int i);
 #endif
 
 #define IPv4 4
+#define IPV4_ADDR_LEN 4
 #define IPv6 6
+#ifdef HAVE_IPv6
+#include "ipv6_macros.h"
+#endif
+
 
 #define SAP_GROUP        "224.2.127.254"
 #define SAP_PORT         9875
@@ -178,6 +183,7 @@ struct advert_data {
   char *aid;
   char *data;
   int tx_sock;
+  int addr_fam;
 #ifdef AUTH
   struct auth_info *authinfo;
   struct sap_header *sap_hdr;
@@ -196,18 +202,70 @@ struct sap_header {
 #ifdef DIFF_BYTE_ORDER
   u_int compress:1;
   u_int enc:1;
-  u_int type:3;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
   u_int version:3;
 #else
   u_int version:3;
-  u_int type:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
   u_int enc:1;
   u_int compress:1;
 #endif
   u_int authlen:8;
   u_int msgid:16;
-  u_int src;
+/* make protocol independent, see new sap_header def's below */
+/*  u_int src; /* MM */
 };
+
+/* These repitious sap headers are UGLY... */
+struct sapv4_header {
+#ifdef DIFF_BYTE_ORDER
+  u_int compress:1;
+  u_int enc:1;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
+  u_int version:3;
+#else
+  u_int version:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
+  u_int enc:1;
+  u_int compress:1;
+#endif
+  u_int authlen:8;
+  u_int msgid:16;
+  u_int src; 
+};
+
+struct sapv6_header {
+#ifdef DIFF_BYTE_ORDER
+  u_int compress:1;
+  u_int enc:1;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
+  u_int version:3;
+#else
+  u_int version:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
+  u_int enc:1;
+  u_int compress:1;
+#endif
+  u_int authlen:8;
+  u_int msgid:16;
+  unsigned char src[16];
+};
+
+
+#define SAPV6_HDR_LEN sizeof(struct sapv6_header)
+#define SAPV4_HDR_LEN sizeof(struct sapv4_header)
 
 /*we use this to store info about authentication*/
 struct auth_info {

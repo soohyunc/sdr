@@ -36,7 +36,7 @@
 
 #include "sdr.h"
 
-#define close closesocket
+/* #define close closesocket */
 
 int
 uname(struct utsname *ub)

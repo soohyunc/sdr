@@ -139,8 +139,13 @@ proc write_cache_entry {aid filename security} {
     catch {set sap_addr $ldata($aid,sap_addr)}
     if {$sap_addr==""} return
 
-    set source    [dotted_decimal_to_decimal $ldata($aid,source)]
-    set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
+# Keep src and hfrom addresses as strings to allow other address families -
+# like IPv6.
+#        set source    [dotted_decimal_to_decimal $ldata($aid,source)]
+#        set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
+    set source $ldata($aid,source)
+    set heardfrom $ldata($aid,heardfrom)
+
     set lastheard $ldata($aid,lastheard)
     set sap_port  $ldata($aid,sap_port)
     set trust     $ldata($aid,trust)

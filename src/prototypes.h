@@ -13,7 +13,7 @@ int aux_load_file(char *buf, char *name, char *flag);
 int parse_announcement(int enc, char *data, int length,
                    u_long src, u_long hfrom, char *rx_sock_addr,
                    int rx_sock_port, int sec);
-int build_packet(char *buf, char *adstr, int len, int encrypt,
+int build_packet(char *buf, char *adstr, int addr_fam, int len, int encrypt,
                  u_int auth_len, u_int hdr_len,
                  struct auth_info *authinfo, struct priv_header *sapenc_p);
 
@@ -95,6 +95,7 @@ int ui_sd_listen(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_verify_ipv6_stack(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_generate_port();
 int ui_generate_address();
+int ui_generate_v6_address(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_generate_id();
 int ui_check_address(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_getdayname(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
@@ -106,6 +107,7 @@ int ui_gettimeofday();
 int ui_createsession(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_getusername(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_gethostaddr(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
+int ui_get_v6_hostaddr(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_gethostname(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_getpid(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_stop_session_ad(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
@@ -122,9 +124,15 @@ void initnames();
 
 /*generate_ids*/
 int generate_port(char *s);
-int store_address(struct in_addr *addr, unsigned long endtime);
+int delete_address(struct addr_list *test, int addr_type);
+int store_address(struct in_addr *addr, int addr_type, unsigned long endtime);
 struct in_addr generate_address();
-int check_address(struct in_addr *addr);
+int check_address(struct in_addr *addr, int addr_type);
+#ifdef HAVE_IPv6
+struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
+                                     struct in6_addr *newaddr);
+#endif
+
 
 
 /*byte_fns.c*/
@@ -152,15 +160,28 @@ void recv_packets();
 int timed_send_advert(ClientData cd);
 #ifdef AUTH
 
-int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, 
-		u_int len, u_int auth_len, struct auth_info *sapauth_h,
-		u_int hdr_len, struct priv_header *sapenc_h,
-		struct sap_header **sap_hdr);
+int send_advert(char *adstr, int sock, int addr_fam,
+                unsigned char ttl, int encrypt, 
+                u_int len, u_int auth_len, struct auth_info *sapauth_h,
+                u_int hdr_len, struct priv_header *sapenc_h,
+                struct sap_header **sap_hdr);
  
  
-int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, char * address, int port, unsigned char ttl, char * keyname, char *auth_type, char *authstatus, char *enctype, char *encstatus, struct advert_data *addata);
- 
-unsigned long parse_entry(char *advertid, char *data, int length, unsigned long src, unsigned long hfrom, char *sap_addr, int port, time_t t, char *trust, char * recvkey, char *authtype, char *authstatus, int *authinfo, char *asym_keyid,  char *enctype, char *encstatus,int *encinfo, char *enc_asym_keyid,char *authmessage,char *encmessage);
+int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, 
+                         char * address, int addr_fam, int port, 
+                         unsigned char ttl, 
+                         char * keyname, char *auth_type, 
+                         char *authstatus, char *enctype, char *encstatus, 
+                         struct advert_data *addata);
+
+unsigned long parse_entry(char *advertid, char *data, int length, 
+                          /* unsigned long src, unsigned long hfrom, */
+                          char *src, char *hfrom,
+                          char *sap_addr, int port, time_t t, char *trust, 
+                          char * recvkey, char *authtype, char *authstatus, 
+                          int *authinfo, char *asym_keyid, char *enctype, 
+                          char *encstatus,int *encinfo, char *enc_asym_keyid,
+                          char *authmessage,char *encmessage);
 #else
 int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, 
 		u_int len);
@@ -182,3 +203,7 @@ int check_net_type(char *in, char *ip, char *addr);
 /* iohandler.c */
 void linksocket(int fd, int mask, Tcl_FileProc* callback);
 void unlinksocket(int fd);
+
+// Macro for comparing IPv6 addresses
+#define IPV6_ADDR_EQUAL(x, y) \
+               ((memcmp((char *)x, (char *)y, 16)) == 0)

@@ -46,7 +46,7 @@
 
 
 #define MULTICAST
-/*#define DEBUG*/
+/* #define DEBUG /* */
 
 #include <assert.h>
 #include <locale.h>
@@ -113,6 +113,7 @@ void hexdump(char *buf, int len) {
 }
 
 int rxsock[MAX_SOCKS];
+int rx_sock_fam[MAX_SOCKS];
 char *rx_sock_addr[MAX_SOCKS];
 int rx_sock_port[MAX_SOCKS];
 int no_of_rx_socks=0;
@@ -121,6 +122,9 @@ char *tx_sock_addr[MAX_SOCKS];
 int no_of_tx_socks=0;
 int sip_udp_rx_sock, sip_tcp_rx_sock, sip_udp_tx_sock, busrxsock;
 unsigned long hostaddr;
+#if HAVE_IPv6
+struct in6_addr hostaddr_v6;
+#endif
 char hostname[TMPSTRLEN];
 char username[TMPSTRLEN];
 char sipalias[MAXALIAS];
@@ -133,7 +137,7 @@ unsigned char rfd2sock[64];
 #endif
 int doexit=FALSE;
 int ui_visible=TRUE;
-int debug1=FALSE;
+int debug1=TRUE;
 jmp_buf env;
 unsigned initializationHasFinished = 0;
 
@@ -227,11 +231,13 @@ int sd_listen(char *address, int port, int addr_fam,
     fcntl(s, F_SETFD, 1);
 #endif
 
+
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
 
 #ifdef SO_REUSEPORT
     setsockopt(s, SOL_SOCKET, SO_REUSEPORT, (char *)&one, sizeof(one));
 #endif
+
 
     if (addr_fam == IPv6) {
 #ifdef HAVE_IPv6
@@ -270,13 +276,18 @@ int sd_listen(char *address, int port, int addr_fam,
 #ifdef HAVE_IPv6
         imr6.ipv6mr_multiaddr = group6;
         imr6.ipv6mr_interface = 0;
-        
+
         if (setsockopt(s, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
                        (char *)&imr6, sizeof(imr6))) {
+#ifdef WIN32
+            printf("sd_listen: setsockopt IPV6_ADD_MEMBRSHIP err, addr: %s\n",
+                   address);
+#else
             perror("sd_listen: setsockopt IPv6_ADD_MEMBERSHIP");
             fprintf(stderr, 
                     "sd_listen: setsockopt IPV6_ADD_MEMBRSHIP err, addr: %s\n",
                     address);
+#endif
             exit(1);
         }
 #endif
@@ -286,13 +297,23 @@ int sd_listen(char *address, int port, int addr_fam,
         if (setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                        (char *)&imr, sizeof(struct ip_mreq)) < 0 ) {
             perror("setsockopt - IP_ADD_MEMBERSHIP");
+            fprintf(stderr, 
+                    "sd_listen: setsockopt IP_ADD_MEMBRSHIP err, addr: %s\n",
+                    address);
+
             exit(1);
         }
     }
     rx_sock_addr[*no_of_socks]=malloc(strlen(address)+1);
     strcpy(rx_sock_addr[*no_of_socks], address);
+    rx_sock_fam[*no_of_socks]=addr_fam;
     rx_sock_port[*no_of_socks]=port;
-    
+
+#if 0 
+    /* MM */
+    printf("sd_listen: creating new socket to fam %d address %s\n",
+           rx_sock_fam[*no_of_socks], rx_sock_addr[*no_of_socks]);
+#endif 
     if (initializationHasFinished) {
         /* 
          * This socket was created after initialization, so start 
@@ -301,7 +322,7 @@ int sd_listen(char *address, int port, int addr_fam,
         linksocket(rxsock[*no_of_socks], TK_READABLE, 
                    (Tcl_FileProc*)recv_packets);
     }
-    
+
     (*no_of_socks)++;
     return(*no_of_socks);
 }
@@ -373,6 +394,91 @@ int sd_tx(char *address, int port, int *txsock, int *no_of_socks)
     return(*no_of_socks);
 }
 
+int sd_tx_ipv6(char *address, int port, int *txsock, int *no_of_socks) 
+{
+#ifdef HAVE_IPv6
+    struct sockaddr_in6 name;
+    struct in6_addr group;
+    int i, zero=0;
+#ifdef WIN32
+    int one=1;
+#endif
+
+
+    if (no_of_socks!=NULL) {
+        for(i=0;i<*no_of_socks;i++) {
+            if (strcmp(address, tx_sock_addr[i])==0) {
+                return(*no_of_socks);
+            }
+        }
+#if 0 /* MM */
+        printf("sd_tx_ipv6: creating new socket to address/port %s/%d\n",
+               address, port);
+#endif
+        tx_sock_addr[*no_of_socks]=malloc(strlen(address)+1);
+        strcpy(tx_sock_addr[*no_of_socks],address);
+    } else {
+        no_of_socks=&zero;
+    }
+    
+    inet6_addr(address, &group);
+
+    if((txsock[*no_of_socks]=socket( AF_INET6, SOCK_DGRAM, 0 )) < 0) {
+        perror("socket");
+        exit(1);
+    }
+
+
+    if (debug1==TRUE) {
+        fprintf(stderr,"Connecting socket %d to address/port %s/%d\n",
+                txsock[*no_of_socks], address, port);
+    }
+    
+#ifndef WIN32
+    fcntl(txsock[*no_of_socks], F_SETFD, 1);
+#else
+    setsockopt(txsock[*no_of_socks], SOL_SOCKET, SO_REUSEADDR,
+               (char *)&one, sizeof(one));
+    
+    memset((char*)&name, 0, sizeof(name));
+    name.sin6_family = AF_INET6;
+    name.sin6_port = 0;
+    name.sin6_addr = in6addr_any;
+    if (bind(txsock[*no_of_socks], (struct sockaddr *)&name, sizeof(name))) {
+        perror("bind");
+        exit(1);
+    }
+#endif
+    memset((char*)&name, 0, sizeof(name));
+    name.sin6_family = AF_INET6;
+    name.sin6_addr = group;
+    name.sin6_port = htons(port);
+    name.sin6_flowinfo = 0;
+    if (connect(txsock[*no_of_socks], (struct sockaddr *)&name, 
+               sizeof(name))<0) {
+        perror("connect");
+        fprintf(stderr, "Dest Address problem\n");
+        exit(-1);
+    }
+    
+    if (setsockopt(txsock[*no_of_socks], IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
+                   (char *)&ttl,  sizeof(ttl)) < 0) {
+        perror("sd_tx_ipv6: setsockopt HOPS");
+        fprintf(stderr, "sd_tx: ttl: %d, socket: %d\n", 
+                ttl, txsock[*no_of_socks]);
+        exit(-1);
+    }
+#if 0 /* MM */
+    printf("sd_tx_ipv6: connected socket %d to address/port %s/%d/%d\n",
+                txsock[*no_of_socks], address, port, ttl);
+#endif
+
+    (*no_of_socks)++;
+
+    return(*no_of_socks);
+#endif /* HAVE_IPv6 */
+}
+
 /*--------------------------------------------------------------------------*/
 /* load the entries from the cache                                          */
 /*--------------------------------------------------------------------------*/
@@ -386,7 +492,7 @@ int load_cache_entry(
     char buf[MAXADSIZE];
     char *p=NULL, advert[MAXADSIZE];
     char *new_data=NULL;
-    char sap_addr[20]="";
+    char sap_addr[128]="";
     char aid[80]="";
     char *k1=NULL,*k2=NULL;
     char *encbuf=NULL, newbuf[MAXADSIZE];
@@ -399,14 +505,25 @@ int load_cache_entry(
     int enc_des=0;
     int irand=0;
     int retval = TCL_OK;
-
-    unsigned long  origsrc, src, endtime=0;
+/*  unsigned long  origsrc, src, endtime=0; MM*/
+    unsigned long endtime=0;
+    char origsrc[128]="";
+    char src[128]="";
+#ifdef HAVE_IPv6
+    struct in6_addr origsrc_v6;
+#endif
+    unsigned long origsrc_v4;
+    int addr_fam=IPv4;
+    int src_equals_host=0;
+    int sap_hdr_len=SAPV4_HDR_LEN;
+    int do_it=0;
     time_t t;
 
     FILE* enc_fd=NULL;
     struct timeval tv;
     struct stat sbuf;
     struct sap_header *bp=NULL;
+    struct sapv4_header *bp4=NULL;
     static char debugbuf[MAXADSIZE]="";
     struct auth_header *auth_hdr=NULL;
     struct priv_header *enc_p=NULL;
@@ -425,16 +542,18 @@ int load_cache_entry(
 
 /* don't load any PGP encrypted cache files if PGPSTATE isn't set         */
 /* Note "symm" is asymmetrically and "crypt" is symmetrically encrypted ! */
-
+        
     if (strcmp(argv[2], "symm")==0) {
-      Tcl_Eval(interp, "pgpstate");
-      if (strcmp(interp->result,"1") != 0) {
-        writelog(printf("PGPSTATE != 1: Not loading %s\n",argv[1]);)
-        retval = 0;
-        goto out;
-      }
-    }
+        printf("symm\n");
+        Tcl_Eval(interp, "pgpstate");
+        if (strcmp(interp->result,"1") != 0) {
+            writelog(printf("PGPSTATE != 1: Not loading %s\n",argv[1]);)
+                retval = 0;
 
+                goto out;
+        }
+    }
+    
     memset(buf,            0, MAXADSIZE);
     memset(advert,         0, MAXADSIZE);
     memset(tmp_keyid,      0, TMPKEYIDLEN);
@@ -445,10 +564,10 @@ int load_cache_entry(
     memset(nrandstr,       0, NRANDSTRLEN);
     memset(trust,          0, TRUSTLEN);
 
+
     new_data = (char *)malloc(MAXADSIZE);
-
     writelog(printf("loading cache file (%s): %s\n", argv[1], argv[2]);)
-
+        
 /* need the following even if no encryption/authentication used */
 
     authstatus  = (char *)malloc(AUTHSTATUSLEN);
@@ -464,77 +583,96 @@ int load_cache_entry(
 /* strange notation: crypt=symmetric; symm=asymmetric; clear=clear   */
 
 /* trying to load a symmetrically encrypted file                     */
-
+    
     if (strcmp(argv[2], "crypt")==0) {
-
-      if (strcmp(get_pass_phrase(), "")==0) {
-        goto out;
-      }
-      len=load_crypted_file(argv[1], buf, get_pass_phrase());
-      buf[len]='\n';
-      buf[len+1]='\0';
-      enc_des=1;
-
+        if (strcmp(get_pass_phrase(), "")==0) {
+            goto out;
+        }
+        len=load_crypted_file(argv[1], buf, get_pass_phrase());
+        buf[len]='\n';
+        buf[len+1]='\0';
+        enc_des=1;
+        
     } else {
-
+        
 /* trying to load asymmetrically encrypted file                      */
-
-      if (strcmp(argv[2], "symm")==0) {
-
-        enc_fd=fopen(argv[1],"rb");
-
-        if (enc_fd==NULL) {
-          retval = -1;
-	  goto out;
-        }
-
-        stat(argv[1], &sbuf);
-        if (sbuf.st_size > MAXADSIZE) {
-          writelog(printf("file %s too big\n",argv[1]);)
-          fclose(enc_fd);
-          retval = -1;
-	  goto out;
-        }
-
-        encbuf = (char *)malloc(sbuf.st_size);
-        len    = fread(encbuf, 1, sbuf.st_size, enc_fd);
-        fclose(enc_fd);
-        memcpy(buf, encbuf, sbuf.st_size);
-        free(encbuf);
-
-      } else {
-
+        
+        if (strcmp(argv[2], "symm")==0) {
+            enc_fd=fopen(argv[1],"rb");
+            if (enc_fd==NULL) {
+                retval = -1;
+                goto out;
+            }
+            
+            stat(argv[1], &sbuf);
+            if (sbuf.st_size > MAXADSIZE) {
+                writelog(printf("file %s too big\n",argv[1]);)
+                    fclose(enc_fd);
+                    retval = -1;
+                    goto out;
+            }
+            
+            encbuf = (char *)malloc(sbuf.st_size);
+            len    = fread(encbuf, 1, sbuf.st_size, enc_fd);
+            fclose(enc_fd);
+            memcpy(buf, encbuf, sbuf.st_size);
+            free(encbuf);
+            
+        } else {
+            
 /* trying to load clear file - argv[2] is "clear" */
-
-        enc_fd=fopen(argv[1], "r");
-        if (enc_fd==NULL) {
-          goto out;
-        }
-        len=fread(buf, 1, MAXADSIZE, enc_fd);
-        buf[len]='\0';
-        fclose(enc_fd);
-      }
-
+            
+            enc_fd=fopen(argv[1], "r");
+            if (enc_fd==NULL) {
+                goto out;
+            }
+            len=fread(buf, 1, MAXADSIZE, enc_fd);
+            buf[len]='\0';
+            fclose(enc_fd);
+        } 
     }
-
+    
 /* cache file should be loaded by now        */
 /* test the first few characters of the file */
 
     if (strncmp(buf, "n=", 2) != 0) {
-     fprintf(stderr, "sdr:corrupted cache file: %s\n", argv[1]);
-     retval = 1;
-     goto out;
+        fprintf(stderr, "sdr:corrupted cache file: %s\n", argv[1]);
+        retval = 1;
+        goto out;
     }
-
 /* read buffer into variables */
 
-    sscanf(&buf[2], "%lu %lu %lu %s %u %u %s %s %s %s %s %s %s",
-      &origsrc, &src, &t, sap_addr, &sap_port, &ttl, trust,
-      authtype, enctype,authstatus,encstatus,asym_keyid,enc_asym_keyid);
+    sscanf(&buf[2], "%s %s %lu %s %u %u %s %s %s %s %s %s %s",
+           origsrc, src, &t, sap_addr, &sap_port, &ttl, trust,
+           authtype, enctype,authstatus,encstatus,asym_keyid,enc_asym_keyid);
 
+
+    if (strstr(origsrc,":") == NULL) {/* Checking for an IPv6 address */
+        origsrc_v4 = atol(origsrc);
+        if (origsrc_v4 == hostaddr) {
+            src_equals_host = 1;
+        }
+        sap_hdr_len = SAPV4_HDR_LEN;
+    } else {
+        addr_fam = IPv6;
+#ifdef HAVE_IPv6
+        if (inet6_addr(origsrc, &origsrc_v6)) {
+            if (IPV6_ADDR_EQUAL(&origsrc_v6, &hostaddr_v6)) {
+                src_equals_host = 1;
+            } else {
+                /*
+                printf("load_c_e: NOT from HOST: origsrc: %s\nsrc: %s", 
+                       origsrc, src);
+                */
+            }
+        }
+        /* } else {  REVIEW: what should we do is could not get a v6 addr */
+        sap_hdr_len = SAPV6_HDR_LEN;
+#endif
+    }
+    
 /* debug */
-
-    writelog(printf("lce: origsrc=%lu src=%lu t=%lu\n",origsrc,src,t);)
+    writelog(printf("lce: origsrc=%s src=%s t=%lu\n",origsrc,src,t);)
     writelog(printf("lce: sap_addr=%s sap_port=%u\n",sap_addr,sap_port);)
     writelog(printf("lce: ttl=%u trust=%s\n",ttl,trust);)
     writelog(printf("lce: authtype=%s authstatus=%s keyid=%s\n",
@@ -544,101 +682,106 @@ int load_cache_entry(
 
 /* check that the buffer is not clear, if it is then set enc and auth off */
 
-      if (strncmp(authtype,"k",1)== 0) {
-        sscanf(&buf[2], "%lu %lu %lu %s %u %u %s", &origsrc,
-          &src, &t, sap_addr, &sap_port, &ttl, trust);
+   if (strncmp(authtype,"k",1)== 0) {
+       sscanf(&buf[2], "%s %s %lu %s %u %u %s", &origsrc,
+              &src, &t, sap_addr, &sap_port, &ttl, trust);
 
-	strcpy(authstatus, "NOAUTH" );
-	strcpy(authtype,   "none"   );
-	strcpy(authmessage,"none"   );
-
-	strcpy(encstatus,  "NOENC"  );
-	strcpy(enctype,    "none"   );
-	strcpy(encmessage, "none"   );
-
-      }
-
-      remove_cr(trust);
-      k1=strchr(buf,'\n')+1;
-      k2=strchr(k1, '\n')-1;
+       strcpy(authstatus, "NOAUTH" );
+       strcpy(authtype,   "none"   );
+       strcpy(authmessage,"none"   );
+       
+       strcpy(encstatus,  "NOENC"  );
+       strcpy(enctype,    "none"   );
+       strcpy(encmessage, "none"   );
+       
+   }
+   
+   remove_cr(trust);
+   k1=strchr(buf,'\n')+1;
+   k2=strchr(k1, '\n')-1;
 
 /* not sure why we would have a cache file with CRLF - cope with it anyway */
 
-      if (strchr(k1, '\r') != NULL) {
-        if (strchr(k1, '\r')-1<k2) {
-          k2=strchr(k1, '\r')-1;
-        }
-      }
+   if (strchr(k1, '\r') != NULL) {
+       if (strchr(k1, '\r')-1<k2) {
+           k2=strchr(k1, '\r')-1;
+       }
+   }
 
 /* set p to point to line following "n=....\nk=...\n" */
 
-      if (strncmp(k1, "k=", 2)==0) {
-	if ((u_int)k2>=(u_int)k1+2) {
-	  memcpy(key, k1+2, (u_int)k2-((u_int)k1+1));
-	  key[(u_int)k2-((u_int)k1+1)]='\0';
-	} else {
-          key[0]='\0';
-        }
-	p=strchr(k1, '\n')+1;
-      } else {
-	key[0]='\0';
-	p=strchr(buf, '\n')+1;
-      }
-
-      if (strcmp(trust,"")==0) {
-	strcpy(trust, "trusted");
-      }
+   if (strncmp(k1, "k=", 2)==0) {
+       if ((u_int)k2>=(u_int)k1+2) {
+           memcpy(key, k1+2, (u_int)k2-((u_int)k1+1));
+           key[(u_int)k2-((u_int)k1+1)]='\0';
+       } else {
+           key[0]='\0';
+       }
+       p=strchr(k1, '\n')+1;
+   } else {
+       key[0]='\0';
+       p=strchr(buf, '\n')+1;
+   }
+   
+   if (strcmp(trust,"")==0) {
+       strcpy(trust, "trusted");
+   }
 
 /* len = amount read in from file; buf points to start of this (ie n=...) */
 /* p points to line following "n=...\nk=...\n" (ie v=...)                 */
 /* So, (p-buf)=length of "n=...\nk=...\n";                                */
 /* len-(p-buf)=all file except the first "n=...\nk=...\n"                 */
 
-      edlen = len - abs(p-buf);
-
+   edlen = len - abs(p-buf);
+   
 /* All previously authenticated announcements must be re-authenticated in */
 /* case the cache has been corrupted or illegally modified                */
-
-      if (strcmp(authtype,"none")==0) {
-        strcpy(authstatus, "NOAUTH");
-        strcpy(authmessage, "none");
-      } else {
-        strcpy(authstatus, "unchecked");
-        strcpy(authmessage, "The signature from the cache file has not been checked. It will be checked when it is received as an announcement.");
-      }
-
-      if (strcmp(enctype,"none")==0) {
-        strcpy(encstatus, "NOENC");
-        strcpy(encmessage, "none");
-      } else {
-        strcpy(encstatus, "unchecked");
-        strcpy(encmessage, "The encryption has not been checked - an unencrypted cache file has been loaded and not updated by a received announcement");
-      }
-
+   
+   if (strcmp(authtype,"none")==0) {
+       strcpy(authstatus, "NOAUTH");
+       strcpy(authmessage, "none");
+   } else {
+       strcpy(authstatus, "unchecked");
+       strcpy(authmessage, "The signature from the cache file has not been checked. It will be checked when it is received as an announcement.");
+   }
+   
+   if (strcmp(enctype,"none")==0) {
+       strcpy(encstatus, "NOENC");
+       strcpy(encmessage, "none");
+   } else {
+       strcpy(encstatus, "unchecked");
+       strcpy(encmessage, "The encryption has not been checked - an unencrypted cache file has been loaded and not updated by a received announcement");
+   }
+   
 /* An attempt at keeping unused fields empty! */
+   
+   if (strcmp(authtype,"none")==0 || strcmp(asym_keyid,"1")== 0) {
+       strcpy(asym_keyid,"0");
+   }
+   
+   if (strcmp(enctype,"none")==0 || strcmp(enc_asym_keyid,"2")==0) {
+       strcpy(enc_asym_keyid,"0");
+   }
 
-      if (strcmp(authtype,"none")==0 || strcmp(asym_keyid,"1")== 0) {
-        strcpy(asym_keyid,"0");
-      }
-
-      if (strcmp(enctype,"none")==0 || strcmp(enc_asym_keyid,"2")==0) {
-        strcpy(enc_asym_keyid,"0");
-      }
+   
+   if (src_equals_host || 
+       (strcmp(authtype,"none")!=0) || (strcmp(enctype,"none")!=0)) {
+       do_it = 1;
+   }
 
 /* if we sent the original or if it has encryption or authentication */
-
-      if ( origsrc==hostaddr || (strcmp(authtype,"none")!=0) || (strcmp(enctype,"none")!=0)) {
-	memset(advert, 0, MAXADSIZE);
-	memcpy(advert, p, strlen(p)+1);
-      }
-
+   if (do_it) {
+       memset(advert, 0, MAXADSIZE);
+       memcpy(advert, p, strlen(p)+1);
+   }
+   
 /* Ensure that we discard the "Z=" component of the cache entry as it was  */
 /* not included in the original signature creation                         */ 
 
 /* debugging info - leave in for the moment */
 
       writelog(printf("lce: calling parse_entry\n");)
-      writelog(printf(" advertid=%s length=%d, origsrc=%lu, src=%lu\n",
+      writelog(printf(" advertid=%s length=%d, origsrc=%s, src=%s\n",
          aid,strlen(p),origsrc,src);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
          sap_addr,sap_port,(int)t,key);)
@@ -649,7 +792,7 @@ int load_cache_entry(
       writelog(printf(" authmessage= %s\n",authmessage);)
       writelog(printf("  encmessage= %s\n",encmessage);)
 
-      endtime = parse_entry(aid, p, edlen,origsrc, src, sap_addr, sap_port, 
+    endtime = parse_entry(aid, p, edlen,origsrc, src, sap_addr, sap_port, 
                   t, trust, key, authtype, authstatus, &data_len, asym_keyid,
                   enctype, encstatus,&enc_data_len, enc_asym_keyid,
                   authmessage, encmessage);
@@ -657,7 +800,7 @@ int load_cache_entry(
 /* debugging info - leave in for the moment */
 
       writelog(printf("load_cache_entry: returned from parse_entry\n");)
-      writelog(printf(" advertid=%s length=%d, origsrc=%lu, src=%lu\n",
+      writelog(printf(" advertid=%s length=%d, origsrc=%s, src=%s\n",
          aid,strlen(p),origsrc,src);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
          sap_addr,sap_port,(int)t,key);)
@@ -670,78 +813,88 @@ int load_cache_entry(
 
 /* malloc advert_data structure */
 
-      addata = (struct advert_data *)malloc(sizeof(struct advert_data));
-      addata->sap_hdr  = NULL;
-      addata->sapenc_p = NULL;
-      addata->authinfo = NULL;
+    addata = (struct advert_data *)malloc(sizeof(struct advert_data));
+    
+    addata->sap_hdr  = NULL;
+    addata->sapenc_p = NULL;
+    addata->authinfo = NULL;
   
 /* if the message is unencrypted or DES encryption has been used */
 
-      if ( strncmp(enctype,"none",4)==0 || strncmp(enctype,"des",3)==0 ) {
-
-	if (strcmp(authtype, "none") != 0 ) {
-
+    if ( strncmp(enctype,"none",4)==0 || strncmp(enctype,"des",3)==0 ) {
+        
+        if (strcmp(authtype, "none") != 0 ) {
+            
 /* we have authentication info */
 
 /* data_len is length of data from "v=0" to "Z= " (not including signature) */
 /* ie advert[data_len-3] is the "z"                                         */
 /* "(p-buf)+data_len" gives length of whole file except the signature       */
 /* so new_len = length of stuff following "Z= "                             */
-
-	  advert[data_len-3]=0;
-
-	  new_len=(len)-abs((p-buf)+data_len);
-
+            
+            advert[data_len-3]=0;
+            
+            new_len=(len)-abs((p-buf)+data_len);
+            
 /* need this for later as new_len gets modified */
-
-	  newlen1 = new_len;
-
-	  if (new_len>MAXADSIZE) {
-	    fprintf(stderr,"Sdr error: buffer too large %d\n",new_len);
-	    retval = -1;
-	    goto out;
-	  }
-
+            
+            newlen1 = new_len;
+            
+            if (new_len>MAXADSIZE) {
+                fprintf(stderr,"Sdr error: buffer too large %d\n",new_len);
+                retval = -1;
+                goto out;
+            }
+            
 /* the following will copy the stuff following "Z= " to newbuf */ 
 /* NB. What follows Z= is the whole SAP packet                 */ 
-
-          memcpy(newbuf,p+data_len,new_len);
-
-	  bp = (struct sap_header *) newbuf;
-
+            
+            memcpy(newbuf,p+data_len,new_len);
+            
+            bp = (struct sap_header *) newbuf;
+            
 /* newbuf is now cast into a sap_header */
-
+            
 /* if debugging have a look to see it is sensible */
-
-          writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
-
+            
+      writelog(printf(
+          "lce: bp: vers=%d type=%d enc=%d compress=%d authlen=%d msgid=%d",
+          bp->version, bp->type, bp->enc, bp->compress, 
+          bp->authlen, bp->msgid);)
+          
+          if (addr_fam == IPv4) {
+              bp4 = (struct sapv4_header *) newbuf;
+              writelog(printf("src=%u\n",bp4->src);)
+          } else { /* don't bother with IPv6 addresses for now */
+              writelog(printf("\n");)
+          }
 /* due to space restrictions the authlen in the header was divided by 4 */
-
-	  auth_len = bp->authlen*4;
-
+      
+          auth_len = bp->authlen*4;
+          
 /* skip the sap_header */
-
-          data     = (char*)bp+sizeof(struct sap_header);
-	  new_len -= sizeof(struct sap_header);
-
+          
+          data     = (char*)bp+sap_hdr_len;
+          new_len -= sap_hdr_len;
+          
 /* skip the authentication header */
-
+          
           data    += auth_len;
           new_len -= auth_len;
-
+          
 /* call gen_new_auth_data to create new_data buffer. Basically this copies */
 /* the sap packet but sets bp->msgid=0 and skips the authentication header */
-
+      
           newlength = gen_new_auth_data(newbuf,new_data,bp,auth_len,newlen1);
-
+          
 /* check the authentication */
-
+          
           if ((bp->authlen !=0 ) && (strcmp(authtype,"none") != 0 ) ) {
-
+              
 /* authentication was present - either PGP or X.509 */
-
-	    auth_hdr=(struct auth_header *)((char *)bp+sizeof(struct sap_header));
-            addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
+          
+          auth_hdr=(struct auth_header *)((char *)bp+sap_hdr_len);
+          addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
 
 	    if (strcmp(authtype,"pgp") == 0) {
 
@@ -760,7 +913,7 @@ int load_cache_entry(
 	      if (strcmp(interp->result,"1") == 0) {
                 irand = (lbl_random()&0xffff);
 		authstatus= check_x509_authentication(auth_hdr,
-                    ((char *)bp+sizeof(struct sap_header)+AUTH_HEADER_LEN), 
+                    ((char *)bp+sap_hdr_len+AUTH_HEADER_LEN), 
                     new_data, newlength, auth_len, tmp_keyid, 
                     irand,authmessage, AUTHMESSAGELEN);
 	        store_x509_authentication_in_memory(addata, authtype, irand);
@@ -787,7 +940,7 @@ int load_cache_entry(
 /* attached to a timer and only authentication information (defined by the   */
 /* PGP extension to SAP) and the advert id are stored in the structure       */
 
-          if (origsrc != hostaddr) {
+          if (!(src_equals_host)) {
             if (first_ad==NULL) {
               first_ad=addata;
               last_ad=addata;
@@ -806,16 +959,14 @@ int load_cache_entry(
 
 /* see if it was one of our ads and send it out again */
 
-        if( (origsrc==hostaddr) && (strcmp(trust,"trusted")==0) ) {
-
+        if( src_equals_host && (strcmp(trust,"trusted")==0) ) {
           if (strcmp(key,"")!=0) {
-
 /* if there was a key it must be DES */
 /* we have the key but need the keyname for sending */
 
             if (find_keyname_by_key(key, keyname) != 0) {
               retval = -1;
-	      goto out;
+              goto out;
             }
 
             if ( enc_des == 1) {
@@ -840,12 +991,12 @@ int load_cache_entry(
 /* here if either DES or unencrypted */
 
           queue_ad_for_sending(aid, advert, INTERVAL, endtime, sap_addr, 
-            sap_port, (unsigned char)ttl, keyname, authtype, authstatus,
-            enctype,encstatus, addata);
+                               addr_fam, sap_port, (unsigned char)ttl, keyname,
+                               authtype, authstatus,
+                               enctype,encstatus, addata);
         }
-
+        
       } else {
-
 /* asymmetric encryption was used */
 
 	memset(asym_keyid,    0, ASYMKEYIDLEN);
@@ -891,15 +1042,15 @@ int load_cache_entry(
 
 /* if debugging have a look to see it is sensible */
 
-        writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+        writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d \n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid);)
 
 /*	src = ntohl(bp->src);               */
 /*      hfrom = ntohl(from.sin_addr.s_addr); */
 
 /* skip the sap_header */
 
-	data     = (char*)bp+sizeof(struct sap_header);
-	new_len -= sizeof(struct sap_header);
+	data     = (char*)bp+sap_hdr_len;
+	new_len -= sap_hdr_len;
 
 /* is there any authentication */
 
@@ -909,7 +1060,7 @@ int load_cache_entry(
 
           auth_len = bp->authlen*4;
 
-          auth_hdr = (struct auth_header *)((char *)bp+sizeof(struct sap_header));
+          auth_hdr = (struct auth_header *)((char *)bp+sap_hdr_len);
 	} else {
 
 /* No authentication - this is a fix for Byte ordering */
@@ -927,7 +1078,7 @@ int load_cache_entry(
 /* the privacy header in the sap packet                                  */
 
           addata->sapenc_p = (struct priv_header *)malloc(sizeof(struct priv_header));
-          enc_p = (struct priv_header *)((char *)bp+sizeof(struct sap_header)+auth_len+TIMEOUT);
+          enc_p = (struct priv_header *)((char *)bp+sap_hdr_len+auth_len+TIMEOUT);
  
 /* debug - check the privacy header looks okay */
 
@@ -980,7 +1131,7 @@ int load_cache_entry(
 	        irand = (lbl_random()&0xffff);
 		encstatus_p = \
 		  check_x509_encryption(enc_p, 
-			   ((char *)bp+sizeof ( struct sap_header)+auth_len),
+			   ((char *)bp+sap_hdr_len+auth_len),
                            data, new_len, hdr_len, enc_asym_keyid, irand,
                            encmessage, ENCMESSAGELEN);
 	        store_x509_encryption_in_memory(addata, enctype, irand);
@@ -1037,7 +1188,7 @@ int load_cache_entry(
 /* authentication was present - either PGP or X.509 */
 
             auth_len = bp->authlen*4;
-	    auth_hdr=(struct auth_header *) ((char *)bp + sizeof(struct sap_header));
+	    auth_hdr=(struct auth_header *) ((char *)bp + sap_hdr_len);
             addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
 
 /* check the version and type of the auth_header          */
@@ -1079,7 +1230,7 @@ int load_cache_entry(
 	            irand = (lbl_random()&0xffff);
                     strncpy(authstatus, \
 			    check_x509_authentication(auth_hdr, 
-				((char *)bp+sizeof (struct sap_header)+2), 
+				((char *)bp+sap_hdr_len+2), 
                                 new_data, newlength, auth_len, asym_keyid, 
                                 irand,authmessage, AUTHMESSAGELEN),
 			    AUTHSTATUSLEN);
@@ -1097,7 +1248,7 @@ int load_cache_entry(
               } else {
                 writelog(printf("lce: unknown version (%d) in auth header\n",auth_hdr->version);)
                 retval = -1;
-		goto out;
+                goto out;
               }
 
 	    } else {
@@ -1124,7 +1275,7 @@ int load_cache_entry(
 
           if (addata != NULL) {
 
-            if (origsrc != hostaddr) {
+            if (!(src_equals_host)) {
               if (first_ad==NULL) {
                 first_ad=addata;
                 last_ad=addata;
@@ -1144,18 +1295,20 @@ int load_cache_entry(
                  sap_port, t, trust, key, authtype, authstatus, &data_len, 
                  asym_keyid, enctype, encstatus,&enc_data_len, 
                  enc_asym_keyid,authmessage,encmessage);
-    
-            if ((origsrc==hostaddr) && (strcmp(trust,"trusted")==0)) {
-              queue_ad_for_sending(aid, advert, INTERVAL, endtime, sap_addr, 
-                     sap_port, (unsigned char)ttl, keyname, authtype, 
-                     authstatus, enctype, encstatus, addata); 
+
+            if ((src_equals_host) && (strcmp(trust,"trusted")==0)) {
+                queue_ad_for_sending(aid, advert, INTERVAL, endtime, sap_addr, 
+                                     addr_fam, sap_port, (unsigned char)ttl, 
+                                     keyname, 
+                                     authtype, authstatus, enctype, encstatus,
+                                     addata); 
             }
+            
           } else {
-            retval = -1;
-	    goto out;
+              retval = -1;
+              goto out;
           }
       }
-
 out:
       free(new_data);
       free(authstatus);
@@ -1180,6 +1333,11 @@ char *argv[];
     int inChannel;
     struct in_addr in;
     struct hostent *hstent;
+    struct hostent *thstent;
+#ifdef HAVE_IPv6
+    struct addrinfo hints;
+    struct addrinfo *result;
+#endif
     char *p;
 
     seedrand();
@@ -1207,6 +1365,42 @@ char *argv[];
     }
     memcpy((char *)&hostaddr,(char *)hstent->h_addr_list[0], hstent->h_length);
 
+#ifdef HAVE_IPv6
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = PF_INET6;
+    hints.ai_flags = AI_CANONNAME;
+
+    if (getaddrinfo(hostname, NULL, &hints, &result) == 0) {
+        struct sockaddr_in6 *sin6;
+        sin6 = (struct sockaddr_in6 *) result->ai_addr;
+        memcpy((char *)&hostaddr_v6, (char *)&sin6->sin6_addr, 
+               result->ai_addrlen);
+        freeaddrinfo(result);
+    } else if (thstent != (struct hostent*) NULL) {
+        /* 
+         * getaddrinfo() failed, let's try getipnodebyname() because
+         * we might function somewhat with a v4-mapped address.
+         */
+#ifdef WIN32            
+        printf("SDR: getaddrinfo failed, couldn't resolve '%s'!\n",
+               hostname);
+#else
+        fprintf(stderr, "SDR: getaddrinfo failed, couldn't resolve '%s'!\n", 
+                hostname);
+#endif
+        thstent = (struct hostent*)getipnodebyname((char *)hostname,
+                                                   AF_INET6, AI_ALL, NULL);
+        memcpy((char *)&hostaddr_v6, (char *)thstent->h_addr, 
+               thstent->h_length);
+        freehostent(thstent);
+    } else {
+        fprintf(stderr, "SDR: Can't resolve hostname ('%s'!)\n", 
+                hostname);
+        exit(1);
+    }
+#endif
+    
 /* If the version of the hostname from the lookup contains dots and is       */
 /* longer than the hostname given by gethostname, it's probably a better bet */
 
@@ -1376,10 +1570,15 @@ char *argv[];
     bus_send_new_app();
 #endif
 /*Set up Initial Rx Socket*/
-    sd_listen(SAP_GROUP, SAP_PORT, AF_INET, rxsock, &no_of_rx_socks, 1);
+    sd_listen(SAP_GROUP, SAP_PORT, IPv4, rxsock, &no_of_rx_socks, 1);
 
 /*Set up Tx Socket*/
     sd_tx(SAP_GROUP, SAP_PORT, txsock, &no_of_tx_socks);
+
+#ifdef HAVE_IPv6
+    sd_listen(SAPv6_GROUP, SAP_PORT, IPv6, rxsock, &no_of_rx_socks, 1);
+    sd_tx_ipv6(SAPv6_GROUP, SAP_PORT, txsock, &no_of_tx_socks);
+#endif
     init_bitmaps();
     ui_create_interface();
 
@@ -1420,6 +1619,7 @@ char *argv[];
 /* load the cached sessions */
 
     Tcl_CreateCommand(interp, "load_cache_entry", load_cache_entry, 0, 0);
+
     Tcl_Eval(interp, "load_from_cache");
 
     /*register our location with a SIP server (if desired)*/
@@ -1542,6 +1742,8 @@ void recv_packets(ClientData fd)
 {
     struct advert_data *advert=NULL, *addata=NULL;
     struct sap_header *bp;
+    struct sapv6_header *bp6;
+    struct sapv4_header *bp4;
     struct sockaddr_in from;
     struct timeval tv;
     struct priv_header *enc_p=NULL;
@@ -1568,10 +1770,18 @@ void recv_packets(ClientData fd)
     int hdr_len=0, enctmp=0, has_encryption=0;
     int auth_len=0, authtmp=0, found=0, has_authentication=0;
     int newlength=0;
+    int sap_hdr_len=SAPV4_HDR_LEN;
     int irand;
-
-    unsigned long src, hfrom;
+    unsigned long src=0, hfrom=0;
+    struct in_addr in;
+#ifdef HAVE_IPv6
+    struct sockaddr_in6 from6;
+    struct in6_addr *src6, *hfrom6;
+#endif
+    char source[128], heardfrom[128];
+    int addr_fam = IPv4;
     unsigned long endtime;
+    int trusted = 0;
 
     int ix = rfd2sock[PTOI(fd)];
 
@@ -1587,28 +1797,51 @@ void recv_packets(ClientData fd)
 /* receive the data */
 
     buf = (char *)malloc(MAXADSIZE);
-    if ((length = recvfrom(rxsock[ix], (char *) buf, MAXADSIZE, 0,
-		       (struct sockaddr *)&from, (int *)&fromlen)) < 0) {
-      perror("recv error");
-      free(buf);
-      return;
+    
+    if (rx_sock_fam[ix] == IPv6) {
+#ifdef HAVE_IPv6    
+        fromlen=sizeof(struct sockaddr_in6);
+        length = recvfrom(rxsock[ix], (char *) buf, MAXADSIZE, 0,
+                          (struct sockaddr *)&from6, (int *)&fromlen);
+        addr_fam = IPv6;
+#endif
+    } else {
+        length = recvfrom(rxsock[ix], (char *) buf, MAXADSIZE, 0,
+                               (struct sockaddr *)&from, (int *)&fromlen);
+    }
+    if (length < 0) {
+        perror("recv error");
+        free(buf);
+        return;
     }
 
 /* some sneaky bugger is trying to splat the stack?  */
 
     if (length==MAXADSIZE) {
-      if (debug1==TRUE)
-	fprintf(stderr, "Warning: 2K announcement truncated\n");
+        if (debug1==TRUE)
+            fprintf(stderr, "Warning: 2K announcement truncated\n");
     }
     gettimeofday(&tv, NULL);
 
 /* cast buf into sap_header bp */
 
-    bp = (struct sap_header *) buf;
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6    
+        bp6 = (struct sapv6_header *) buf;
+        bp = (struct sap_header *) bp6;
+        sap_hdr_len = SAPV6_HDR_LEN;
+#endif
+    } else {
+        bp4 = (struct sapv4_header *) buf;
+        bp = (struct sap_header *) bp4;
+        sap_hdr_len = SAPV4_HDR_LEN;
+    }
 
 /* if debugging have a look at the header */
 
-    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, ntohl(bp->src));)
+/*    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, ntohl(bp->src));) /* */
+    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d \n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid));
+
 
 /* save a copy of the original buffer */
 
@@ -1617,14 +1850,27 @@ void recv_packets(ClientData fd)
     orglength = length;
 
 /* determine the addresses */
-
-    src     = ntohl(bp->src);
-    hfrom   = ntohl(from.sin_addr.s_addr);
+    memset(source, 0, 128);
+    memset(heardfrom, 0, 128);
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+        src6 = (struct in6_addr *) bp6->src;
+        strcpy(source, inet6_ntoa(src6));
+        hfrom6 = (struct in6_addr *) &from6.sin6_addr;
+        strcpy(heardfrom, inet6_ntoa(&from6.sin6_addr));
+ #endif
+    } else {
+        src     = ntohl(bp4->src);
+        hfrom   = ntohl(from.sin_addr.s_addr);
+        in.s_addr = bp4->src;
+        strcpy(source, inet_ntoa(in));
+        strcpy(heardfrom, inet_ntoa(from.sin_addr));
+    }
 
 /* set data to point after the originating source field */
 
-    data    = (char *)((char *)bp+sizeof(struct sap_header));
-    length -= sizeof(struct sap_header);
+    data    = (char *)((char *)bp + sap_hdr_len);
+    length -= sap_hdr_len;
 
 /* sanity check */
 
@@ -1637,6 +1883,7 @@ void recv_packets(ClientData fd)
 /* Ignore announcements with later SAP versions than we can cope with */
 
     if (bp->version > 1) {
+	fprintf(stderr,"announcement with version>1 received and ignored\n");
       if (debug1==TRUE) 
 	fprintf(stderr,"announcement with version>1 received and ignored\n");
       goto out;
@@ -1649,10 +1896,12 @@ void recv_packets(ClientData fd)
 /* create the advert_data structure to store details in the linked list */
 
     addata = (struct advert_data *)malloc(sizeof(struct advert_data));
+    memset(addata, 0 , sizeof(struct advert_data));
     addata->sap_hdr  = NULL;
     addata->sapenc_p = NULL;
     addata->authinfo = NULL;
     addata->encrypt  = 0;
+    addata->addr_fam = addr_fam;
 
 /* is the announcement encrypted ? */
 /* need these even if it isn't     */
@@ -1662,15 +1911,15 @@ void recv_packets(ClientData fd)
     encstatus_p = (char *)malloc(8);
 
     if ( bp->enc == 1 ) {
-
+        printf("should not be here\n");
 /* create the privacy header part of the advert_data structure */
 
       addata->sapenc_p=(struct priv_header *)malloc(sizeof(struct priv_header));
 
 /* set privacy header pointer to point to the received privacy header */
 
-      enc_p = (struct priv_header *) ((char *)bp+sizeof(struct sap_header)
-                 +auth_len+TIMEOUT);
+      enc_p = (struct priv_header *) 
+          ((char *)bp+sap_hdr_len +auth_len+TIMEOUT);
 
 /* if debugging have a look at the privacy header we received */
 
@@ -1817,7 +2066,7 @@ void recv_packets(ClientData fd)
 
     if ( auth_len != 0) {
 
-      auth_hdr = (struct auth_header *)((char *)bp+sizeof(struct sap_header));
+      auth_hdr = (struct auth_header *)((char *)bp+sap_hdr_len);
 
 /* if debugging have a look at the authentication header */
 
@@ -1878,7 +2127,7 @@ void recv_packets(ClientData fd)
           irand = (lbl_random()&0xffff);
           strncpy(authstatus, 
                   check_x509_authentication(auth_hdr,
-                    ((char *)bp+sizeof (struct sap_header)+2),
+                    ((char *)bp+sap_hdr_len+2),
                     new_data, newlength, auth_len, asym_keyid,
                     irand,authmessage,AUTHMESSAGELEN), 
                   AUTHSTATUSLEN);
@@ -2085,8 +2334,12 @@ void recv_packets(ClientData fd)
 /* debugging info - leave in for the moment */
 
       writelog(printf("recv_packets: calling parse_entry\n");)
-      writelog(printf(" no advertid yet length=%d, src=%lu, hfrom=%lu\n",
-         length,src,hfrom);)
+      if (bp->addr != 1) {
+        writelog(printf(" no advertid yet length=%d, src=%lu, hfrom=%lu\n",
+          length,src,hfrom);)
+      }
+      writelog(printf(" no advertid yet length=%d, src=%s, hfrom=%s\n",
+                      length,source,heardfrom);)
       writelog(printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
          rx_sock_addr[ix],rx_sock_port[ix],(int)tv.tv_sec,recvkey);)
       writelog(printf(" auth type=%s, status=%s, keyid=%s\n",
@@ -2095,26 +2348,55 @@ void recv_packets(ClientData fd)
          enctype,encstatus_p,enc_asym_keyid);)
       writelog(printf(" authmessage= %s\n",authmessage);)
       writelog(printf("  encmessage= %s\n",encmessage);)
- 
+
 /* if someone else is repeating our announcements, be careful not to       */
 /* re-announce their modified version ourselves                            */
 
       strcpy(aid, "BAD");
-      if (src == hfrom || src != hostaddr) {
-        writelog(printf("calling parse_entry with trust = trusted\n");)
-	endtime=parse_entry(aid, data, length, src, hfrom,
-	    rx_sock_addr[ix], rx_sock_port[ix],
-	    tv.tv_sec, "trusted", recvkey, authtype, authstatus,
-	    &authtmp, asym_keyid,enctype,encstatus_p,&enctmp,
-            enc_asym_keyid,authmessage,encmessage) ;
+      trusted = 0;
+         /* REVIEW. This is a bit problematic. In IPv6, if the announcement
+          * is meant for a link-local multicast address, the announcement will 
+          * be sent with a link-local source IP address, even though the 
+          * SAP source address will always be the source's *global* IPv6
+          * address. Therefore, the src and hfrom fields of a link-local
+          * multicast packet will never be "equal" even though they might
+          * be from the same host. At the moment, all announcements from 
+          * the host are 'trusted'. 
+          */
+     if (addr_fam == IPv6) { /* Is this an IPv6 announcement? */
+#ifdef HAVE_IPv6
+         if (IPV6_ADDR_EQUAL(src6, hfrom6) ||
+             IPV6_ADDR_EQUAL(src6, &hostaddr_v6)) {
+             trusted = 1;
+         }
+#endif
+     } else {
+         if (src == hfrom || src != hostaddr) {
+             trusted = 1;
+         }
+     }
+
+    if (trusted) {
+          writelog(printf("calling parse_entry with trust = trusted\n");)
+              endtime=parse_entry(aid, data, length, source, heardfrom,
+                                  rx_sock_addr[ix], rx_sock_port[ix],
+                                  tv.tv_sec, "trusted", recvkey, 
+                                  authtype, authstatus,
+                                  &authtmp, asym_keyid,
+                                  enctype,encstatus_p,&enctmp,
+                                  enc_asym_keyid,authmessage,encmessage) ;
+
 	} else {
           writelog(printf("calling parse_entry with trust = untrusted\n");)
-	  endtime=parse_entry(aid, data, length, src, hfrom,
-	    rx_sock_addr[ix], rx_sock_port[ix],
-	    tv.tv_sec, "untrusted", recvkey, authtype, authstatus,
-	    &authtmp, asym_keyid,enctype,encstatus_p,&enctmp,
-            enc_asym_keyid,encmessage,authmessage);
+              endtime=parse_entry(aid, data, length, source, heardfrom,
+                                  rx_sock_addr[ix], rx_sock_port[ix],
+                                  tv.tv_sec, "untrusted", recvkey, 
+                                  authtype, authstatus,
+                                  &authtmp, asym_keyid,
+                                  enctype, encstatus_p,&enctmp,
+                                  enc_asym_keyid,encmessage,authmessage);
 	}
+
 
 /* debugging info - leave in for the moment */
 
@@ -2129,6 +2411,22 @@ void recv_packets(ClientData fd)
          enctype,encstatus_p,enc_asym_keyid);)
       writelog(printf(" authmessage= %s\n",authmessage);)
       writelog(printf("  encmessage= %s\n",encmessage);)
+
+#if 0
+          if (addr_fam == IPv6) {
+
+      printf("recv_packets: aid=%s len=%d, src=%s, hfrom=%s\n",
+             aid,length,source,heardfrom);
+      printf(" sap_addr=%s sap_port=%d, time_t=%d, recvkey=%s\n",
+         rx_sock_addr[ix],rx_sock_port[ix],(int)tv.tv_sec,recvkey);
+      printf(" auth type=%s, status=%s, keyid=%s\n",
+         authtype,authstatus,asym_keyid);
+      printf(" enc  type=%s, status=%s, keyid=%s\n",
+         enctype,encstatus_p,enc_asym_keyid);
+          }
+#endif
+
+
 
 /* Store received authentication data in the linked list                */
 /* overwrite existing data if this is a repeated/modified announcement  */
@@ -2146,7 +2444,7 @@ void recv_packets(ClientData fd)
 	     } while ((advert!=last_ad->next_ad) && !found);
            }
 	 }
-	
+
 	 if (!found) {
            if ( addata != NULL ) {
 	     addata->aid=strdup(aid);
@@ -2169,7 +2467,6 @@ void recv_packets(ClientData fd)
 	 } else {
 
 /* This is a repeated announcement */
-
 /* Free up the old copy of the authentication info and replace it with the */
 /* new copy from the packet                                                */
 
@@ -2192,8 +2489,6 @@ void recv_packets(ClientData fd)
 	   advert->sapenc_p=addata->sapenc_p;
 	   free(addata);
 	 }
-
-/* free some variables */
 
 out:
       free(buf);
@@ -2236,7 +2531,8 @@ static void set_time(const char* var, int i, time_t t)
 /* parse_entry - parse the SDP payload or cache entry etc                */
 /*-----------------------------------------------------------------------*/
 unsigned long parse_entry(char *advertid, char *data, int length,
-        unsigned long src, unsigned long hfrom,
+/*        unsigned long src, unsigned long hfrom, */
+        char *src, char *hfrom,
         char *sap_addr, int sap_port, time_t t, char *trust,
         char *recvkey, char *authtype, char *authstatus, int *data_len,
         char *asym_keyid, char *enctype, char *encstatus, int *enc_data_len,
@@ -2261,6 +2557,10 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     unsigned int time1[MAXTIMES], time2[MAXTIMES], rctr[MAXTIMES], timemax;
     struct in_addr source;
     struct in_addr maddr;
+#ifdef HAVE_IPv6
+    struct in6_addr maddr6;
+#endif
+
     struct timeval tv;
 
     writelog(printf("parse_entry: > entered parse_entry\n");)
@@ -2346,10 +2646,17 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 
     *end++ = '\0';
     length -= end-version;
+
+    strncpy(heardfrom, hfrom, strlen(hfrom));
+    strncpy(origsrc, src, strlen(src));
+
+#if 0
     source.s_addr=htonl(hfrom);
     strncpy(heardfrom, (char *)inet_ntoa(source), 16);
     source.s_addr=htonl(src);
     strncpy(origsrc, (char *)inet_ntoa(source), 16);
+#endif
+
 
 /* loop through the rest of the data looking at the various SDP fields */
 
@@ -2365,7 +2672,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 		if (*(cur + 1) != '=') {
 		    if (debug1)
 			fprintf(stderr,"no = at byte %d\n", end-data);
-		    dump(data2, origlen);
+	    dump(data2, origlen);
+			printf("no = at byte %d\n", end-data);
 		    goto errorleap;
 		}
                 switch (*cur) {
@@ -2834,7 +3142,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	    sprintf(namestr, "%u", time2[i]);
 	    Tcl_SetVar(interp, var, namestr, TCL_GLOBAL_ONLY);
 	    maddr.s_addr=inet_addr(tmpstr);
-	    store_address(&maddr, time2[i]);
+	    store_address(&maddr, IPv4, time2[i]);
 	    for(r=0;r<rctr[i];r++) {
 #ifdef NOTDEF
 		unsigned int interval, duration;
@@ -2884,7 +3192,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	    strcpy(var, "endtime(0)");
 	    Tcl_SetVar(interp, var, "0", TCL_GLOBAL_ONLY);
             maddr.s_addr=inet_addr(tmpstr);
-            store_address(&maddr, 0);
+            store_address(&maddr, IPv4, 0);
 	  }
       }
     Tcl_SetVar(interp, "multicast", tmpstr, TCL_GLOBAL_ONLY);
@@ -3113,7 +3421,7 @@ errorleap:
     if (debug1)
 	free(data2);
     return 0;
-}
+} /* parse_entry */
 
 int extract_ttl(char *addrstr)
 {
@@ -3140,44 +3448,47 @@ int check_net_type(char *in, char *ip, char *addr)
   int j1, j2, j3, j4;
   char c;
 
-  if (strncmp(in, "IN", 2)!=0)
-    {
-      if (debug1==TRUE)
-	fprintf(stderr, "sdr: expected network type IN, got %s\n", in);
+  if (strncmp(in, "IN", 2)!=0) {
+      if (debug1==TRUE) {
+          fprintf(stderr, "sdr: expected network type IN, got %s\n", in);
+          printf("bad 1\n");
+      }
       return -1;
-    }
-  if (strncmp(ip, "IP4", 3)!=0)
-    {
-      if (debug1==TRUE)
-	fprintf(stderr, "sdr: expected address type IP4, got %s\n", ip);
-      return -1;
-    }
+  }
+  if ((strncmp(ip, "IP4", 3)!=0) || (strncmp(ip, "IP6", 3)!=0)) {   /* MM */
+      if (debug1==TRUE) {
+          printf("bad 2\n");
+          fprintf(stderr, "sdr: expected address type IP4, got %s\n", ip);
+          return -1;
+      }
+  }
   if (addr != NULL &&
       (sscanf(addr, "%d.%d.%d.%d%c", &j1, &j2, &j3, &j4, &c) != 4 ||
        inet_addr(addr) == -1)) {
-    int isok = 0;
-    char *p;
+      int isok = 0;
+      char *p;
 
-    /* It's not a valid numeric address.
-     * RFC2327 says that the other possibility is a FQDN, defined as
-     *   4*(alpha-numeric|"-"|".")
-     * Instead, we just ensure that it has an alpha in it.
-     * ("Be generous in what you accept.")
-     */
-    for (p = addr; *p; p++) {
-      if (isalpha(*p)) {
-	isok = 1;
-	break;
+      /* It's not a valid numeric address.
+       * RFC2327 says that the other possibility is a FQDN, defined as
+       *   4*(alpha-numeric|"-"|".")
+       * Instead, we just ensure that it has an alpha in it.
+       * ("Be generous in what you accept.")
+       */
+      for (p = addr; *p; p++) {
+          if (isalpha(*p)) {
+              isok = 1;
+              break;
+          }
       }
-    }
-    if (!isok) {
-      if (debug1)
-	fprintf(stderr, "sdr: illegal IP address %s\n", addr);
-      return -1;
-    }
+      if (!isok) {
+          if (debug1)
+              fprintf(stderr, "sdr: illegal IP address %s\n", addr);
+          printf("bad 3\n");
+          return -1;
+      }
   }
   return 0;
-}
+} 
 
 /*------------------------------------------------------------------------*/
 /* timed_send_advert                                                      */
@@ -3228,133 +3539,173 @@ int timed_send_advert(ClientData cd)
   writelog(printf("timed_send_advert calling send_advert\n");)
 
   if (((unsigned long)tv.tv_sec<=addata->end_time)||(addata->end_time==0)) {
-    send_advert(addata->data, addata->tx_sock, addata->ttl,
-		addata->encrypt, addata->length,
-		auth_len, addata->authinfo, 
-                hdr_len, sapenc_p, &(addata->sap_hdr));
-    interval = addata->interval;
-    jitter = (unsigned)lbl_random() % interval;
-    addata->timer_token=Tcl_CreateTimerHandler(interval + jitter,
-                (Tk_TimerProc*)timed_send_advert,
-                (ClientData)addata);
+      send_advert(addata->data, addata->tx_sock, addata->addr_fam, addata->ttl,
+                  addata->encrypt, addata->length,
+                  auth_len, addata->authinfo, 
+                  hdr_len, sapenc_p, &(addata->sap_hdr));
+      interval = addata->interval;
+      jitter = (unsigned)lbl_random() % interval;
+      addata->timer_token=Tcl_CreateTimerHandler(interval + jitter,
+                                              (Tk_TimerProc*)timed_send_advert,
+                                                 (ClientData)addata);
   }
 
   return TCL_OK;
-}
+} /* timed_send_advert() */
+
 /*------------------------------------------------------------------------*/
 /* send the advert out                                                    */
 /*                                                                        */
 /*------------------------------------------------------------------------*/
-int send_advert(char *adstr, int tx_sock, unsigned char ttl,
+int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
                 int encrypt, u_int len, u_int auth_len,
                 struct auth_info *authinfo , u_int hdr_len,
                 struct priv_header *sapenc_p, 
-		struct sap_header **sap_hdr)
+                struct sap_header **sap_hdr)
 {
-  struct auth_header *auth_hdr=NULL;
-  struct sap_header  *bp=NULL;
-  struct priv_header *enc_p=NULL;
-
-  char *buf=NULL;
-
-  int datalength=0;
-  int packetlength=0;
-  int code;
-
+    struct auth_header *auth_hdr=NULL;
+    struct sap_header  *bp=NULL;
+    struct priv_header *enc_p=NULL;
+    
+    char *buf=NULL;
+    
+    int datalength=0;
+    int packetlength=0;
+    int code;
+    int addr_len = IPV4_ADDR_LEN;
+    
 #ifdef WIN32
-  int wttl;
+    int wttl;
 #endif
-
+    
 #ifdef LOCAL_ONLY
-  ttl=1;
+    ttl=1;
 #endif
-
-  writelog(printf(" -- entered send_advert --\n");)
-
-  datalength = len;
-
+    
+    writelog(printf(" -- entered send_advert --\n");)
+        
+        
+    datalength = len;
+    
+    if (addr_fam == IPv6) {
+        addr_len = IPV6_ADDR_LEN;
+    }
+    
 /* calculate packetlength - asymm,symm (+4(2[generic enc_hdr]+2[pad]),clear  */
 /* len = data; auth_len = auth_hdr_len; hdr_len = priv_hdr len               */
+    
+    writelog(printf("send_advert: len=%d auth_len=%d hdr_len=%d\n",len,auth_len,hdr_len);)
 
-  writelog(printf("send_advert: len=%d auth_len=%d hdr_len=%d\n",len,auth_len,hdr_len);)
-
-  if (hdr_len != 0) {
+    if (hdr_len != 0) {
 
 /* think hdr_len is everything from start of priv_hdr so no need for +len ? */
 /*  packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+hdr_len+len;  */
-    packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+hdr_len;
-
-  } else if (encrypt !=0 ) {
-    packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+4+len;
-  } else {
-    packetlength = sizeof(struct sap_header)+auth_len+len;
-  }
+        
+        packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+hdr_len;
+    } else if (encrypt !=0 ) {
+        packetlength = sizeof(struct sap_header)+auth_len+TIMEOUT+4+len;
+    } else {
+        packetlength = sizeof(struct sap_header)+auth_len+len;
+    }
+    
+/* 
+ * Add the length of the source address which is part of the SAP addr - 
+ * may be a v6 or v4 address.
+ */
+    packetlength += addr_len;
 
 /* malloc the space */
-
-  buf = (char *)malloc(packetlength);
-
+    
+    buf = (char *)malloc(packetlength);
+    
 /* call build_packet to fill out sap_hdr, auth_hdr and priv_hdr             */
-
-  len += build_packet(buf,adstr,len,encrypt,auth_len,hdr_len,authinfo,sapenc_p);
-
+    
+    len += build_packet(buf, adstr, addr_fam, len, 
+                        encrypt, auth_len, hdr_len, authinfo, sapenc_p);
+    
 /* store the SAP header we used so we can write it to the cache later       */
 /* not sure why we want to do this                                          */
-
-  if (*sap_hdr==NULL) {
-    *sap_hdr=(struct sap_header *)malloc(sizeof(struct sap_header));
-  }
-  memcpy(*sap_hdr, buf, sizeof(struct sap_header));
-
+    
+    if (*sap_hdr==NULL) {
+        *sap_hdr=(struct sap_header *)malloc(sizeof(struct sap_header));
+    }
+    memcpy(*sap_hdr, buf, sizeof(struct sap_header));
+    
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6        
 #ifdef WIN32
-  wttl = ttl;
-  if (setsockopt(tx_sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&wttl, 
-		 sizeof(wttl))<0)
+        wttl = ttl;
+        if (setsockopt(tx_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
+                       (char *)&wttl,  sizeof(wttl))) 
 #else
-    if (setsockopt(tx_sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&ttl, 
-		   sizeof(ttl))<0)
+        if (setsockopt(tx_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
+                       (char *)&ttl,  sizeof(ttl)))
 #endif
-      {
-	perror("setsockopt ttl");
-	fprintf(stderr, "ttl: %d\n", ttl);
-	free(buf);
-	return 0;
-      }
+            {
+            perror("send_advert: setsockopt HOPS");
+            fprintf(stderr, "ttl: %d, socket: %d\n", ttl, tx_sock);
+            }
+#endif /* HAVE_IPv6 */
+    } else {
+#ifdef WIN32
+        wttl = ttl;
+        if (setsockopt(tx_sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&wttl, 
+                       sizeof(wttl))<0)
+#else
+        if (setsockopt(tx_sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&ttl, 
+                       sizeof(ttl))<0)
+#endif
+            {
+                perror("setsockopt ttl");
+                fprintf(stderr, "ttl: %d\n", ttl);
+                free(buf);
+                return 0;
+            }
+    }
 
 /* if debugging look at what we are going to send just before we send it */
+    
+    writelog(printf(" *** SENDING ***\n");)
 
-      writelog(printf(" *** SENDING ***\n");)
+    bp= (struct sap_header *)((char *)buf);
 
-      bp= (struct sap_header *)((char *)buf);
-      writelog(printf(" sap_hdr: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+#if 0    
+    writelog(printf(" sap_hdr: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+#endif
 
-      if (auth_len != 0) {
-        auth_hdr= (struct auth_header *)((char *)buf+sizeof(struct sap_header));
+    if (auth_len != 0) {
+        auth_hdr= (struct auth_header *)
+            ((char *)buf+sizeof(struct sap_header));
         writelog(printf("auth_hdr: version = %d, padding = %d, auth_type = %d, siglen = %d\n",auth_hdr->version, auth_hdr->padding, auth_hdr->auth_type,auth_hdr->siglen);)
-      }
+     }
 
-      if (hdr_len != 0) {
-        enc_p = (struct priv_header *)((char *)buf+sizeof(struct sap_header)+auth_len+TIMEOUT);
+    if (hdr_len != 0) {
+        enc_p = (struct priv_header *)
+            ((char *)buf+sizeof(struct sap_header)+auth_len+TIMEOUT);
         writelog(printf("priv_hdr: version=%d padding=%d enc_type=%d hdr_len=%d \n",enc_p->version,enc_p->padding,enc_p->enc_type,enc_p->hdr_len) ;)
-      }
-
-      writelog(printf(" ***************\n");)
+     }
+    
+    writelog(printf(" ***************\n");)
 
 /* send the data out - len should be the full length after build_packet */
 
-  code = send(tx_sock, buf, len, 0);
+        /* printf("\nsend_adver: socket %d sending %s len: %d, plen: %d\n", 
+            tx_sock, adstr, len, packetlength); /* MM */
+        /* printf("\nsend_adver:  %s \n", adstr); /* MM */
 
+    code = send(tx_sock, buf, len, 0);
+          
 /* if debugging check the announcement is sent */
-
-  if (code == -1) {
-    writelog(printf(" \nFailed to send announcement: errno = %d\n\n",errno);)
-  }
+          
+    if (code == -1) {
+       writelog(printf(" \nFailed to send announcement: errno = %d\n\n",errno);)
+    }
 
 /* free up some space */
 
-  free(buf);
-
-  return 0;
+    free(buf);
+    
+    return 0;
 }
 
 /*------------------------------------------------------------------------*/
@@ -3364,7 +3715,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 /*                                                                        */
 /*------------------------------------------------------------------------*/
 int queue_ad_for_sending(char *aid, char *adstr, int interval,
-        long end_time, char *txaddress, int txport,
+        long end_time, char *txaddress, int addr_fam, int txport,
         unsigned char ttl, char *keyname, 
         char *auth_type, char *auth_status,
         char *enc_type,  char *enc_status,
@@ -3383,6 +3734,7 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
  
   if (addata == NULL) {
     addata = (struct advert_data *)malloc(sizeof(struct advert_data));
+    memset(addata, 0, sizeof(struct advert_data));
     addata->sap_hdr  = NULL;
     addata->authinfo = NULL;
     addata->sapenc_p = NULL;
@@ -3392,19 +3744,23 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
 /* start filling in the advert_data structure */
 
   addata->tx_sock=0;
-  for(i=0;i<no_of_tx_socks;i++) 
-    {
+  for(i=0;i<no_of_tx_socks;i++) {
       if (strcmp(tx_sock_addr[i], txaddress)==0)
-	{
-	  addata->tx_sock=txsock[i];
-	  break;
-	}
-    }
-  if (addata->tx_sock==0) {
-    sd_tx(txaddress, txport, txsock, &no_of_tx_socks);
-    addata->tx_sock=txsock[no_of_tx_socks-1];
+          {
+              addata->tx_sock=txsock[i];
+              break;
+          }
   }
 
+  if (addata->tx_sock==0) {
+      if (addr_fam == IPv6) {
+          sd_tx_ipv6(txaddress, txport, txsock, &no_of_tx_socks);
+      } else {
+          sd_tx(txaddress, txport, txsock, &no_of_tx_socks);
+      }
+      addata->tx_sock=txsock[no_of_tx_socks-1];
+  }
+  
   addata->aid  = (char *)malloc(strlen(aid)+1);
   strcpy(addata->aid, aid);
 
@@ -3498,9 +3854,15 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
 
   writelog(printf("queue_ad_for_sending calling send_advert\n");)
 
-  send_advert(addata->data, addata->tx_sock, ttl, addata->encrypt,
-	      addata->length, auth_len, addata->authinfo,hdr_len, 
-	      sapenc_p, &(addata->sap_hdr));
+  /*printf("queue_ad_for_sending calling send_advert \n%s\n", 
+    addata->data); /* MM */
+      
+  addata->addr_fam = addr_fam;
+
+  send_advert(addata->data, addata->tx_sock, addata->addr_fam,
+              ttl, addata->encrypt,
+              addata->length, auth_len, addata->authinfo,hdr_len, 
+              sapenc_p, &(addata->sap_hdr));
 
   return 0;
 }

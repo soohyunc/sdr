@@ -35,12 +35,19 @@
 #include "ui_fns.h"
 #include "prototypes.h"
 
+#ifdef HAVE_IPv6
+#include "ipv6_macros.h"
+#endif
+
 extern Tcl_Interp *interp;
 
 extern char hostname[];
 extern char username[];
 extern char sipalias[];
 extern unsigned long hostaddr;
+#ifdef HAVE_IPv6
+struct in6_addr hostaddr_v6;
+#endif
 extern int rxsock[];
 extern int no_of_rx_socks;
 extern int doexit;
@@ -177,7 +184,7 @@ int ui_check_address(dummy, interp, argc, argv)
 {
   struct in_addr in;
   in.s_addr=inet_addr(argv[1]);
-  if(check_address(&in)==TRUE)
+  if(check_address(&in, IPv4)==TRUE)
     {
       interp->result="ok";
     }
@@ -202,6 +209,36 @@ int ui_generate_address(dummy, interp, argc, argv)
     in=generate_address(&in, atoi(argv[2]));
   }
   strcpy(interp->result,inet_ntoa(in));
+  return TCL_OK;
+}
+
+int ui_generate_v6_address(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;                        /* Argument strings. */
+{
+
+#ifdef HAVE_IPv6
+  struct in6_addr in;
+  struct in6_addr in2;
+
+  /* printf("entering ui_generate_v6_address: no of args: %d,  %s %d\n", 
+         argc,argv[1],atoi(argv[2])); /* */
+  
+  if (argc==1) {
+      printf("ui_generate_v6_address: no args???\n");
+      IN6_pADDR_COPY(&in, generate_v6_address(NULL, 0, NULL));
+  } else {
+        inet6_addr(argv[1], &in);
+      generate_v6_address(&in, atoi(argv[2]), &in2);
+  }   
+  
+  strcpy(interp->result,inet6_ntoa(&in2));
+  
+  /*printf("exiting ui_generate_v6_address: result%s\n", interp->result); /* */
+#endif /* HAVE_IPv6 */
+
   return TCL_OK;
 }
 
@@ -331,6 +368,19 @@ int ui_gethostaddr(dummy, interp, argc, argv)
   strcpy(interp->result,(char *)inet_ntoa(in));
   return TCL_OK;
 }
+
+int ui_get_v6_hostaddr(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv; 
+{
+#ifdef HAVE_IPv6
+  strcpy(interp->result,(char *)inet6_ntoa(&hostaddr_v6));
+#endif
+  return TCL_OK;
+}
+
 
 int ui_gethostname(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
