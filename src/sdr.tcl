@@ -27,11 +27,11 @@ proc debug {str} {
 proc putlogfile {text} {
     global logfile
 #    puts "In putlogfile - logfile = $logfile"
-#   set out [open $logfile a]
-#   puts $out "$text"
-#   close $out
-# change to just the followign if on unix and want all output to screen
-#   puts "$text"
+##   set out [open $logfile a]
+##   puts $out "$text"
+##   close $out
+# change to just the following if on unix and want all output to screen
+  puts "$text"
 }
 
 #set langtab [open "/tmp/langtab" "w"]
@@ -606,15 +606,15 @@ proc set_media {} {
 		    [media_changed_warning $aid $medianum]
 	}
     }
-    set ldata($aid,$medianum,media) $media
-    set ldata($aid,$medianum,port) $port
-    set ldata($aid,$medianum,proto) $proto
-    set ldata($aid,$medianum,fmt) $fmt
-    set ldata($aid,$medianum,vars) $vars
-    set ldata($aid,$medianum,addr) $mediaaddr
-    set ldata($aid,$medianum,layers) $medialayers
-    set ldata($aid,$medianum,ttl) $mediattl
-    set ldata($aid,$medianum,pid) 0
+    set ldata($aid,$medianum,media)    $media
+    set ldata($aid,$medianum,port)     $port
+    set ldata($aid,$medianum,proto)    $proto
+    set ldata($aid,$medianum,fmt)      $fmt
+    set ldata($aid,$medianum,vars)     $vars
+    set ldata($aid,$medianum,addr)     $mediaaddr
+    set ldata($aid,$medianum,layers)   $medialayers
+    set ldata($aid,$medianum,ttl)      $mediattl
+    set ldata($aid,$medianum,pid)      0
     set ldata($aid,$medianum,mediakey) $mediakey
 
     incr medianum
@@ -623,14 +623,14 @@ proc set_media {} {
 }
 
 proc add_to_list {} {
-    global session multicast recvttl recvsap_addr recvsap_port desc 
-    global advertid creator tfrom tto
-    global ldata fullnumitems fullix medianum source items
-    global heardfrom timeheard 
-    global starttime endtime showwhich phone email uri rctr repeat 
-    global createtime modtime createaddr sessvars trust recvkey
-    global debug1
-#AUTH
+  global session multicast recvttl recvsap_addr recvsap_port desc 
+  global advertid creator tfrom tto
+  global ldata fullnumitems fullix medianum source items
+  global heardfrom timeheard 
+  global starttime endtime showwhich phone email uri rctr repeat 
+  global createtime modtime createaddr sessvars trust recvkey
+  global debug1
+
   global asym_cur_keyid
   global sess_auth_status
   global sess_auth_type
@@ -640,10 +640,11 @@ proc add_to_list {} {
   global sess_enc_type
   global sess_enc_message
   global asympse
-#end
-    if {$debug1 == 1} {
-	putlogfile "add_to_list $advertid"
-    }
+
+  if {$debug1 == 1} {
+    putlogfile "add_to_list $advertid"
+  }
+
   set aid $advertid
   set code 0
   debug "add_to_list $session key:$recvkey"
@@ -663,41 +664,41 @@ proc add_to_list {} {
 	  set code 0
       }
   }
-#AUTH
-  set asympse {}
-  set ldata($aid,authtype) $sess_auth_type
-  set ldata($aid,authstatus) $sess_auth_status
-  set ldata($aid,authmessage) $sess_auth_message
-  set ldata($aid,asym_keyid) $asym_cur_keyid
-  set ldata($aid,enctype) $sess_enc_type
-  set ldata($aid,encstatus) $sess_enc_status
-  set ldata($aid,enc_asym_keyid) $enc_asym_cur_keyid
-  set ldata($aid,encmessage) $sess_enc_message
-#end
 
-  set ldata($aid,key) $recvkey
-  set ldata($aid,createtime) $createtime
-  set ldata($aid,modtime) $modtime
-  set ldata($aid,createaddr) $createaddr
-  set ldata($aid,source) $source
-  set ldata($aid,heardfrom) $heardfrom
-  set ldata($aid,session) $session
-  set ldata($aid,multicast) $multicast
-  set ldata($aid,ttl) $recvttl
-  set ldata($aid,sap_addr) $recvsap_addr
-  set ldata($aid,sap_port) $recvsap_port
+  set asympse {}
+  set ldata($aid,authtype)       $sess_auth_type
+  set ldata($aid,authstatus)     $sess_auth_status
+  set ldata($aid,authmessage)    $sess_auth_message
+  set ldata($aid,asym_keyid)     $asym_cur_keyid
+  set ldata($aid,enctype)        $sess_enc_type
+  set ldata($aid,encstatus)      $sess_enc_status
+  set ldata($aid,enc_asym_keyid) $enc_asym_cur_keyid
+  set ldata($aid,encmessage)     $sess_enc_message
+
+  set ldata($aid,key)            $recvkey
+  set ldata($aid,createtime)     $createtime
+  set ldata($aid,modtime)        $modtime
+  set ldata($aid,createaddr)     $createaddr
+  set ldata($aid,source)         $source
+  set ldata($aid,heardfrom)      $heardfrom
+  set ldata($aid,session)        $session
+  set ldata($aid,multicast)      $multicast
+  set ldata($aid,ttl)            $recvttl
+  set ldata($aid,sap_addr)       $recvsap_addr
+  set ldata($aid,sap_port)       $recvsap_port
 #  regsub -all {\\n} $desc "\n" desc
-  set ldata($aid,desc) $desc
-  set ldata($aid,creator) $creator
-  set ldata($aid,theard) $timeheard
-  set ldata($aid,starttime) 0
-  set ldata($aid,endtime) 0
-  set ldata($aid,tto) ""
-  set ldata($aid,tfrom) ""
-  set ldata($aid,method) advert
-  set ldata($aid,vars) $sessvars
-  set ldata($aid,type) unknown
-  set ldata($aid,tool) unknown
+  set ldata($aid,desc)           $desc
+  set ldata($aid,creator)        $creator
+  set ldata($aid,theard)         $timeheard
+  set ldata($aid,starttime)      0
+  set ldata($aid,endtime)        0
+  set ldata($aid,tto)            ""
+  set ldata($aid,tfrom)          ""
+  set ldata($aid,method)         advert
+  set ldata($aid,vars)           $sessvars
+  set ldata($aid,type)           unknown
+  set ldata($aid,tool)           unknown
+
   foreach i [split $sessvars "\n"] {
       set attr [lindex [split $i ":"] 0]
       switch $attr {
@@ -709,6 +710,7 @@ proc add_to_list {} {
 	  }
       }
   }
+
   foreach i [array names starttime] {
       set ldata($aid,tto,$i) $tto($i)
       set ldata($aid,tfrom,$i) $tfrom($i)
@@ -907,7 +909,7 @@ proc add_to_display_list {aid list} {
     }
     incr items($list)
 }
-#AUTH
+
 proc list_session {aid lastix list} {
     global sessbox ldata ifstyle 
          #puts "$ldata($aid,session)"
@@ -1223,14 +1225,14 @@ proc resort_sessions {} {
 }
 
 
-set typevalue(test) -1
-set typevalue(meeting) 1
-set typevalue(broadcast) 2
-#AUTH
-set typevalue(stest) -1
-set typevalue(smeeting) 1
+set typevalue(test)      -1
+set typevalue(meeting)    1
+set typevalue(broadcast)  2
+# secure sessions 
+set typevalue(stest)     -1
+set typevalue(smeeting)   1
 set typevalue(sbroadcast) 2
-#set typevalue(secure) 3
+#set typevalue(secure)    3
 
 proc compare {aid1 aid2} {
     global ifstyle typevalue ldata
@@ -1460,338 +1462,160 @@ proc popup {aid ifstyle msgsrc} {
   set win $wname.f
   pack $win -side top -fill both -expand true
   set infofont "[option get . infoFont Sdr]"
-#AUTH
-  #Determine the background colour of the title bar by checking
-  #authentication status.
+
+# Determine the bgd colour of the title bar by checking auth and enc status.
+# XXX This needs checking to see that all options are accounted for
+# should get: green = everything okay; 
+#               red = either auth or enc failed; 
+#            orange = auth is "integrity" and enc didn't fail; 
+#            yellow = got some strange enc or auth type which needs handling
+#              cyan = SIP (no auth or enc supported by SIP yet)     
+# The background to the auth/enc messages are red, green, orange 
+# (bad, good, caution) and yellow (something unknown)
+
   if {($msgsrc=="advert") && ($ldata($aid,trust)!="sip")} {
-  set auth $ldata($aid,authstatus)
-  set enc $ldata($aid,encstatus)
-  set autht $ldata($aid,authtype) 
-  set enct $ldata($aid,enctype) 
-  set authm $ldata($aid,authmessage)
-  set encm $ldata($aid,encmessage)
-  switch $auth {
-        noauth {
-                set bgcolour "lightblue"
-                switch $enc {
-		    failed {
-			   set fgcolour "blue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-		    success {
-                	   
-			   set fgcolour "red"
-			    }
-		    SUCCESS {
-                	   
-			   set fgcolour "orange"
-			    }
-		    noenc {
-			   set fgcolour "brown"
-			    }
-		    NOENC {
-			   set fgcolour "black"
-			    }
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-        failed           {
-                set bgcolour "pink"
-                switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
 
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-        trustworthy      {
-                
-                set bgcolour "green"
-               switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
- 
-                    default {
-                            set fgcolour "blue"
-			    }
-		}
-        }
-        authenticated      {
-                
-                set bgcolour "skyblue"
-               switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
- 
-                    default {
-                            set fgcolour "blue"
-			    }
-		}
-        }
-        integrity    {
-                
-                set bgcolour "yellowgreen"
-               switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
- 
-                    default {
-                            set fgcolour "blue"
-			    }
-		}
-        }
-        TRUSTWORTHY          {
-                
-                set bgcolour "yellow"
-                switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
+    set auth  $ldata($aid,authstatus)
+    set enc   $ldata($aid,encstatus)
+    set autht $ldata($aid,authtype) 
+    set enct  $ldata($aid,enctype) 
+    set authm $ldata($aid,authmessage)
+    set encm  $ldata($aid,encmessage)
 
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-        FAILED          {
-                
-                set bgcolour "lightsalmon"
-                switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
+    putlogfile "popup: auth=$auth, autht=$autht, authm=$authm" 
+    putlogfile "popup:  enc=$enc,   enct=$enct,   encm=$encm" 
 
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-       INTEGRITY           {
-                
-                set bgcolour "limegreen"
-                switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
+# sort out the authentication background 
+# combined with enc for main status and on own in auth box
 
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-        NOAUTH          {
-                
-                set bgcolour "cyan"
-                switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "black"
-                            }
-
-		    default {
-			    set fgcolour "blue"
-			    }
-		 }
-        }
-        default          {
-                set bgcolour "lightpink"
-               switch $enc {
-                    failed {
-                           set fgcolour "cadleblue"
-                            }
-                    Encrypted {
-                           set fgcolour "navy"
-                            }
-                    success {
-                           
-                           set fgcolour "red"
-                            }
-                    SUCCESS {
-                           
-                           set fgcolour "orange"
-                            }
-                    noenc {
-                           set fgcolour "brown"
-                            }
-                    NOENC {
-                           set fgcolour "cadleblue"
-                            }
- 
-		    default {
-			    set fgcolour "black"
-			    }
-		}
-        }
-  }
-} else {
-
-  set auth "sip"
-  set enc "sip"
-  set autht  "none"
-  set enct  "none"
-  set authm "none"
-  set encm  "none"
     switch $auth {
-               sip {
-                set bgcolour "yellow"
-               switch $enc {
-                    sip {
-                           set fgcolour "black"
-                            }
- 
-                    default {
-                            set fgcolour "red"
-			    }
-		}
+
+      trustworthy    -
+      TRUSTWORTHY    -
+      authenticated  - 
+      AUTHENTICATED  {
+        set bgauth "okay"
+        set authcol "green"
+      }
+
+      noauth -
+      NOAUTH {
+        set bgauth "none"
+        set authcol "yellow"
+      }
+
+      integrity -
+      INTEGRITY {
+        set bgauth "careful"
+        set authcol "orange"
+      }
+
+      failed -
+      FAILED {
+        set bgauth "failed"
+        set authcol "red"
+      }
+
+      default {
+        set bgauth "unknown"
+        set authcol "yellow"
+      }
+
+    }
+
+# sort out the encryption background 
+# combined with auth for main status and on own in enc box
+
+
+    switch $enc {
+
+      encrypted  -
+      success    -
+      ENCRYPTED  -
+      SUCCESS    { 
+        set bgenc "okay"
+        set enccol "green"
+      }
+
+      noenc      - 
+      NOENC      {
+        set bgenc "none"
+        set enccol "yellow"
+      }
+
+      failed  -
+      FAILED  {
+        set bgenc "failed"
+        set enccol "red"
+      }
+
+      default {
+        set bgenc "unknown"
+        set enccol "yellow"
+      }
+
+    }
+
+# now combine for the main status bar
+
+    switch $bgauth {
+      none {
+        switch $bgenc {
+          none    {set bgcolour "lightblue"}
+          okay    {set bgcolour "green"    }
+          failed  {set bgcolour "red"      }
+          unknown {set bgcolour "yellow"   }
         }
-   }
-}
-#end
+      }
+      okay {
+        switch $bgenc {
+          none    -
+          okay    {set bgcolour "green" }
+          failed  {set bgcolour "red"   }
+          unknown {set bgcolour "yellow"}
+        }
+      }
+      failed {
+        set bgcolour "red" 
+      }
+      careful {
+        switch $bgenc {
+          none    -
+          okay    {set bgcolour "orange"}
+          failed  {set bgcolour "red"   }
+          unknown {set bgcolour "yellow"}
+        }
+      }
+      unknown {
+        switch $bgenc {
+          none    -
+          okay    -
+          unknown {set bgcolour "yellow"}
+          failed  {set bgcolour "red"   }
+        }
+      }
+    }
+
+  } else {
+
+# handle the SIP adverts
+
+    set auth   "sip"
+    set enc    "sip"
+    set autht  "none"
+    set enct   "none"
+    set authm  "none"
+    set encm   "none"
+  
+# not sure what we should do about SIP colours - there is 
+# no auth/encryption so set it to cyan
+
+    switch $auth {
+      sip {
+        set bgcolour "cyan"
+      }
+    }
+  }
 
   if {$msgsrc=="advert"} {
       wm title $wname "Sdr: Session Information"
@@ -1810,12 +1634,8 @@ proc popup {aid ifstyle msgsrc} {
       pack $win.inv.f.m -side left -fill x -expand true
       posn_win_midscreen $wname
   }
-#AUTH - added "-background $bgcolour for AUTHENTICATION and  \" below
-#     Fg for Encryption
- 
 
   frame $win.sn -borderwidth 0
-#AUTH
   button $win.sn.icon -bitmap [get_type_icon $ldata($aid,type) $autht $enct]\
       -relief flat -borderwidth 0 \
       -padx 0 -pady 0 -highlightthickness 0 \
@@ -1824,14 +1644,12 @@ proc popup {aid ifstyle msgsrc} {
   #label $win.sn.l -text $ldata($aid,session) -anchor n
   #log "displaying details of session called:\n   $ldata($aid,session) \n   at [getreadabletime]"
   #pack  $win.sn.l -side left -fill x -expand true
-#AUTH - added "-bg $bgcolour \" below
-#  label $win.sn.l -text "Encryption: $enc $enct  $ldata($aid,session)    \
-#        Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
-  label $win.sn.l -text "Session: $ldata($aid,session) Encryption: $enc $enct  \
-        Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
+  label $win.sn.l -text "Encryption: $enc $enct  $ldata($aid,session)    \
+        Authentication: $auth $autht"  -anchor n -bg $bgcolour 
+# label $win.sn.l -text "Session: $ldata($aid,session) Encryption: $enc $enct  \
+#       Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
   pack  $win.sn.l -side left -fill x -expand true
  
-#end AUTH
 
   frame $win.f0  -relief ridge -borderwidth 2
   text $win.f0.desc -width 40 -height 5  -wrap word -relief flat \
@@ -1882,25 +1700,25 @@ proc popup {aid ifstyle msgsrc} {
   set $win.visible 0
   frame $win.buttons -borderwidth 2 -relief groove
   pack $win.buttons -side top -fill x -expand true
-	if {$authm != "none" || $encm != "none" } {
-  	if {$authm != "none" } {
- # frame $win.authmsg -borderwidth 0
-  #label $win.authmsg.l -text "$authm "  -anchor n -bg $bgcolour -fg $fgcolour
-  #pack  $win.authmsg.l -side left -fill x -expand true
-  iconbutton $win.buttons.authmsg -text "Authentication Info"  -relief raised \
-      -borderwidth 1 -command "authinfo $win $bgcolour $fgcolour \"$authm\" "\
-      -font [option get . mediumFont Sdr] -pad 1
-  tixAddBalloon $win.buttons.authmsg Frame [tt "Display the Authentication Security Information."]
-  incr $win.visible
-  pack $win.buttons.authmsg -side left -fill x -expand true
-  }
+  if {$authm != "none" || $encm != "none" } {
+    if {$authm != "none" } {
+#     frame $win.authmsg -borderwidth 0
+#     label $win.authmsg.l -text "$authm "  -anchor n -bg $bgcolour -fg $fgcolour
+#     pack  $win.authmsg.l -side left -fill x -expand true
+      iconbutton $win.buttons.authmsg -text "Authentication Info"  -relief raised \
+        -borderwidth 1 -command "authinfo $win $authcol \"$authm\" "\
+        -font [option get . mediumFont Sdr] -pad 1
+      tixAddBalloon $win.buttons.authmsg Frame [tt "Display the Authentication Security Information."]
+      incr $win.visible
+      pack $win.buttons.authmsg -side left -fill x -expand true
+    }
   if {$encm != "none" } {
-  iconbutton $win.buttons.encmsg -text "Encryption Info"  -relief raised \
-      -borderwidth 1 -command "encinfo $win $bgcolour $fgcolour \"$encm\" "\
+    iconbutton $win.buttons.encmsg -text "Encryption Info"  -relief raised \
+      -borderwidth 1 -command "encinfo $win $enccol \"$encm\" "\
       -font [option get . mediumFont Sdr] -pad 1
-  tixAddBalloon $win.buttons.encmsg Frame [tt "Display the Encryption Security Information."]
-  incr $win.visible
-  pack $win.buttons.encmsg -side left -fill x -expand true
+    tixAddBalloon $win.buttons.encmsg Frame [tt "Display the Encryption Security Information."]
+    incr $win.visible
+    pack $win.buttons.encmsg -side left -fill x -expand true
   }
 }
 #  label $win.buttons.l -text "Show:" -font $mf
@@ -4415,8 +4233,7 @@ proc periodic_save {interval} {
 proc user_hook {} {
 }
 
-#AUTH
-proc authinfo {win bgcolour fgcolour authm} {
+proc authinfo {win bgcolour authm} {
     global ldata
     global $win.visible
     pack forget $win.buttons.authmsg
@@ -4425,10 +4242,10 @@ proc authinfo {win bgcolour fgcolour authm} {
     frame $win.authinfo -borderwidth 2 -relief groove
     set mf [option get . mediumFont Sdr]
     pack $win.authinfo -side top -fill x -after $win.hidden2
-    message $win.authinfo.authmsg -aspect 600 -text "Authentication Information: $authm " -font $mf -bg $bgcolour -fg $fgcolour
+    message $win.authinfo.authmsg -aspect 600 -text "Authentication Information: $authm " -font $mf -bg $bgcolour
     pack $win.authinfo.authmsg  -side top -expand true
 }
-proc encinfo {win fgcolour bgcolour encm} {
+proc encinfo {win bgcolour encm} {
     global ldata
     global $win.visible
     pack forget $win.buttons.encmsg
@@ -4437,7 +4254,7 @@ proc encinfo {win fgcolour bgcolour encm} {
     frame $win.encinfo -borderwidth 2 -relief groove
     set mf [option get . mediumFont Sdr]
     pack $win.encinfo -side top -fill x  -after $win.hidden2
-    message $win.encinfo.encmsg -aspect 800 -text "Encryption Information: $encm " -font $mf -bg $bgcolour -fg $fgcolour
+    message $win.encinfo.encmsg -aspect 800 -text "Encryption Information: $encm " -font $mf -bg $bgcolour
     pack $win.encinfo.encmsg  -side top -expand true
 }
 
