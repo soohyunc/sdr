@@ -71,7 +71,7 @@ int encrypt_announcement(char *srcbuf, char **dstbuf, int *length,
 int decrypt_announcement(char *buf, int *len, char *recvkey)
 {
   char key[MAXKEYLEN];
-  char *dstbuf, origbuf[*len];
+  char *dstbuf, *origbuf;
   struct enc_header *enchead;
   struct keydata *tmpkey=keylist;
   int length=0;
@@ -79,6 +79,7 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
   int i;
 #endif
 
+  origbuf=malloc(*len);
   memcpy(origbuf,buf,*len);          /* decrypt splats buffer so save it */
   enchead=(struct enc_header *)buf;
 
