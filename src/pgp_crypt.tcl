@@ -586,7 +586,7 @@ proc pgp_create_encryption {irand} {
             set env(PGPPATH) $pgpdir
            }
     }
-    set configfile $env(PGPPATH)/config.txt"
+    set configfile $env(PGPPATH)/config.txt
     #putlogfile "env $env(PGPPATH)"
     if { [file exists $configfile] } {
      set config [open $configfile r]
