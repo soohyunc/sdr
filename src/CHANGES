@@ -1,5 +1,7 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.6.3 K.Hasler 25 June 1999
+  - removed []$ characters in sip_recv_udp and recv_packets 
 
 2.6.2 K.Hasler 22 June 1999
   - enlarged some fonts on windows
