@@ -1122,6 +1122,7 @@ char *argv[];
     int inChannel;
     struct in_addr in;
     struct hostent *hstent;
+    char *p;
 
     seedrand();
     signal(SIGINT, (void(*))clean_up_and_die);
@@ -1140,6 +1141,7 @@ char *argv[];
       fprintf(stderr, "gethostname failed!\n");
       exit(1);
     }
+    writelog(printf("0. >%s<\n", hostname));
     hstent=(struct hostent*)gethostbyname(hostname);
     if (hstent == (struct hostent*) NULL) {
       fprintf(stderr, "gethostbyname failed (hostname='%s'!\n", hostname);
@@ -1154,6 +1156,8 @@ char *argv[];
       (strlen(hstent->h_name)>strlen(hostname))) 
       strcpy(hostname, hstent->h_name);
 
+    writelog(printf("1. >%s<\n", hostname));
+
 /* If the primary name of the host can't be a FQDN, try any aliases */
 
     if (strchr(hostname, '.')==NULL) {
@@ -1166,6 +1170,7 @@ char *argv[];
       }
     }
     
+    writelog(printf("2. >%s<\n", hostname));
     if (strchr(hostname, '.')==NULL) {
 
 /* OK, none of the aliases worked. Next, we can try to look in */
@@ -1192,10 +1197,10 @@ char *argv[];
 	    strcat(testbuf, ".");
 	    strcat(testbuf, cp);
 	    /*remove trailing whitespace*/
-	    if (strchr(testbuf, ' ')!=NULL)
-	      *strchr(testbuf, ' ')='\0';
-	    if (strchr(testbuf, '\t')!=NULL)
-	      *strchr(testbuf, '\t')='\0';
+	    p = testbuf + strlen(testbuf);
+	    while (*p == '\0' || *p == ' ' || *p == '\t'
+		    || *p == '\n' || *p == '\r')
+	      *p-- = '\0';
 	    
 	    /*now we've got a possible name, we need to check this really
 	      is our host*/
@@ -1221,6 +1226,7 @@ char *argv[];
 	fclose(dnsconf);
       }
     }
+    writelog(printf("3. >%s<\n", hostname));
 
 /* Anyone got any idea what to do if we still haven't obtained a */
 /* fully qualified domain name by this point?                    */
@@ -1230,6 +1236,8 @@ char *argv[];
     in.s_addr=htonl(hostaddr);
     if (strchr(hostname, '.')==NULL)
       strcpy(hostname,(char *)inet_ntoa(in));
+
+    writelog(printf("4. >%s<\n", hostname));
 
     hostaddr=ntohl(hostaddr);
     
