@@ -190,9 +190,9 @@ proc new_wiz_panel_timing_norm {panelnum panels aid} {
 		    
 		    set rpts 1
 		    for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-			if {$r>0} {putlogfile "too complicated - tragic!"}
+			if {$r>0} {puts "too complicated - tragic!"}
 			if {$ldata($aid,time$t,offset$r)!="0"} {
-			    putlogfile "too many offsets! - tragic!"
+			    puts "too many offsets! - tragic!"
 			}
 			set start $ldata($aid,starttime,$t)
 			set end $ldata($aid,endtime,$t)
@@ -212,7 +212,7 @@ proc new_wiz_panel_timing_norm {panelnum panels aid} {
 				} elseif {$ofs=="0 86400 172800 259200 345600"} {
 				    set rpt_menu_value([expr $t+1]) 6
 				} else {
-				    putlogfile "help - can't handle this weekly offset"
+				    puts "help - can't handle this weekly offset"
 				}
 			    }
 			    1209600 {set rpt_menu_value([expr $t+1]) 4}
@@ -299,9 +299,9 @@ proc new_wiz_panel_timing_tech {panelnum panels aid} {
 		} else {
 		    set rpts 1
 		    for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-			if {$r>0} {putlogfile "too complicated - tragic!"}
+			if {$r>0} {puts "too complicated - tragic!"}
 			if {$ldata($aid,time$t,offset$r)!="0"} {
-			    putlogfile "too many offsets! - tragic!"
+			    puts "too many offsets! - tragic!"
 			}
 			set start $ldata($aid,starttime,$t)
 			set end $ldata($aid,endtime,$t)
@@ -321,7 +321,7 @@ proc new_wiz_panel_timing_tech {panelnum panels aid} {
 				} elseif {$ofs=="0 86400 172800 259200 345600"} {
 				    set rpt_menu_value([expr $t+1]) 6
 				} else {
-				    putlogfile "help - can't handle this weekly offset"
+				    puts "help - can't handle this weekly offset"
 				}
 			    }
 			    1209600 {set rpt_menu_value([expr $t+1]) 4}
@@ -1469,7 +1469,7 @@ proc changetime {widget change} {
 	    }
 	}
     } else {
-	if {$change!=1} {putlogfile "odd change value $change"}
+	if {$change!=1} {puts "odd change value $change"}
 	if {[set [set widget](mins)]==0} {
 	    set [set widget](mins) 30
 	    incr [set widget](timeofday) 1800
@@ -1766,7 +1766,7 @@ proc create_menu {mname mlist defattrlist media mode} {
 	#delete old menus if we're using this to modify a menu
 	if {[$mname index end]!="none"} {
 	    for {set i 0} {$i <= [$mname index end]} {incr i} {
-#		putlogfile "$i [$mname index end]"
+#		puts "$i [$mname index end]"
 		catch {destroy [$mname entrycget $i -menu]}
 	    }
 	    $mname delete 0 end
