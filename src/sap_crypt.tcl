@@ -385,6 +385,7 @@ proc enter_long_passphrase {mode} {
          -background [option get . entryBackground Sdr]
     pack .pass.f.f.f0.e -side left
 
+##ed     bind .pass.f.f.f0.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
     bind .pass.f.f.f0.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
 
 # only want to retype passphrase if saving the keys file for the first time
@@ -456,7 +457,7 @@ proc enter_short_passphrase {win after} {
 }
 
 proc submit_pass {win mode msgwin str} {
-    global tmppass tmppass1
+    global tmppass tmppass1 ifstyle
 #    if {[string length [$win.f.e get]]<8} \{
     if {([string length $tmppass]<8)&&($mode == "save")} {
 	bell
@@ -487,7 +488,11 @@ proc submit_pass {win mode msgwin str} {
 	    load_from_cache_crypt
 	    $msgwin configure -text "$str"
 	} else {
-	    $win.f.e.workaround set ""
+            if {$ifstyle(labels)=="long"} {
+              $win.f.f.f0.e.workaround set ""
+            } else {
+              $win.f.e.workaround set ""
+            }
 	    bell
 	    $msgwin configure -text "Pass phrase incorrect"
 	    set tmppass ""
