@@ -72,7 +72,6 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
     char *homedir, fulltxt[MAXFILENAMELEN]="";
     char irandstr[10]="";
     char *auth_message=NULL;
-    int messagelen;
 
    writelog(printf("++ debug ++ > entered generate_authentication_x509_info\n");)
  
@@ -134,7 +133,6 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   char *key_id=NULL;
   char *auth_status=NULL;
   char *auth_message=NULL;
-  int messagelen;
 
   char *homedir;
  char fulltxt[MAXFILENAMELEN]="", fullsig[MAXFILENAMELEN]="", fullbdy[MAXFILENAMELEN]="";
@@ -294,7 +292,6 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
   fclose(sig_fd);
 
        authinfo->key_len =0;
-       authinfo->keycertificate=NULL;
 
 /* Toadd the authetication used pgp or X509 Plus the certificate*/
   if (memcmp(auth_type,"cx50",4) == 0)
@@ -337,7 +334,6 @@ int generate_x509_encryption_info(char *data, char *encstatus, int irand,
     char sx509fullenc[MAXFILENAMELEN]="" ;
     char irandstr[10]="";
     char *enc_message=NULL;
-    int messagelen;
 
  
    writelog(printf("++ debug ++ > entered generate_authentication_info\n");)
