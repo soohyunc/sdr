@@ -3600,7 +3600,7 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
     int packetlength=0;
     int code;
     int addr_len = IPV4_ADDR_LEN;
-    int wttl;
+    unsigned int wttl;
     
 #ifdef LOCAL_ONLY
     ttl=1;
@@ -3658,15 +3658,10 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
     memcpy(*sap_hdr, buf, sizeof(struct sap_header)+addr_len);
     
     if (addr_fam == IPv6) {
-#ifdef HAVE_IPv6        
-#ifdef WIN32
-        wttl = ttl;
-        if (setsockopt(tx_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
-                       (char *)&wttl,  sizeof(wttl))) 
-#else
+#ifdef HAVE_IPv6
+        wttl = ttl;        
         if (setsockopt(tx_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
                        (char *)&wttl,  sizeof(wttl)))
-#endif
             {
             perror("send_advert: setsockopt HOPS");
             fprintf(stderr, "ttl: %d, socket: %d\n", ttl, tx_sock);
