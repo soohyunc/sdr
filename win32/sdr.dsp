@@ -65,9 +65,10 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "\src\sdr\src" /I "\src\tcl-8.0\generic" /I "\src\tk-8.0\generic" /I "\src\tk-8.0\xlib" /I "\src\sdr\win32" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "AUTH" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "\src\sdr\src" /I "\src\tcl-8.0\generic" /I "\src\tk-8.0\generic" /I "\src\tk-8.0\xlib" /I "\src\sdr\win32" /I "\src\common" /D "WIN32" /D "_DEBUG" /D "AUTH" /D "CANT_MCAST_BIND" /D "NORANDPROTO" /D "DIFF_BYTE_ORDER" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -77,7 +78,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 msacm32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib tcllib.lib tklib.lib uclmm.lib wsock32.lib Ws2_32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /libpath:"\src\tcl-8.0\win\Debug" /libpath:"\src\tk-8.0\win\Debug" /libpath:"\src\common\Debug"
+# SUBTRACT LINK32 /verbose /nodefaultlib
 
 !ENDIF 
 
@@ -130,6 +132,10 @@ SOURCE=..\src\polluted.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\random.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sap_crypt.c
 # End Source File
 # Begin Source File
@@ -170,6 +176,10 @@ SOURCE=.\tcl_new.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\tcl_parsed_plugins.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\tcl_pgp_crypt.c
 # End Source File
 # Begin Source File
@@ -206,10 +216,6 @@ SOURCE=.\tcl_www.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\text2html.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\tkUnixInit.c
 # End Source File
 # Begin Source File
@@ -227,14 +233,6 @@ SOURCE=..\src\win32.c
 # Begin Source File
 
 SOURCE=..\src\www_fns.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\www_main.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\www_ui_init.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -263,10 +261,6 @@ SOURCE=..\src\form.h
 # Begin Source File
 
 SOURCE=..\src\generate_ids.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\generic_prototypes.h
 # End Source File
 # Begin Source File
 
@@ -784,7 +778,7 @@ InputPath=.\cache.tcl
 InputName=cache
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -823,7 +817,7 @@ InputPath=..\src\cli.tcl
 InputName=cli
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -843,7 +837,7 @@ InputPath=..\src\generic.tcl
 InputName=generic
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -863,7 +857,27 @@ InputPath=..\src\new.tcl
 InputName=new
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\parsed_plugins.tcl
+
+!IF  "$(CFG)" == "sdr - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "sdr - Win32 Debug"
+
+# Begin Custom Build
+InputPath=.\parsed_plugins.tcl
+InputName=parsed_plugins
+
+"tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -883,7 +897,7 @@ InputPath=..\src\pgp_crypt.tcl
 InputName=pgp_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -903,7 +917,26 @@ InputPath=..\src\pkcs7_crypt.tcl
 InputName=pkcs7_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\plugin2tcl.tcl
+
+!IF  "$(CFG)" == "sdr - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "sdr - Win32 Debug"
+
+# Begin Custom Build
+InputPath=..\src\plugin2tcl.tcl
+
+"parsed_plugins.tcl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	\src\tcl-8.0\win\tclsh\Debug\tclsh $(InputPath)
 
 # End Custom Build
 
@@ -923,7 +956,7 @@ InputPath=..\src\plugins.tcl
 InputName=plugins
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -943,7 +976,7 @@ InputPath=..\src\sap_crypt.tcl
 InputName=sap_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -963,7 +996,7 @@ InputPath=..\src\sdp.tcl
 InputName=sdp
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -983,7 +1016,7 @@ InputPath=..\src\sdr.tcl
 InputName=sdr
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1003,7 +1036,7 @@ InputPath=..\src\sip.tcl
 InputName=sip
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1023,7 +1056,7 @@ InputPath=..\src\start_tools.tcl
 InputName=start_tools
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1043,7 +1076,7 @@ InputPath=..\src\www.tcl
 InputName=www
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 

@@ -1,8 +1,8 @@
-#include <stdio.h>
+#include "config_win32.h"
+#include "config_unix.h"
+#include "tcl.h"
+#include "tk.h"
 
-
-#include <stdlib.h>
-#include <sys/types.h>
 #ifdef WIN32
 #define TclGetTime TclpGetTime
 #include <winsock.h>
@@ -79,43 +79,13 @@
 
 #define MAXHOSTNAMELEN	256
 
-#define _SYS_NMLN	9
-struct utsname {
-	char sysname[_SYS_NMLN];
-	char nodename[_SYS_NMLN];
-	char release[_SYS_NMLN];
-	char version[_SYS_NMLN];
-	char machine[_SYS_NMLN];
-};
-
 typedef char *caddr_t;
 
-struct iovec {
-	caddr_t iov_base;
-	int	    iov_len;
-};
-
-struct timezone {
-	int tz_minuteswest;
-	int tz_dsttime;
-};
 
 typedef int pid_t;
 typedef int uid_t;
 typedef int gid_t;
 
-/*
- * Message header for recvmsg and sendmsg calls.
- */
-struct msghdr {
-        caddr_t msg_name;               /* optional address */
-        int     msg_namelen;            /* size of address */
-        struct  iovec *msg_iov;         /* scatter/gather array */
-        int     msg_iovlen;             /* # elements in msg_iov */
-        caddr_t msg_accrights;          /* access rights sent/received */
-        int     msg_accrightslen;
-};
-    
 int uname(struct utsname *);
 int getopt(int, char * const *, const char *);
 int strcasecmp(const char *, const char *);
@@ -188,9 +158,6 @@ char *strerror(int i);
 #define PKCS7 3
 
 /*Missing Prototypes*/
-long lrand48();
-void srand48(long seedval);
-double drand48();
 
 #if !defined(WIN32)&&!defined(SGI)&&!defined(AIX41)&&!defined(_HPUX_SOURCE) && !defined(SOLARIS) && !defined(FREEBSD)
 int gethostname(char * name, size_t namelen);

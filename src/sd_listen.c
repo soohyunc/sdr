@@ -89,7 +89,7 @@ void seedrand()
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  lblsrandom(tv.tv_usec);
+  lbl_srandom(tv.tv_usec);
 }
 
 void remove_cr(char *str)
@@ -700,7 +700,7 @@ int load_cache_entry(
 
 	      Tcl_Eval(interp, "x509state");
 	      if (strcmp(interp->result,"1") == 0) {
-                irand = (lblrandom()&0xffff);
+                irand = (lbl_random()&0xffff);
 		authstatus= check_x509_authentication(auth_hdr,
                     ((char *)bp+sizeof(struct sap_header)+AUTH_HEADER_LEN), 
                     new_data, newlength, auth_len, tmp_keyid, 
@@ -919,7 +919,7 @@ int load_cache_entry(
 
 	      Tcl_Eval(interp, "x509state");
               if (strcmp(interp->result,"1") == 0) {
-	        irand = (lblrandom()&0xffff);
+	        irand = (lbl_random()&0xffff);
 		encstatus_p = \
 		  check_x509_encryption(enc_p, 
 			   ((char *)bp+sizeof ( struct sap_header)+auth_len),
@@ -1018,7 +1018,7 @@ int load_cache_entry(
 
                   if (strcmp(interp->result,"1") == 0) {
 
-	            irand = (lblrandom()&0xffff);
+	            irand = (lbl_random()&0xffff);
                     strncpy(authstatus, \
 			    check_x509_authentication(auth_hdr, 
 				((char *)bp+sizeof (struct sap_header)+2), 
@@ -1808,7 +1808,7 @@ void recv_packets(ClientData fd)
         Tcl_Eval(interp, "x509state");
 
         if (strcmp(interp->result,"1") == 0) {
-          irand = (lblrandom()&0xffff);
+          irand = (lbl_random()&0xffff);
           strncpy(authstatus, 
                   check_x509_authentication(auth_hdr,
                     ((char *)bp+sizeof (struct sap_header)+2),
@@ -3168,7 +3168,7 @@ int timed_send_advert(ClientData cd)
 		auth_len, addata->authinfo, 
                 hdr_len, sapenc_p, &(addata->sap_hdr));
     interval = addata->interval;
-    jitter = (unsigned)lblrandom() % interval;
+    jitter = (unsigned)lbl_random() % interval;
     addata->timer_token=Tcl_CreateTimerHandler(interval + jitter,
                 (Tk_TimerProc*)timed_send_advert,
                 (ClientData)addata);

@@ -54,7 +54,7 @@ int generate_port(char *media)
           mask=0x3ffe;
         }
     }
-  return((lblrandom()&mask)+base);
+  return((lbl_random()&mask)+base);
 }
 
 
@@ -141,7 +141,7 @@ struct in_addr generate_address(struct in_addr *baseaddr, int netmask)
   }
   while(1)
     {
-      i=lblrandom();
+      i=lbl_random();
       newaddr.s_addr &= mask.s_addr;
       newaddr.s_addr |= (i & ~mask.s_addr);
       if (check_address(&newaddr)==TRUE)

@@ -68,7 +68,7 @@ int ui_generate_port(dummy, interp, argc, argv)
 int ui_generate_id()
 {
   int i=0;
-  i=(lblrandom()&0xffff);
+  i=(lbl_random()&0xffff);
   sprintf(interp->result, "%d", i);
   return TCL_OK;
 }
@@ -452,9 +452,14 @@ int ui_run_program(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;
 {
-  int i;
-  int pid;
-  pid=run_program(argv[1]);
-  sprintf(interp->result, "%d", pid);
-  return TCL_OK;
+#ifdef WIN32
+	/* This function is not used on Windows... */
+	return TCL_ERROR;
+#else
+	int i;
+	int pid;
+	pid=run_program(argv[1]);
+	sprintf(interp->result, "%d", pid);
+	return TCL_OK;
+#endif
 }

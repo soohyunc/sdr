@@ -33,22 +33,7 @@
  * This module contributed by John Brezak <brezak@apollo.hp.com>.
  * January 31, 1996
  */
-#ifndef lint
-static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.9 1999-03-22 13:49:30 ucackha Exp $ (LBL)";
-#endif
 
-#include <assert.h>
-#include <io.h>
-#include <process.h>
-#include <fcntl.h>
-#include <windows.h>
-#include <malloc.h>
-#include <string.h>
-#include <stdio.h>
-#include <time.h>
-#include <winsock.h>
-#include <tk.h>
 #include "sdr.h"
 
 #define close closesocket
@@ -196,7 +181,7 @@ WinMain(
     	perror("Windows Sockets init failed");
 	abort();
     }
-    TclHasSockets(NULL);
+/*    TclHasSockets(NULL);  ...not sure what this does? [csp] */
 
     DllMain(hInstance, DLL_PROCESS_ATTACH, 0);
     TkWinXInit(hInstance);

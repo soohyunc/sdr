@@ -31,7 +31,8 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
+#include "config_unix.h"
+#include "config_win32.h"
 #include "sdr.h"
 #include "sap_crypt.h"
 #include "crypt.h"
@@ -39,9 +40,6 @@
 #include "prototypes.h"
 #ifdef AUTH
 #include "prototypes_crypt.h"
-#endif
-#ifndef WIN32
-#include <fcntl.h>
 #endif
 
 

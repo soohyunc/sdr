@@ -90,7 +90,7 @@ int generate_authentication_info(char *data,
 
 /* generate a random number to be used as a unique file identifier */
 
-    irand    = (lblrandom()&0xffff);
+    irand    = (lbl_random()&0xffff);
 
 /* malloc the filename space */
 
@@ -287,7 +287,7 @@ char *check_authentication(struct auth_header *auth_p,
 
 /* generate a random number to be used as a unique file identifier */
 
-    irand    = (lblrandom()&0xffff);
+    irand    = (lbl_random()&0xffff);
 
 /* malloc the filename space */
 
@@ -504,7 +504,7 @@ int generate_encryption_info(char *data,
  
 /* generate a random number to use for the unique filenames */
 
-    irand = (lblrandom()&0xffff);
+    irand = (lbl_random()&0xffff);
 
 /* malloc the filename space */
 
@@ -688,7 +688,7 @@ int check_encryption(	struct priv_header *enc_p,
 
 /* generate a random number to use for the unique filenames */
 
-  irand = (lblrandom()&0xffff);
+  irand = (lbl_random()&0xffff);
 
 /* malloc the filename space */
 

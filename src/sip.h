@@ -35,3 +35,5 @@ typedef struct connection_s {
   int port;
 } connection;
 
+int sip_close_tcp_connection(char *callid);
+int sip_send_tcp_reply_to_fd(int fd, char *msg);

@@ -1,3 +1,6 @@
+#include "config_unix.h"
+#include "config_win32.h"
+#include "crypt_random.h"
 #include "generic_prototypes.h"
 #include "www_prototypes.h"
 
@@ -24,10 +27,6 @@ int bus_listen();
 int is_a_bus_message(char *buf);
 void parse_bus_message(char *buf, int len);
 int bus_send_new_app();
-
-/*random*/
-void lblsrandom(unsigned int seed);
-long lblrandom();
 
 #ifdef SIP_MODULE
 /*sip_register.c*/

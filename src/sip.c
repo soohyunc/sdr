@@ -234,7 +234,7 @@ int sip_readfrom_tcp()
   int i, bytes, consumed;
   char callid[80], *parsebuf;
   fd_set readfds;
-  debug_tcp_conns();
+/*  debug_tcp_conns();*/
 
   /*Got new data on an existing TCP socket*/
   for(i=0;i<MAX_CONNECTIONS;i++)
@@ -301,7 +301,7 @@ int sip_readfrom_tcp()
       }
     }
   }
-  debug_tcp_conns();
+/*  debug_tcp_conns();*/
 }
 
 

@@ -401,7 +401,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
 /* haven't looked at sorting out this X509 code yet */
 
-    irand = (lblrandom()&0xffff);
+    irand = (lbl_random()&0xffff);
 
     rc = generate_x509_authentication_info(data,strlen(data), authstatus, 
                      irand,authmessage, AUTHMESSAGELEN);
@@ -474,7 +474,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
 /* asymmetric - X509 encryption - not checked yet */
 
-    irand = (lblrandom()&0xffff);
+    irand = (lbl_random()&0xffff);
     if (!generate_x509_encryption_info(data, encstatus, irand, 
 				       encmessage, ENCMESSAGELEN)) {
       Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
@@ -575,7 +575,7 @@ int ui_createsession(dummy, interp, argc, argv)
 /* X.509 stuff - I haven't looked at this */
 
     new_len=gen_new_data(data,new_data,argv[6],addata);
-    irand = (lblrandom()&0xffff);
+    irand = (lbl_random()&0xffff);
     memset(authmessage,0,AUTHMESSAGELEN);
     memset(authstatus,0,AUTHSTATUSLEN);
     free(addata->authinfo);
