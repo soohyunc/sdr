@@ -48,7 +48,6 @@
 #define MULTICAST
 /* #define DEBUG */
 
-#include <assert.h>
 #include <locale.h>
 #include <signal.h>
 #ifndef WIN32

@@ -31,7 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <sys/types.h>
 #include "sdr.h"
 #include "sap_crypt.h"
