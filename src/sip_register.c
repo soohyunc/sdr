@@ -51,7 +51,7 @@ extern Tcl_Interp *interp;
 extern char *webdata;
 extern int webblocks;
 extern int webdatalen;
-#define DEBUG
+/*#define DEBUG*/
 
 #define MAXURLLEN 256
 
