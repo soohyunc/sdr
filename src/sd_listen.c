@@ -1163,7 +1163,10 @@ char *argv[];
       while (sip_tcp_rx_sock==-1) {
 	fprintf(stderr, "Failed to open SIP TCP socket\n");
 #ifndef WIN32
+/* unix time is in seconds windows is in milliseconds */
 	sleep(5);
+#else
+	Sleep (5000);
 #endif
 	sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
       }
