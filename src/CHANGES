@@ -1,5 +1,10 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.5a3 mjh@isi.edu, 1998/04/21
+  Fixed SIP bug when inviting to public sessions
+  Fixed SIP URL syntax
+  Increased version number as SIP will no longer interoperate with 2.5a2
+
 2.5a2 c.perkins@cs.ucl.ac.uk
 
   mjh, 26th Mar 98

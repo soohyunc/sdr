@@ -138,6 +138,7 @@ proc qcreate {} {
     set ldata($aid,sap_port) ""
     set ldata($aid,started) 0
     set ldata($aid,list) ""
+    set ldata($aid,trust) sip
     set medianum 0
     foreach media $medialist {
         if {$send($media)==1} {
@@ -283,7 +284,7 @@ proc sip_list_invitees {wname aid} {
 proc sip_map_url_to_addr {location} {
     #if it was a URL other than a SIP one, this doesn't work...
 
-    if {[string compare [string range $location 0 5] "sip://"]==0} {
+    if {[string compare [string range $location 0 3] "sip:"]==0} {
 	#it's a SIP URL
 	#trim the URL
 	set location [string range $location 6 end]
@@ -680,7 +681,7 @@ proc sip_ringing_user {id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation:sip://[getusername]@[gethostname]"
+    set msg "$msg\r\nLocation:sip:[getusername]@[gethostname]"
     sip_send_msg $msg [lrange $path end end]
     start_ringing $id
 }
@@ -750,7 +751,7 @@ proc sip_send_accept_invite {id srcuser dstuser path sdp cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
+    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
     #puts "------\nSending response to [lrange $path end end]\n$msg\n"
     sip_send_msg $msg [lrange $path end end]
 }
@@ -764,7 +765,7 @@ proc sip_send_refuse_invite {id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
+    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
     sip_send_msg $msg [lrange $path end end]
 }
 
@@ -777,7 +778,7 @@ proc sip_send_method_unsupported {id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
+    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
     sip_send_msg $msg [lrange $path end end]
 }
 
@@ -1095,7 +1096,7 @@ proc sip_moved {msg pktsrc} {
 	return 0
     }
     set aid $sip_request_aid($id) 
-    if {[string compare [string range $location 0 5] "sip://"]==0} {
+    if {[string compare [string range $location 0 3] "sip:"]==0} {
 	#it's a SIP URL
 	#trim the URL
 	set location [string range $location 6 end]

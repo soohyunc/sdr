@@ -23,19 +23,25 @@ proc parse_sdp {msg} {
 		set ldata($aid,uri) 0
 		set ldata($aid,multicast) 0
 		set ldata($aid,key) ""
-		set ldata($aid,trust) "sip"
-		#which SAP address and port did this come from? - none!
-		set ldata($aid,sap_addr) ""
-		set ldata($aid,sap_port) ""
-		#have the media tools been started? - no
-		set ldata($aid,started) 0
-		#which display list is it on - none yet
-		set ldata($aid,list) ""
+		if {![info exists ldata($aid,trust)]} {
+		    set ldata($aid,trust) "sip"
+		}
+		if {![info exists ldata($aid,sap_addr)]} {
+		    #which SAP address and port did this come from? - none!
+		    set ldata($aid,sap_addr) ""
+		    set ldata($aid,sap_port) ""
+		}
+		if {![info exists ldata($aid,started)]} {
+		    #have the media tools been started? - no
+		    set ldata($aid,started) 0
+		}
+		if {![info exists ldata($aid,list)]} {
+		    #which display list is it on - none yet
+		    set ldata($aid,list) ""
+		}
 		set mn -1
 
-		set tmp 0
-		catch {set tmp $ldata($aid,heardfrom)}
-		if {$tmp==0} {
+		if {![info exists ldata($aid,heardfrom)]} {
 		    #only set these if we didn't already know about it
 		    set ldata($aid,source) $ldata($aid,createaddr)
 		    set ldata($aid,heardfrom) "session invitation"

@@ -1,5 +1,6 @@
 #sdr.tcl
 #Copyright University College London 1995, 1996
+#Copyright USC/ISI, 1997, 1996, 1998
 #see ui_fns.c for information on usage and redistribution of this file
 #and for a DISCLAIMER OF ALL WARRANTIES.
 
@@ -68,7 +69,7 @@ proc getreadabletime {} {
     return [clock format [clock seconds] -format {%H:%M, %d/%m/%y}]
 }
 
-set sdrversion "v2.5a2"
+set sdrversion "v2.5a3"
 set titlestr "Multicast Session Directory $sdrversion"
 
 proc initialise_resources {} {
@@ -1569,7 +1570,9 @@ if {$ifstyle=="norm"} {
   #Is this a session we announced?  If so, let us modify it...
   set username $ldata($aid,creator)
   set mysess 0
-  if {([gethostaddr]==$ldata($aid,source))&&([getusername]==$username)} {
+  if {([gethostaddr]==$ldata($aid,source)) && \
+	  ([getusername]==$username) && \
+          ($ldata($aid,trust)=="trusted")} {
       set mysess 1
       button $win.f3.edit -text [tt "Edit"] -relief raised \
 	  -command "new \"$aid\"" -highlightthickness 0

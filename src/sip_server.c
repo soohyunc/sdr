@@ -181,18 +181,18 @@ int sip_redirect_request(char *dst, int ttl, int proto, char *buf)
     {
       if (reply_ttl>0)
 	sprintf(reply, "SIP/2.0 302 Moved Temporarily\r\n\
-%sLocation:sip://%s;ttl=%d\r\n%s", 
+%sLocation:sip:%s;ttl=%d\r\n%s", 
 		tmp, dst, ttl, rest);
       else
 	sprintf(reply, "SIP/2.0 302 Moved Temporarily\r\n\
-%sLocation:sip://%s\r\n%s", 
+%sLocation:sip:%s\r\n%s", 
 		tmp, dst, rest);
       sip_send_udp(addr, reply_ttl, reply);
     } 
   else if(reply_proto==TCP)
     {
 	sprintf(reply, "SIP/2.0 302 Moved Temporarily\r\n\
-%sLocation:sip://%s\r\n%s", 
+%sLocation:sip:%s\r\n%s", 
 		tmp, dst, rest);
       sip_send_tcp(addr, reply);
     }
