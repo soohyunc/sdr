@@ -50,7 +50,7 @@
 extern HINSTANCE Tk_GetHINSTANCE();
 
 #ifdef WIN32
-#define MAX_FD 512
+#define MAX_FD 768
 #else
 #define MAX_FD 64
 #endif
