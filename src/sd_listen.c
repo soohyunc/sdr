@@ -2935,7 +2935,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 /* Tcl special characters here! - at least we will issue a warning       */
 
     if (kctr>0) {
-      warn_tcl_special_chars(key[1]);                              
+/*      warn_tcl_special_chars(key[1]);                               */
+      splat_tcl_special_chars(key[1]);                              
       Tcl_SetVar(interp, "key", key[1], TCL_GLOBAL_ONLY);
     }
 
@@ -3002,7 +3003,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 /* look at the individual media stream keys */
 
       if ((kctr>0) && (mediakey[i] != NULL) ) {
-        warn_tcl_special_chars(mediakey[i]);
+/*        warn_tcl_special_chars(mediakey[i]); */
+        splat_tcl_special_chars(mediakey[i]);
         Tcl_SetVar(interp, "mediakey", mediakey[i], TCL_GLOBAL_ONLY);
 	free(mediakey[i]);
       } else {
