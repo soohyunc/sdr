@@ -2539,7 +2539,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 	if(time1[i]!=0) {
 	    unsigned int r;
 	    time1[i]-=0x83aa7e80;
-	    time2[i]-=0x83aa7e80;
+	    if (time2[i])
+		time2[i]-=0x83aa7e80;
 	    if (time2[i]>timemax) timemax=time2[i];
 	    /*Don't bother to do anything if it's already timed out*/
 	    /*	if(time2[i]<tv.tv_sec) return 0;*/
