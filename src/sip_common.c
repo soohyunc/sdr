@@ -79,7 +79,7 @@ void debug_tcp_conns() {
     int i;
     for(i=0;i<MAX_CONNECTIONS;i++) {
 	if (sip_tcp_conns[i].used==1) {
-	    printf("%d: fd: %d addr:%s host:%s port:%d\n",
+	    printf (stderr,"%d: fd: %d addr:%s host:%s port:%d\n",
 		   i,
 		   sip_tcp_conns[i].fd,
 		   sip_tcp_conns[i].addr,
@@ -180,7 +180,7 @@ int sip_send(char *msg, int len, struct sockaddr_in *dst, unsigned char ttl)
 	if (connect(sockets[sock], 
 		    (struct sockaddr *) dst, sizeof(struct sockaddr_in))<0) {
 	    perror("connect");
-	    printf("Dest Address problem\n");
+	    printf (stderr,"Dest Address problem\n");
 #ifdef DEBUG
 	    fprintf(stderr, "Dest Address problem\n");
 #endif
@@ -559,7 +559,7 @@ int sip_tcp_accept(connection conns[])
     conns[cnum].bufsize=6000;
     conns[cnum].fd=accept(sip_tcp_rx_sock, (struct sockaddr *)&addr, &addrlen);
     conns[cnum].addr=strdup(inet_ntoa(addr.sin_addr));
-    printf("Accepted connection from %s\n", conns[cnum].addr);
+    printf (stderr,"Accepted connection from %s\n", conns[cnum].addr);
     debug_tcp_conns();
     return 0;
 }
@@ -601,10 +601,10 @@ int sip_request_ready(char *buf, int len)
     clen=atoi(clenstr);
     payload=strstr(buf, "\r\n\r\n");
     if (payload==NULL) {
-	printf("no CRLFCRLF in buf:>>>%s<<<\n", buf);
+	printf (stderr,"no CRLFCRLF in buf:>>>%s<<<\n", buf);
 	return 0;
     }
-    printf("len:%d clen:%d payload-buf:%d\n", len, clen, (payload-buf));
+    printf (stderr,"len:%d clen:%d payload-buf:%d\n", len, clen, (payload-buf));
     if (len >= clen+4+(payload-buf))
 	return (clen+4+(payload-buf));
     else 
@@ -620,7 +620,7 @@ int extract_field(char *buf, char *field_ret, int retlen, char *field)
     strcat(ufield, ":");
     flen=strlen(ufield);
 #ifdef NOTDEF
-    printf("extract_field: %s\n", field);
+    printf (stderr,"extract_field: %s\n", field);
 #endif
     while (1) {
 	if (strncasecmp(ptr, ufield, flen)==0) {
@@ -628,14 +628,14 @@ int extract_field(char *buf, char *field_ret, int retlen, char *field)
 	    while(*ptr==' ') ptr++;
 	    while((*ptr!='\r')&&(retlen>1)) {
 #ifdef NOTDEF
-		printf("%c", *ptr);
+		printf (stderr,"%c", *ptr);
 #endif
 		*field_ret++=*ptr++;
 		retlen--;
 	    }
 	    *field_ret='\0';
 #ifdef NOTDEF
-	    printf("<-returning\n");
+	    printf (stderr,"<-returning\n");
 #endif
 	    return 0;
 	}
@@ -976,24 +976,24 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
 	/*there may be an existing TCP connection we can use*/
 	for(i=0;i<MAX_CONNECTIONS;i++) {
 	    if (sip_tcp_conns[i].used==1) {
-		printf("1: fd: %d, host: %s port: %d\n", origfd, host, port);
-		printf("2: fd: %d, host: %s port: %d\n", sip_tcp_conns[i].fd,
+		printf (stderr,"1: fd: %d, host: %s port: %d\n", origfd, host, port);
+		printf (stderr,"2: fd: %d, host: %s port: %d\n", sip_tcp_conns[i].fd,
 		       sip_tcp_conns[i].host, sip_tcp_conns[i].port);
 		if ((sip_tcp_conns[i].fd==origfd)&&
 		    (strcmp(sip_tcp_conns[i].host,host)==0)&&
 		    (sip_tcp_conns[i].port==port)) {
 		    /* There's an existing connection that still seems to be up.*/
-		    printf("sending %d butes\n", strlen(user_data));
+		    printf (stderr,"sending %d butes\n", strlen(user_data));
 		    len=send(origfd, user_data, strlen(user_data), 0);
-		    printf("sent %d bytes:\n>>>%s<<<\n", len, user_data);
+		    printf (stderr,"sent %d bytes:\n>>>%s<<<\n", len, user_data);
 		    if (len==strlen(user_data)) {
-			printf("send message on existing connection %d\n", i);
+			printf (stderr,"send message on existing connection %d\n", i);
 			return origfd;
 		    }
 		}
 	    }
 	}
-	printf("existing connection had been closed\n");
+	printf (stderr,"existing connection had been closed\n");
     }
 
     if ( (inaddr = inet_addr(host)) != INADDR_NONE) {
@@ -1137,7 +1137,7 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
 #endif
 		if (send(fd, user_data, strlen(user_data),0)
 		    !=strlen(user_data)) {
-		    printf("failed to send to fd %d\n", fd);
+		    printf (stderr,"failed to send to fd %d\n", fd);
 		}
 		if (wait==0) {
 		    /*
@@ -1162,7 +1162,7 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
 			sip_tcp_conns[i].bufsize=6000;
 			sip_tcp_conns[i].fd=fd;
 			sip_tcp_conns[i].port=port;
-			printf("port is now %d\n", port);
+			printf (stderr,"port is now %d\n", port);
 			sip_tcp_conns[i].host=strdup(host);
 			sip_tcp_conns[i].addr=
 			    strdup(inet_ntoa(sinhim.sin_addr));
@@ -1198,17 +1198,17 @@ int sip_send_tcp_reply(int fd, char *callid, char *addr, int port, char *msg)
      * return the response.
      */
     int i, nfd;
-    printf("seeking for call-id >>%s<<\n", callid);
+    printf (stderr,"seeking for call-id >>%s<<\n", callid);
     debug_tcp_conns();
     for(i=0;i<MAX_CONNECTIONS; i++) {
 	if ((sip_tcp_conns[i].used==1)) {
-	    printf("Used conn %d has callid >>%s<<\n", 
+	    printf (stderr,"Used conn %d has callid >>%s<<\n", 
 		   i, sip_tcp_conns[i].callid);
 	}
 	if ((sip_tcp_conns[i].used==1) && 
 	    (strcmp(sip_tcp_conns[i].callid,callid)==0)) {
 	    /* This is our fd. */
-	    printf("this is our fd\n");
+	    printf (stderr,"this is our fd\n");
 	    if (sip_send_tcp_reply_to_fd(sip_tcp_conns[i].fd, msg)>=0) {
 		return 0;
 	    } else {
@@ -1229,7 +1229,7 @@ int sip_send_tcp_reply(int fd, char *callid, char *addr, int port, char *msg)
 
 int sip_send_tcp_reply_to_fd(int fd, char *msg)
 {
-    printf("\nsending reply mesg: %s\n", msg);
+    printf (stderr,"\nsending reply mesg: %s\n", msg);
     write(fd, msg, strlen(msg));
     /* 
      * If we close we have to go to time-wait.  Give the client the chance to
@@ -1245,13 +1245,13 @@ int sip_finished_reading_tcp(char *data, int len)
     char contentlen[20];
     int clen=0;
 
-    printf("checking for content-length\n");
+    printf (stderr,"checking for content-length\n");
     if (extract_field(data, contentlen, 20, "content-length")==0) {
 	clen=atoi(contentlen);
     }
-    printf("clen=%d\n", clen);
+    printf (stderr,"clen=%d\n", clen);
     ptr=find_end_of_header(data, len);
-    printf("eoh at %x, start at %x, len: %d\n", (unsigned int)ptr, 
+    printf (stderr,"eoh at %x, start at %x, len: %d\n", (unsigned int)ptr, 
 	   (unsigned int)data, len);
 
     if (ptr==NULL) return 0;
@@ -1321,14 +1321,14 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    return 0; /* REVIEW: What to do? */
 	}
 	
-	printf("dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
+	printf (stderr,"dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
 	       dstname, u_at_h, u_at_a, sipalias);
-	printf("who's the request for?!\n");
+	printf (stderr,"who's the request for?!\n");
 	if (((dstname!=NULL)&&(strcmp(u_at_h, dstname)==0)) || 
 	    ((dstname!=NULL)&&(strcmp(u_at_a, dstname)==0)) || 
 	    ((dstname!=NULL)&&(strcmp(sipalias, dstname)==0))) {
 	    
-	    printf("It's for a request for me!\n");
+	    printf (stderr,"It's for a request for me!\n");
 	    
 	    Tcl_SetVar(interp, "sip_advert", buf, TCL_GLOBAL_ONLY);
 	    sprintf(sipfdstr, "%d", sipfd);
@@ -1340,7 +1340,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 		/*	    Tcl_VarEval(interp, "puts $errorInfo", NULL);  */
 	    };
 	} else {
-	    printf("But it's not for me :-(\n");
+	    printf (stderr,"But it's not for me :-(\n");
 	    sprintf(sipfdstr, "%d", sipfd);
 	    callid=malloc(80);
 	    srcuser=malloc(80);
@@ -1353,8 +1353,8 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    extract_field(buf, dstuser, 80, "To");
 	    extract_field(buf, path, 80, "Via");
 	    extract_field(buf, cseq, 80, "Cseq");
-	    printf("path: >%s<\n", path);
-	    printf("cseq: >%s<\n", cseq);
+	    printf (stderr,"path: >%s<\n", path);
+	    printf (stderr,"cseq: >%s<\n", cseq);
 	    switch(method) {
 		case INVITE:
 		    if (Tcl_VarEval(interp, "sip_send_unknown_user ", 
