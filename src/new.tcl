@@ -11,35 +11,53 @@ proc new {aid} {
 	#in case we don't commit the changes.
 	set ldata($aid,tmpmulticast) $ldata($aid,multicast)
     }
-    if {$ifstyle(create)=="norm"} {
-	norm_new $aid
-    } else {
-	tech_new $aid
-    }
+    new_wiz_init $aid $ifstyle(create)
 }
 
-####
-#new creates a window to allow a new session to be defined
-####
-proc norm_new {aid} {
-    global send durationix sd_menu scope zone
-    global monthix dayix dayofmonth hrix ttl timeofday
-    global video_attr audio_attr whiteboard_attr
-    global ldata startdayofweek medialist media_fmt media_proto
-    global security
-    global yourphone
-    global youremail
-    global yourname
-    global new_createtime
-    if {[string length $yourphone]==0} {
-	#enter_phone_details will re-run this if it succeeds
-	enter_phone_details "norm_new $aid"
-	return
-    }
 
+#If you need to add more panels, create a function called 
+#new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
+#called.
+set new_wiz_norm_panels \
+	"info type timing_norm scope_norm media_norm contact accept"
+set new_wiz_tech_panels \
+	"info type timing_tech scope_tech media_tech contact accept"
+
+proc new_wiz_init {aid iftype} {
+    global new_wiz_norm_panels new_wiz_tech_panels 
+    global send new_createtime medialist
     catch {destroy .new}
     toplevel .new
-    posn_win .new
+
+    wm title .new "Session Creation Wizard"
+    frame .new.f -borderwidth 2 -relief groove
+    pack .new.f -side top -fill both -expand true
+    label .new.f.l -text ""
+    pack .new.f.l -side top -fill x
+    text .new.f.t -width 80 -height 5 -relief flat -highlightthickness 0 \
+	    -wrap word
+    pack .new.f.t -side top 
+    frame .new.f.f -borderwidth 2 -relief groove
+    pack .new.f.f -side top -fill x
+    frame .new.f.f.spacer -width 1 -height 200 -borderwidth 0
+    pack .new.f.f.spacer -side right
+    frame .new.f.b -borderwidth 2 -relief groove
+    pack .new.f.b -side top -fill x
+    button .new.f.b.back -text "<< Back" -command "" -relief raised \
+	    -borderwidth 1 -highlightthickness 0 -state disabled
+    pack .new.f.b.back -side left -fill x    -expand true
+    button .new.f.b.next -text "Next >>" -command "" -relief raised \
+	    -borderwidth 1 -highlightthickness 0 -state disabled
+    pack .new.f.b.next -side left -fill x    -expand true
+    button .new.f.b.accept -text "Accept" \
+	    -relief raised \
+	    -borderwidth 1 -highlightthickness 0
+    pack .new.f.b.accept -side left -fill x    -expand true
+    button .new.f.b.cancel -text "Cancel" -command {destroy .new} \
+	    -relief raised \
+	    -borderwidth 1 -highlightthickness 0
+    pack .new.f.b.cancel -side left -fill x    -expand true
+
     if {[string compare $aid "new"]!=0} {
 	wm title .new "Sdr: [tt "Edit Session"]"
 	foreach i $medialist {
@@ -54,465 +72,180 @@ proc norm_new {aid} {
 	set send(audio) 1
 	set new_createtime [unix_to_ntp [gettimeofday]]
     }
-
-
-    new_mk_session_name .new $aid
-    new_mk_session_desc .new $aid
-    new_mk_session_url .new $aid
-
-    frame .new.type -relief groove -borderwidth 2
-    pack .new.type -side top -fill x -pady 2 -ipady 2
-    new_mk_session_type .new.type left $aid
-
-    if {[string compare $aid "new"]!=0} {
-	set sap_addr $ldata($aid,sap_addr)
-	set ttl $ldata($aid,ttl)
-	set scope ttl
-	set zone(cur_zone) $zone(ttl_scope)
-	for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
-#	    puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
-	    if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
-#		puts "setting zone(cur_zone) $i"
-		set scope admin
-		set zone(cur_zone) $i
-	    }
-	}
-    } else {
-	set scope admin
-	set zone(cur_zone) 0
-	set ttl $zone(ttl,$zone(cur_zone))
-    }
-
-
-    frame .new.f3
-    pack .new.f3 -side top -pady 5 -fill x -expand true
-
-    catch {
-	new_mk_session_security .new.f3.l $aid
-    }
-
-    frame .new.f3.m -width 1 -height 1
-    pack .new.f3.m -side left -fill y -padx 3
-
-    #padding frame
-    pack [frame .new.f3.m2 -width 1 -height 1] -side left -fill y -padx 3
-
-    new_mk_session_admin .new.f3.admin $aid $scope
     
-
-    #padding frame
-    pack [frame .new.f3.m3 -width 1 -height 1] -side left -fill y -padx 3
-
-    set show_details 0
-    new_mk_session_media .new.f3.media $aid $scope $show_details
-
-    frame .new.f2
-    frame .new.f2.act -relief groove -borderwidth 2
-    pack .new.f2.act -side left -fill both -expand true
-    pack .new.f2 -side top -pady 5 -fill x -expand true
-    pack [frame .new.f2.act.l] -side top -anchor w
-    label .new.f2.act.l.icon -bitmap clock
-    pack .new.f2.act.l.icon -side left
-    label .new.f2.act.l.l -text "Session will take place ..." 
-    tixAddBalloon .new.f2.act.l.l Label [tt "When and how often is the session going to be on"]
-    pack .new.f2.act.l.l -side left
-
-    global rpt_times
-    global has_times
-    global needs_lifetime
-    global rpt_min_values 
-    global rpt_menu_value
-    global duration_max
-
-    set rpt_times {{---} {Once} {Daily} {Weekly} {Every Two Weeks}\
-     {Monthly by Date} {Monday thru Friday}}
-
-    #whether or not the times box should be active 
-    set has_times {0 1 1 1 1 1 1}
-
-    set menu_disabled {0 0 0 0 0 1 1}
-
-    #whether or not there is a repeat time
-    set needs_lifetime {0 0 1 1 1 1 1}
-
-    #what the default minimum repeat time should be
-    set rpt_min_values {0 0 2880 20160 40320 40320 20160}
-
-    #what the max duration should be for each repeat interval
-    set duration_max {0 4838400 43200 518400 1036800 0 604800}
-
-    if {[string compare $aid "new"]!=0} {
-	for {set box 1} {$box <= $ldata($aid,no_of_times)} { incr box} {
-	    set rpt_menu_value($box) 1
-	    new_mk_session_time_box .new.f2.act.f$box $box $ldata($aid,no_of_times) $rpt_times $menu_disabled
-	}
+    if {$iftype=="tech"} {
+	eval "new_wiz_panel_[lindex $new_wiz_tech_panels 0] 0 \"$new_wiz_tech_panels\" $aid"
     } else {
-	set rpt_menu_value(1) 1
-	new_mk_session_time_box .new.f2.act.f1 1 1 $rpt_times $menu_disabled
+	eval "new_wiz_panel_[lindex $new_wiz_norm_panels 0] 0 \"$new_wiz_norm_panels\" $aid"
     }
-
-    label .new.f2.act.expl2 -text [tt "Length of this series of sessions"] \
-	-font [resource infoFont]
-    pack .new.f2.act.expl2 -side top -anchor w
-    pack [frame .new.f2.act.fd] -side top -anchor w
-    pack [label .new.f2.act.fd.l -text [tt "Repeat for:"]] -side left -anchor w
-    duration_widget .new.f2.act.fd.duration 3600
-    if {[string compare $aid "new"]!=0} {
-	configure_duration_box .new.f2.act.fd $ldata($aid,no_of_times)
-    } else {
-	configure_duration_box .new.f2.act.fd 1
-    }
-    if {[string compare $aid "new"]!=0} {
-	set rpts 0
-	set maxdiff 0
-	for {set t 0} {$t < $ldata($aid,no_of_times)} {incr t} {
-	    if {$ldata($aid,time$t,no_of_rpts)==0} {
-		.new.f2.act.fb[expr $t+1].day.workaround configure \
-		    -time $ldata($aid,starttime,$t)		
-		.new.f2.act.fb[expr $t+1].time.workaround configure \
-		    -time $ldata($aid,starttime,$t)
-		.new.f2.act.fb[expr $t+1].duration.workaround configure -time \
-		    [expr $ldata($aid,endtime,$t) - $ldata($aid,starttime,$t)]
-		set rpt_menu_value([expr $t+1]) 1
-		configure_rpt_menu [expr $t+1] .new.f2.act.fb[expr $t+1]
-	    } else {
-
-		set rpts 1
-		for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-		    if {$r>0} {putlogfile "too complicated - tragic!"}
-		    if {$ldata($aid,time$t,offset$r)!="0"} {
-			putlogfile "too many offsets! - tragic!"
-		    }
-		    set start $ldata($aid,starttime,$t)
-		    set end $ldata($aid,endtime,$t)
-		    set dur $ldata($aid,time$t,duration$r)
-		    set ofs $ldata($aid,time$t,offset$r)
-		    if {[expr ($end-$start)-$dur]> $maxdiff } {
-			     set maxdiff [expr ($end-$start)-$dur]
-		    }
-		    .new.f2.act.fb[expr $t+1].day.workaround configure -time $start
-		    .new.f2.act.fb[expr $t+1].time.workaround configure -time $start
-		    .new.f2.act.fb[expr $t+1].duration.workaround configure -time $dur
-		    case $ldata($aid,time$t,interval$r) in {
-			86400 {set rpt_menu_value([expr $t+1]) 2}
-			604800 {
-			    if {$ofs=="0"} {
-				set rpt_menu_value([expr $t+1]) 3
-			    } elseif {$ofs=="0 86400 172800 259200 345600"} {
-				set rpt_menu_value([expr $t+1]) 6
-			    } else {
-				putlogfile "help - can't handle this weekly offset"
-			    }
-			}
-			1209600 {set rpt_menu_value([expr $t+1]) 4}
-		    }
-		    configure_rpt_menu [expr $t+1] .new.f2.act.fb[expr $t+1]
-		}
-	    }
-	}
-	if {$rpts==1} {
-	    .new.f2.act.fd.duration.workaround configure -time $maxdiff
-	    .new.f2.act.fd.duration.workaround configure -state normal
-	}
-    }
-    new_mk_session_contact .new.you $aid
-
-    new_mk_session_buttons .new.f4 $aid
-    move_onscreen .new
-    log "displaying normal session creation interface at [getreadabletime]"
 }
 
-####
-#new creates a window to allow a new session to be defined
-####
-set sizes(.new.x) 473
-set sizes(.new.y) 814
-proc tech_new {aid} {
-    global send durationix sd_menu scope zone
-    global monthix dayix dayofmonth hrix ttl timeofday
-    global video_attr audio_attr whiteboard_attr
-    global ldata startdayofweek medialist sd_fmt media_fmt media_proto
-    global security
-    global yourphone
-    global youremail
-    global yourname
-    global new_createtime
-    if {[string length $yourphone]==0} {
-	enter_phone_details "tech_new $aid"
-	return
+proc new_wiz_change_panels {} {
+    .new.f.t delete 1.0 end
+    set children [winfo children .new.f.f]
+    foreach child $children {
+	pack unpack $child
     }
+    pack .new.f.f.spacer -side right
+}
 
-    catch {destroy .new}
-    toplevel .new
+proc new_wiz_panel_info {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Information About the Session"
+    .new.f.t insert 1.0 "You need to give a title to your session and provide information about it.  The information should be a paragraph or so describing the purpose of the session.  If you need to refer people to more information, add a URL below.  The URL can be left blank, but the title and information must be given.  When you've filled in this information, click on Next."
+    set next_panel [expr $panelnum + 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state disabled
+    .new.f.b.accept configure -state disabled
+    new_mk_session_name .new.f.f $aid
+    new_mk_session_desc .new.f.f $aid
+    new_mk_session_url .new.f.f $aid
+}
 
-    posn_win .new
-    if {[string compare $aid "new"]!=0} {
-	wm title .new "Sdr: [tt "Edit Session"]"
-	foreach i $medialist {
-            set send($i) 0
-        }
-  	set new_createtime $ldata($aid,createtime)
-    } else {
-	wm title .new "Sdr: [tt "Create New Session"]"
-	foreach i $medialist {
-	    set send($i) 0
+proc new_wiz_panel_type {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: What Type of Session is this?"
+    .new.f.t insert 1.0 "You need to specify the type of session.  Use \"broadcast\" for sessions that are largely non-interactive, \"meeting\" for interactive sessions and private meetings, and \"test\" for anything that isn't intended for real listeners."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    .new.f.b.accept configure -state disabled    
+    new_mk_session_type .new.f.f.type top $aid
+}
+
+proc new_wiz_panel_timing_norm {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: When will the session be active?"
+    .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+
+    if {[winfo exists .new.f.f.f2]==0} {
+	frame .new.f.f.f2
+	frame .new.f.f.f2.act -relief groove -borderwidth 2
+	frame .new.f.f.f2.act.l
+	label .new.f.f.f2.act.l.icon -bitmap clock
+	label .new.f.f.f2.act.l.l -text "Session will take place ..." 
+	tixAddBalloon .new.f.f.f2.act.l.l Label [tt "When and how often is the session going to be on"]
+
+	global rpt_times
+	global has_times
+	global needs_lifetime
+	global rpt_min_values 
+	global rpt_menu_value
+	global duration_max
+
+	set rpt_times {{---} {Once} {Daily} {Weekly} {Every Two Weeks}\
+		{Monthly by Date} {Monday thru Friday}}
+
+	#whether or not the times box should be active 
+	set has_times {0 1 1 1 1 1 1}
+
+	set menu_disabled {0 0 0 0 0 1 1}
+
+	#whether or not there is a repeat time
+	set needs_lifetime {0 0 1 1 1 1 1}
+
+	#what the default minimum repeat time should be
+	set rpt_min_values {0 0 2880 20160 40320 40320 20160}
+
+	#what the max duration should be for each repeat interval
+	set duration_max {0 4838400 43200 518400 1036800 0 604800}
+
+	if {[string compare $aid "new"]!=0} {
+	    for {set box 1} {$box <= $ldata($aid,no_of_times)} { incr box} {
+		set rpt_menu_value($box) 1
+		new_mk_session_time_box .new.f.f.f2.act $box $ldata($aid,no_of_times) $rpt_times $menu_disabled
+	    }
+	} else {
+	    set rpt_menu_value(1) 1
+	    new_mk_session_time_box .new.f.f.f2.act 1 1 $rpt_times $menu_disabled
 	}
-	set send(audio) 1
-	set new_createtime [unix_to_ntp [gettimeofday]]
-    }
 
-
-    new_mk_session_name .new $aid
-    new_mk_session_desc .new $aid
-    new_mk_session_url .new $aid
-
-    if {[string compare $aid "new"]!=0} {
-	set sap_addr $ldata($aid,sap_addr)
-	set ttl $ldata($aid,ttl)
-	set scope ttl
-	set zone(cur_zone) $zone(ttl_scope)
-	for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
-#	    puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
-	    if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
-#		puts "setting zone(cur_zone) $i"
-		set scope admin
-		set zone(cur_zone) $i
-	    }
+	label .new.f.f.f2.act.expl2 -text [tt "Length of this series of sessions"] \
+		-font [resource infoFont]
+	frame .new.f.f.f2.act.fd
+	label .new.f.f.f2.act.fd.l -text [tt "Repeat for:"]
+	duration_widget .new.f.f.f2.act.fd.duration 3600
+	if {[string compare $aid "new"]!=0} {
+	    configure_duration_box .new.f.f.f2.act.fd $ldata($aid,no_of_times)
+	} else {
+	    configure_duration_box .new.f.f.f2.act.fd 1
 	}
-    } else {
-	set scope admin
-	set zone(cur_zone) 0
-	set ttl $zone(ttl,$zone(cur_zone))
-    }
-
-
-    frame .new.f3
-    pack .new.f3 -side top -pady 5 -fill x -expand true
-
-    catch {
-	new_mk_session_security .new.f3.l $aid
-    }
-
-    frame .new.f3.m -width 1 -height 1
-    pack .new.f3.m -side left -fill y -padx 3
-    frame .new.f3.r -relief groove -borderwidth 2
-    pack .new.f3.r -side left -fill both -expand true
-
-    new_mk_session_type .new.f3.r top $aid
-
-    label .new.f3.r.l2 -text "Scope Mechanism:"
-    pack .new.f3.r.l2 -side top -anchor nw
-    radiobutton .new.f3.r.b3 -text "TTL Scope" \
-	-highlightthickness 0 \
-	-variable scope -value ttl -relief flat -command \
-	[format { 
-	    set addr [generate_address %s]
-	    if {$addr!=0} {
-		pack .new.f3.rr -after .new.f3.m2 -side left -fill both \
-		    -expand true
-		pack forget .new.f3.admin
-		if {$addr!=1} {
-		    set_new_session_addr conference $addr
-		    foreach media $medialist {
-			if {$send($media)==1} {
-			    set_new_session_addr $media [generate_address]
+	if {[string compare $aid "new"]!=0} {
+	    set rpts 0
+	    set maxdiff 0
+	    for {set t 0} {$t < $ldata($aid,no_of_times)} {incr t} {
+		if {$ldata($aid,time$t,no_of_rpts)==0} {
+		    .new.f.f.f2.act.fb[expr $t+1].day.workaround configure \
+			    -time $ldata($aid,starttime,$t)		
+		    .new.f.f.f2.act.fb[expr $t+1].time.workaround configure \
+			    -time $ldata($aid,starttime,$t)
+		    .new.f.f.f2.act.fb[expr $t+1].duration.workaround configure -time \
+			    [expr $ldata($aid,endtime,$t) - $ldata($aid,starttime,$t)]
+		    set rpt_menu_value([expr $t+1]) 1
+		    configure_rpt_menu [expr $t+1] .new.f.f.f2.act.fb[expr $t+1]
+		} else {
+		    
+		    set rpts 1
+		    for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
+			if {$r>0} {putlogfile "too complicated - tragic!"}
+			if {$ldata($aid,time$t,offset$r)!="0"} {
+			    putlogfile "too many offsets! - tragic!"
 			}
-		    }
-		}
-		set zone(cur_zone) $zone(ttl_scope)
-		set scope ttl
-		set_ttl_scope $ttl
-	    } else {
-		set scope admin
-	    }
-	} $aid ]
-    pack .new.f3.r.b3 -side top -anchor nw
-    radiobutton .new.f3.r.b4 -text "Admin Scope" \
-	-highlightthickness 0 \
-	-variable scope -value admin -relief flat -command \
-	[format { 
-	    # Recover the previously-selected scope if one clicks
-	    # on "admin" then "ttl" then "admin".
-	    #
-	    set tmpzone 0
-	    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
-		if {[string compare \
-		     [.new.f3.admin.f.lb tag cget line$i -background] \
-			 [option get . activeBackground Sdr]]==0} {
-			     set tmpzone $i
-			     break
-			 }
-	    }
-	    set addr [generate_address $zone(base_addr,$tmpzone) \
-                         $zone(netmask,$tmpzone) %s]
-	    if {$addr!=0} {
-		set zone(cur_zone) $tmpzone
-		pack .new.f3.admin -after .new.f3.m2 -side left -fill both \
-		    -expand true
-		pack forget .new.f3.rr
-		if {$addr!=1} {
-		    set_new_session_addr conference $addr
-		    foreach media $medialist {
-			if {$send($media)==1} {
-			    set_new_session_addr $media \
-				[generate_address \
-				 $zone(base_addr,$zone(cur_zone)) \
-				     $zone(netmask,$zone(cur_zone))]
+			set start $ldata($aid,starttime,$t)
+			set end $ldata($aid,endtime,$t)
+			set dur $ldata($aid,time$t,duration$r)
+			set ofs $ldata($aid,time$t,offset$r)
+			if {[expr ($end-$start)-$dur]> $maxdiff } {
+			    set maxdiff [expr ($end-$start)-$dur]
 			}
-		    }
-		}
-		set scope admin
-		set ttl $zone(ttl,$zone(cur_zone))
-	    } else {
-		set scope ttl
-	    }
-	    unset tmpzone
-	} $aid]
-    pack .new.f3.r.b4 -side top -anchor nw
-
-    hlfocus .new.f3.r.b3
-    hlfocus .new.f3.r.b4
-    #padding frame
-    pack [frame .new.f3.m2 -width 1 -height 1] -side left -fill y -padx 3
-
-    #admin scope frame
-    frame .new.f3.admin -relief groove -borderwidth 2
-    if {$scope=="admin"} {pack .new.f3.admin -side left -fill both -expand true}
-    label .new.f3.admin.l -text Scope:
-    pack .new.f3.admin.l -side top -anchor w
-    frame .new.f3.admin.f -relief sunken -borderwidth 1
-    pack .new.f3.admin.f -side top -fill both -expand true
-    text .new.f3.admin.f.lb -width 15 -height 6 -relief flat -wrap none
-    pack .new.f3.admin.f.lb -side top -fill both -expand true
-    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
-	.new.f3.admin.f.lb insert [expr $i+1].0 "$zone(name,$i)"
-	.new.f3.admin.f.lb tag add line$i [expr $i+1].0 end-1c
-	.new.f3.admin.f.lb tag configure line$i -background\
-	    [option get . background Sdr]
-	.new.f3.admin.f.lb insert end " \n"
-	.new.f3.admin.f.lb tag bind line$i <1> \
-	    [format {
-		set addr [generate_address $zone(base_addr,%s) \
-			  $zone(netmask,%s) %s]
-		if {$addr!=0} {
-		    #the change of scope is OK
-		    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
-			.new.f3.admin.f.lb tag configure line$i -background\
-			    [option get . background Sdr]
-		    }
-		    .new.f3.admin.f.lb tag configure line%s -background\
-			[option get . activeBackground Sdr]
-		    set ttl $zone(ttl,%s)
-		    if {$addr!=1} {
-			#and we can reallocated the addresses too.
-			set_new_session_addr conference $addr
-			foreach media $medialist {
-			    if {$send($media)==1} {
-				set_new_session_addr $media \
-				    [generate_address $zone(base_addr,%s) \
-				     $zone(netmask,%s)]
+			.new.f.f.f2.act.fb[expr $t+1].day.workaround configure -time $start
+			.new.f.f.f2.act.fb[expr $t+1].time.workaround configure -time $start
+			.new.f.f.f2.act.fb[expr $t+1].duration.workaround configure -time $dur
+			case $ldata($aid,time$t,interval$r) in {
+			    86400 {set rpt_menu_value([expr $t+1]) 2}
+			    604800 {
+				if {$ofs=="0"} {
+				    set rpt_menu_value([expr $t+1]) 3
+				} elseif {$ofs=="0 86400 172800 259200 345600"} {
+				    set rpt_menu_value([expr $t+1]) 6
+				} else {
+				    putlogfile "help - can't handle this weekly offset"
+				}
 			    }
+			    1209600 {set rpt_menu_value([expr $t+1]) 4}
 			}
+			configure_rpt_menu [expr $t+1] .new.f.f.f2.act.fb[expr $t+1]
 		    }
-		    set zone(cur_zone) %s
 		}
-	    } $i $i $aid $i $i $i $i $i]
-    }
-    .new.f3.admin.f.lb configure -state disabled
-    .new.f3.admin.f.lb tag configure line$zone(cur_zone) -background\
-	[option get . activeBackground Sdr]
-
-    
-    frame .new.f3.rr -relief groove -borderwidth 2
-    tixAddBalloon .new.f3.rr Frame [tt "The scope determines how far your session will reach.  The default values are:
-
-Local net: 1
-Site:      15
-Region:    63
-World:     127
-
-Specify the smallest scope that will reach the people you want to communicate with."]
-
-    label .new.f3.rr.l -text [tt "Scope"]
-    radiobutton .new.f3.rr.r1 -relief flat -text [tt "Site"] -variable ttl\
-	-highlightthickness 0 \
-	-value 15 -command {disable_scope_entry 15}
-    radiobutton .new.f3.rr.r2 -relief flat -text [tt "Region"] -variable ttl\
-	-highlightthickness 0 \
-	-value 63 -command {disable_scope_entry 63}
-    radiobutton .new.f3.rr.r3 -relief flat -text [tt "World"] -variable ttl\
-	-highlightthickness 0 \
-	-value 127 -command {disable_scope_entry 127}
-    hlfocus .new.f3.rr.r1
-    hlfocus .new.f3.rr.r2
-    hlfocus .new.f3.rr.r3
-    frame .new.f3.rr.f
-    if {[string compare $aid "new"]==0} {
-	radiobutton .new.f3.rr.f.r4 -relief flat -variable ttl\
-	    -highlightthickness 0 \
-	    -command "enable_scope_entry 1" -value 0
-    } else {
-	radiobutton .new.f3.rr.f.r4 -relief flat -variable ttl\
-	    -highlightthickness 0 \
-	    -command "enable_scope_entry $ttl" -value 0
-    }
-    entry .new.f3.rr.f.e -relief sunken -width 4 -text 1 \
-	-bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    .new.f3.rr.f.e insert 0 $ttl
-    proc disable_scope_entry {value} {
-	.new.f3.rr.f.e configure -state normal
-	.new.f3.rr.f.e delete 0 end
-	.new.f3.rr.f.e insert 0 $value
-	.new.f3.rr.f.e configure -state disabled \
-	    -background [option get . background Sdr]\
-	    -relief groove
-    }
-    proc enable_scope_entry {ttl} {
-	.new.f3.rr.f.e configure -state normal \
-            -background [option get . entryBackground Sdr]\
-            -relief sunken
-	.new.f3.rr.f.e delete 0 end
-        .new.f3.rr.f.e insert 0 $ttl
-    }
-    bind .new.f3.rr.f.e <1> {
-	.new.f3.rr.f.r4 invoke
-	.new.f3.rr.f.e icursor end
-	focus .new.f3.rr.f.e
-    }
-    pack .new.f3.rr.f.r4 -side left
-    pack .new.f3.rr.f.e -side left
-    if {[string compare $aid "new"]!=0} {
-	set ttl $ldata($aid,ttl)
-	if {$scope=="ttl"} {
-	    set_ttl_scope $ttl
-	}
-    } else {
-	if {$scope=="ttl"} {
-	    .new.f3.rr.r1 invoke
+	    }
+	    if {$rpts==1} {
+		.new.f.f.f2.act.fd.duration.workaround configure -time $maxdiff
+		.new.f.f.f2.act.fd.duration.workaround configure -state normal
+	    }
 	}
     }
-    pack .new.f3.rr.l -side top -anchor w
-    pack .new.f3.rr.r1 -side top -anchor w
-    pack .new.f3.rr.r2 -side top -anchor w
-    pack .new.f3.rr.r3 -side top -anchor w
-    pack .new.f3.rr.f -side top -anchor w
-    if {$scope=="ttl"} {pack .new.f3.rr -side left -fill both -expand true}
-
-
-    set show_details 1
-    new_mk_session_media .new.f1 $aid $scope $show_details
-
-    frame .new.f2
-    frame .new.f2.act -relief groove -borderwidth 2
-    pack .new.f2.act -side left -fill both -expand true
-    pack .new.f2 -side top -pady 5 -fill x -expand true
-    pack [frame .new.f2.act.l] -side top -anchor w
-    label .new.f2.act.l.icon -bitmap clock
-    pack .new.f2.act.l.icon -side left
-    label .new.f2.act.l.l -text "Session will be active:" 
-    pack .new.f2.act.l.l -side left
-
+    pack .new.f.f.f2 -side top -pady 5 -fill x -expand true
+    pack .new.f.f.f2.act -side left -fill both -expand true
+    pack .new.f.f.f2.act.l -side top -anchor w
+    pack .new.f.f.f2.act.l.icon -side left
+    pack .new.f.f.f2.act.l.l -side left
+    pack .new.f.f.f2.act.expl2 -side top -anchor w
+    pack .new.f.f.f2.act.fd -side top -anchor w
+    pack .new.f.f.f2.act.fd.l -side left -anchor w
+}
+proc new_wiz_panel_timing_tech {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: When will the session be active?"
+    .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
     global rpt_times
     global has_times
     global needs_lifetime
@@ -540,70 +273,151 @@ Specify the smallest scope that will reach the people you want to communicate wi
     set rpt_menu_value(1) 1
     set rpt_menu_value(2) 0
     set rpt_menu_value(3) 0
-    foreach box {1 2 3} {
-	new_mk_session_time_box .new.f2.act.f$box $box 3 $rpt_times $menu_disabled
-    }
-    pack [frame .new.f2.act.fd] -side top -anchor w
-    pack [label .new.f2.act.fd.l -text "Repeat for:"] -side left -anchor w
-    duration_widget .new.f2.act.fd.duration 3600
-    configure_duration_box .new.f2.act.fd 3
-    if {[string compare $aid "new"]!=0} {
-	set rpts 0
-	set maxdiff 0
-	for {set t 0} {$t < $ldata($aid,no_of_times)} {incr t} {
-	    if {$ldata($aid,time$t,no_of_rpts)==0} {
-		.new.f2.act.fb[expr $t+1].day.workaround configure \
-		    -time $ldata($aid,starttime,$t)		
-		.new.f2.act.fb[expr $t+1].time.workaround configure \
-		    -time $ldata($aid,starttime,$t)
-		.new.f2.act.fb[expr $t+1].duration.workaround configure -time \
-		    [expr $ldata($aid,endtime,$t) - $ldata($aid,starttime,$t)]
-		set rpt_menu_value([expr $t+1]) 1
-		configure_rpt_menu [expr $t+1] .new.f2.act.fb[expr $t+1]
-	    } else {
-		set rpts 1
-		for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-		    if {$r>0} {putlogfile "too complicated - tragic!"}
-		    if {$ldata($aid,time$t,offset$r)!="0"} {
-			putlogfile "too many offsets! - tragic!"
-		    }
-		    set start $ldata($aid,starttime,$t)
-		    set end $ldata($aid,endtime,$t)
-		    set dur $ldata($aid,time$t,duration$r)
-		    set ofs $ldata($aid,time$t,offset$r)
-		    if {[expr ($end-$start)-$dur]> $maxdiff } {
-			     set maxdiff [expr ($end-$start)-$dur]
-		    }
-		    .new.f2.act.fb[expr $t+1].day.workaround configure -time $start
-		    .new.f2.act.fb[expr $t+1].time.workaround configure -time $start
-		    .new.f2.act.fb[expr $t+1].duration.workaround configure -time $dur
-		    case $ldata($aid,time$t,interval$r) in {
-			86400 {set rpt_menu_value([expr $t+1]) 2}
-			604800 {
-			    if {$ofs=="0"} {
-				set rpt_menu_value([expr $t+1]) 3
-			    } elseif {$ofs=="0 86400 172800 259200 345600"} {
-				set rpt_menu_value([expr $t+1]) 6
-			    } else {
-				putlogfile "help - can't handle this weekly offset"
-			    }
+
+    if {[winfo exists .new.f.f.f2]==0} {
+	frame .new.f.f.f2
+	label .new.f.f.f2.l -text "Session will be active:"
+	frame .new.f.f.f2.act -relief groove -borderwidth 2
+	foreach box {1 2 3} {
+	    new_mk_session_time_box .new.f.f.f2.act $box 3 $rpt_times $menu_disabled
+	}
+	frame .new.f.f.f2.act.fd
+	label .new.f.f.f2.act.fd.l -text "Repeat for:"
+	duration_widget .new.f.f.f2.act.fd.duration 3600
+	configure_duration_box .new.f.f.f2.act.fd 3
+	if {[string compare $aid "new"]!=0} {
+	    set rpts 0
+	    set maxdiff 0
+	    for {set t 0} {$t < $ldata($aid,no_of_times)} {incr t} {
+		if {$ldata($aid,time$t,no_of_rpts)==0} {
+		    .new.f.f.f2.act.fb[expr $t+1].day.workaround configure \
+			    -time $ldata($aid,starttime,$t)		
+		    .new.f.f.f2.act.fb[expr $t+1].time.workaround configure \
+			    -time $ldata($aid,starttime,$t)
+		    .new.f.f.f2.act.fb[expr $t+1].duration.workaround configure -time \
+			    [expr $ldata($aid,endtime,$t) - $ldata($aid,starttime,$t)]
+		    set rpt_menu_value([expr $t+1]) 1
+		    configure_rpt_menu [expr $t+1] .new.f.f.f2.act.fb[expr $t+1]
+		} else {
+		    set rpts 1
+		    for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
+			if {$r>0} {putlogfile "too complicated - tragic!"}
+			if {$ldata($aid,time$t,offset$r)!="0"} {
+			    putlogfile "too many offsets! - tragic!"
 			}
-			1209600 {set rpt_menu_value([expr $t+1]) 4}
+			set start $ldata($aid,starttime,$t)
+			set end $ldata($aid,endtime,$t)
+			set dur $ldata($aid,time$t,duration$r)
+			set ofs $ldata($aid,time$t,offset$r)
+			if {[expr ($end-$start)-$dur]> $maxdiff } {
+			    set maxdiff [expr ($end-$start)-$dur]
+			}
+			.new.f.f.f2.act.fb[expr $t+1].day.workaround configure -time $start
+			.new.f.f.f2.act.fb[expr $t+1].time.workaround configure -time $start
+			.new.f.f.f2.act.fb[expr $t+1].duration.workaround configure -time $dur
+			case $ldata($aid,time$t,interval$r) in {
+			    86400 {set rpt_menu_value([expr $t+1]) 2}
+			    604800 {
+				if {$ofs=="0"} {
+				    set rpt_menu_value([expr $t+1]) 3
+				} elseif {$ofs=="0 86400 172800 259200 345600"} {
+				    set rpt_menu_value([expr $t+1]) 6
+				} else {
+				    putlogfile "help - can't handle this weekly offset"
+				}
+			    }
+			    1209600 {set rpt_menu_value([expr $t+1]) 4}
+			}
+			configure_rpt_menu [expr $t+1] .new.f.f.f2.act.fb[expr $t+1]
 		    }
-		    configure_rpt_menu [expr $t+1] .new.f2.act.fb[expr $t+1]
 		}
 	    }
-	}
-	if {$rpts==1} {
-	    .new.f2.act.fd.duration.workaround configure -time $maxdiff
-	    .new.f2.act.fd.duration.workaround configure -state normal
+	    if {$rpts==1} {
+		.new.f.f.f2.act.fd.duration.workaround configure -time $maxdiff
+		.new.f.f.f2.act.fd.duration.workaround configure -state normal
+	    }
 	}
     }
-    new_mk_session_contact .new.you $aid
+    pack .new.f.f.f2 -side top
+    pack .new.f.f.f2.l -side top
+    pack .new.f.f.f2.act -side left -fill both -expand true
+    pack .new.f.f.f2.act.fd -side top -anchor w
+    pack .new.f.f.f2.act.fd.l -side left -anchor w
+}
 
-    new_mk_session_buttons .new.f4 $aid
-    move_onscreen .new
-    log "displaying technical session creation interface at [getreadabletime]"
+proc new_wiz_panel_scope_norm {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
+    .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    .new.f.b.accept configure -state disabled
+    new_mk_session_norm_scope .new.f.f $aid
+}
+
+proc new_wiz_panel_scope_tech {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
+    .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    .new.f.b.accept configure -state disabled
+    new_mk_session_tech_scope .new.f.f $aid
+}
+
+proc new_wiz_panel_media_norm {panelnum panels aid} {
+    global scope
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Choose and configure the media?"
+    .new.f.t insert 1.0 "You need to decide which media the session will use.  For each medium, you need to choose the protocol and format.  Some formats also let you choose the number of layers in the encoding."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    set show_details 0
+    new_mk_session_media .new.f.f.media $aid $scope $show_details
+}
+
+proc new_wiz_panel_media_tech {panelnum panels aid} {
+    global scope
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Choose and configure the media?"
+    .new.f.t insert 1.0 "You need to decide which media the session will use.  For each medium, you need to choose the protocol and format.  Some formats also let you choose the number of layers in the encoding."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    set show_details 1
+    new_mk_session_media .new.f.f.media $aid $scope $show_details
+}
+
+proc new_wiz_panel_contact {panelnum panels aid} {
+    global scope
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Provide Contact Details"
+    .new.f.t insert 1.0 "You need to provide contact details for the session so that people can get in touch if there is a problem."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    .new.f.b.accept configure -state disabled
+    new_mk_session_contact .new.f.f.you $aid
+}
+
+proc new_wiz_panel_accept {panelnum panels aid} {
+    global scope
+    new_wiz_change_panels
+    .new.f.l configure -text "Review session details"
+    .new.f.t insert 1.0 "Check the details below are correct.  If they are correct, press \"Accept\".  If they're incorrect, go back and amend the information.  \"Cancel\" will abort and lose any information you've entered."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+    .new.f.b.next configure -state disabled
+    .new.f.b.accept configure -state normal -command "create"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
 }
 
 proc set_sess_type {win type} {
@@ -628,172 +442,446 @@ proc set_sess_type {win type} {
     }
 }
 
+proc new_mk_session_norm_scope {win aid} {
+    global zone scope
+    if {[winfo exists $win.f3]==0} {
+	if {[string compare $aid "new"]!=0} {
+	    set sap_addr $ldata($aid,sap_addr)
+	    set ttl $ldata($aid,ttl)
+	    set scope ttl
+	    set zone(cur_zone) $zone(ttl_scope)
+	    for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
+		#	    puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
+		if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
+		    #		puts "setting zone(cur_zone) $i"
+		    set scope admin
+		    set zone(cur_zone) $i
+		}
+	    }
+	} else {
+	    set scope admin
+	    set zone(cur_zone) 0
+	    set ttl $zone(ttl,$zone(cur_zone))
+	}
+
+	frame $win.f3
+	frame $win.f3.m -width 1 -height 1
+	frame $win.f3.m2 -width 1 -height 1
+    }
+    pack $win.f3 -side top -pady 5
+    pack $win.f3.m -side left -fill y -padx 3
+    pack $win.f3.m2 -side left -fill y -padx 3
+
+    new_mk_session_admin $win.f3.admin $aid $scope
+}
+
+proc new_mk_session_tech_scope {win aid} {
+    global zone scope
+    if {[string compare $aid "new"]!=0} {
+        set sap_addr $ldata($aid,sap_addr)
+        set ttl $ldata($aid,ttl)
+        set scope ttl
+        set zone(cur_zone) $zone(ttl_scope)
+        for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
+#           puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
+            if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
+#               puts "setting zone(cur_zone) $i"
+                set scope admin
+                set zone(cur_zone) $i
+            }
+        }
+    } else {
+        set scope admin
+        set zone(cur_zone) 0
+        set ttl $zone(ttl,$zone(cur_zone))
+    }
+    if {[winfo exists $win.f3]==0} {
+	frame $win.f3
+	frame $win.f3.r
+	label $win.f3.r.l2 -text "Scope Mechanism:"
+	radiobutton $win.f3.r.b3 -text "TTL Scope" \
+		-highlightthickness 0 \
+		-variable scope -value ttl -relief flat -command \
+		[format { 
+	    set addr [generate_address %s]
+	    if {$addr!=0} {
+		pack %s.f3.rr -after %s.f3.m2 -side left -fill both \
+		    -expand true
+		pack forget %s.f3.admin
+		if {$addr!=1} {
+#		    set_new_session_addr conference $addr
+		    foreach media $medialist {
+#			if {$send($media)==1} {
+#			    set_new_session_addr $media [generate_address]
+#			}
+		    }
+		}
+		set zone(cur_zone) $zone(ttl_scope)
+		set scope ttl
+		set_ttl_scope $ttl
+	    } else {
+		set scope admin
+	    }
+	} $aid $win $win $win]
+	    radiobutton $win.f3.r.b4 -text "Admin Scope" \
+		    -highlightthickness 0 \
+		    -variable scope -value admin -relief flat -command \
+		    [format { 
+		# Recover the previously-selected scope if one clicks
+		# on "admin" then "ttl" then "admin".
+		#
+		set tmpzone 0
+		for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
+		    if {[string compare \
+			    [%s.f3.admin.f.lb tag cget line$i -background] \
+			    [option get . activeBackground Sdr]]==0} {
+			set tmpzone $i
+			break
+		    }
+		}
+		set addr [generate_address $zone(base_addr,$tmpzone) \
+			$zone(netmask,$tmpzone) %s]
+		if {$addr!=0} {
+		    set zone(cur_zone) $tmpzone
+		    pack %s.f3.admin -after %s.f3.m2 -side left -fill both \
+			    -expand true
+		    pack forget %s.f3.rr
+		    if {$addr!=1} {
+			#set_new_session_addr conference $addr
+			foreach media $medialist {
+			    if {$send($media)==1} {
+				#set_new_session_addr $media \
+					#[generate_address \
+					#$zone(base_addr,$zone(cur_zone)) \
+					#$zone(netmask,$zone(cur_zone))]
+			    }
+			}
+		    }
+		    set scope admin
+		    set ttl $zone(ttl,$zone(cur_zone))
+		} else {
+		    set scope ttl
+		}
+		unset tmpzone
+	    } $win $aid $win $win $win]
+		
+		hlfocus $win.f3.r.b3
+		hlfocus $win.f3.r.b4
+		#padding frame
+		frame $win.f3.m2 -width 1 -height 1
+
+		#admin scope frame
+		frame $win.f3.admin -relief groove -borderwidth 2
+		label $win.f3.admin.l -text Scope:
+		frame $win.f3.admin.f -relief sunken -borderwidth 1
+		text $win.f3.admin.f.lb -width 15 -height 6 -relief flat -wrap none
+		for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
+		    $win.f3.admin.f.lb insert [expr $i+1].0 "$zone(name,$i)"
+		    $win.f3.admin.f.lb tag add line$i [expr $i+1].0 end-1c
+		    $win.f3.admin.f.lb tag configure line$i -background\
+			    [option get . background Sdr]
+		    $win.f3.admin.f.lb insert end " \n"
+		    $win.f3.admin.f.lb tag bind line$i <1> \
+			    [format {
+			set addr [generate_address $zone(base_addr,%s) \
+				$zone(netmask,%s) %s]
+			if {$addr!=0} {
+			    #the change of scope is OK
+			    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
+				%s.f3.admin.f.lb tag configure line$i -background\
+					[option get . background Sdr]
+			    }
+			    %s.f3.admin.f.lb tag configure line%s -background\
+				    [option get . activeBackground Sdr]
+			    set ttl $zone(ttl,%s)
+			    if {$addr!=1} {
+				#and we can reallocated the addresses too.
+#			set_new_session_addr conference $addr
+				foreach media $medialist {
+				    if {$send($media)==1} {
+#				set_new_session_addr $media \
+#				    [generate_address $zone(base_addr,%s) \
+#				     $zone(netmask,%s)]
+				    }
+				}
+			    }
+			    set zone(cur_zone) %s
+			}
+		    } $i $i $aid $win $win $i $i $i $i $i]
+		    }
+		    $win.f3.admin.f.lb configure -state disabled
+		    $win.f3.admin.f.lb tag configure line$zone(cur_zone) -background\
+			    [option get . activeBackground Sdr]
+
+    
+		    frame $win.f3.rr -relief groove -borderwidth 2
+		    tixAddBalloon $win.f3.rr Frame [tt "The scope determines how far your session will reach.  The default values are:
+		    
+Local net: 1
+Site:      15
+Region:    63
+World:     127
+
+Specify the smallest scope that will reach the people you want to communicate with."]
+
+        label $win.f3.rr.l -text [tt "Scope"]
+        radiobutton $win.f3.rr.r1 -relief flat -text [tt "Site"] -variable ttl\
+		-highlightthickness 0 \
+		-value 15 -command {disable_scope_entry 15}
+	radiobutton $win.f3.rr.r2 -relief flat -text [tt "Region"] -variable ttl\
+		-highlightthickness 0 \
+		-value 63 -command {disable_scope_entry 63}
+	radiobutton $win.f3.rr.r3 -relief flat -text [tt "World"] -variable ttl\
+		-highlightthickness 0 \
+		-value 127 -command {disable_scope_entry 127}
+	hlfocus $win.f3.rr.r1
+	hlfocus $win.f3.rr.r2
+	hlfocus $win.f3.rr.r3
+	frame $win.f3.rr.f
+	if {[string compare $aid "new"]==0} {
+	    radiobutton $win.f3.rr.f.r4 -relief flat -variable ttl\
+		    -highlightthickness 0 \
+		    -command "enable_scope_entry 1" -value 0
+	} else {
+	    radiobutton $win.f3.rr.f.r4 -relief flat -variable ttl\
+		    -highlightthickness 0 \
+		    -command "enable_scope_entry $ttl" -value 0
+	}
+	entry $win.f3.rr.f.e -relief sunken -width 4 -text 1 \
+		-bg [option get . entryBackground Sdr] \
+		-highlightthickness 0
+	$win.f3.rr.f.e insert 0 $ttl
+	proc disable_scope_entry {value} {
+	    $win.f3.rr.f.e configure -state normal
+	    $win.f3.rr.f.e delete 0 end
+	    $win.f3.rr.f.e insert 0 $value
+	    $win.f3.rr.f.e configure -state disabled \
+		    -background [option get . background Sdr]\
+		    -relief groove
+	}
+	proc enable_scope_entry {ttl} {
+	    $win.f3.rr.f.e configure -state normal \
+		    -background [option get . entryBackground Sdr]\
+		    -relief sunken
+	    $win.f3.rr.f.e delete 0 end
+	    $win.f3.rr.f.e insert 0 $ttl
+	}
+	bind $win.f3.rr.f.e <1> {
+	    $win.f3.rr.f.r4 invoke
+	    $win.f3.rr.f.e icursor end
+	    focus $win.f3.rr.f.e
+	}
+	if {[string compare $aid "new"]!=0} {
+	    set ttl $ldata($aid,ttl)
+	    if {$scope=="ttl"} {
+		set_ttl_scope $ttl
+	    }
+	} else {
+	    if {$scope=="ttl"} {
+		$win.f3.rr.r1 invoke
+	    }
+	}
+    }
+    pack $win.f3 -side top
+    pack $win.f3.r -side left
+    pack $win.f3.r.l2 -side top -anchor nw
+    pack $win.f3.r.b3 -side top -anchor nw
+    pack $win.f3.r.b4 -side top -anchor nw
+    pack $win.f3.m2 -side left -fill y -padx 3
+    pack $win.f3.admin.l -side top -anchor w
+    pack $win.f3.admin.f -side top -fill both -expand true
+    pack $win.f3.admin.f.lb -side top -fill both -expand true
+    pack $win.f3.rr.f.r4 -side left
+    pack $win.f3.rr.f.e -side left
+    pack $win.f3.rr.l -side top -anchor w
+    pack $win.f3.rr.r1 -side top -anchor w
+    pack $win.f3.rr.r2 -side top -anchor w
+    pack $win.f3.rr.r3 -side top -anchor w
+    pack $win.f3.rr.f -side top -anchor w
+if {$scope=="admin"} {pack $win.f3.admin -side left -fill both -expand true}
+    if {$scope=="ttl"} {pack $win.f3.rr -side left -fill both -expand true}
+
+}
+
 proc new_mk_session_type {win order aid} {
     global ldata typelist
-    label $win.l -text "Type of Session:"
+    if {[winfo exists $win]==0} {
+	frame $win
+	label $win.l -text "Type of Session:"
+	menubutton $win.m -menu $win.m.menu -width 10\
+		-borderwidth 1 -relief raised
+	menu $win.m.menu -tearoff 0
+	foreach type $typelist {
+	    $win.m.menu add command -label [get_type_name $type] \
+		    -command "set_sess_type $win $type"
+	}
+	if {[string compare $aid "new"]==0} {
+	    set_sess_type $win test
+	} else {
+	    set_sess_type $win $ldata($aid,type)
+	}
+    }
+    pack $win -side top
     pack $win.l -side $order -anchor nw
-    menubutton $win.m -menu $win.m.menu -width 10\
-	-borderwidth 1 -relief raised
     pack $win.m -side $order -anchor nw -padx 10
-    menu $win.m.menu -tearoff 0
-    foreach type $typelist {
-	$win.m.menu add command -label [get_type_name $type] \
-		-command "set_sess_type $win $type"
-    }
-    if {[string compare $aid "new"]==0} {
-	set_sess_type $win test
-    } else {
-	set_sess_type $win $ldata($aid,type)
-    }
 }
 
 proc new_mk_session_name {win aid} {
     global ldata
-    frame $win.f0
-    label $win.f0.l -text [tt "Session Name:"]
-    entry $win.f0.entry -width 30 -relief sunken\
-	 -bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    tixAddBalloon  $win.f0.entry Entry [tt "Enter the name of the session here"]
-    if {[string compare $aid "new"]!=0} { $win.f0.entry insert 0 $ldata($aid,session) }
+    if {[winfo exists $win.f0]==0} {
+	frame $win.f0
+	label $win.f0.l -text [tt "Session Name:"]
+	entry $win.f0.entry -width 30 -relief sunken\
+		-bg [option get . entryBackground Sdr] \
+		-highlightthickness 0
+	tixAddBalloon  $win.f0.entry Entry [tt "Enter the name of the session here"]
+	if {[string compare $aid "new"]!=0} { $win.f0.entry insert 0 $ldata($aid,session) }
+	proc get_new_session_name {win} {
+	    $win.f0.entry get
+	}
+    }
     pack $win.f0.l -side left
     pack $win.f0.entry -side left -fill x -expand true
     pack $win.f0 -side top -anchor w -fill x
-    proc get_new_session_name {win} {
-	$win.f0.entry get
-    }
 }
 
 proc new_mk_session_desc {win aid} {
     global ldata
-    label $win.descl -text [tt "Description:"]
-    pack $win.descl -side top -anchor w
-    frame $win.df
-    text $win.df.desc -width 40 -height 5 -relief sunken -borderwidth 2 \
-	 -bg [option get . entryBackground Sdr] -yscroll "$win.df.sb set"\
-	-wrap word
-    scrollbar $win.df.sb -command "$win.df.desc yview" \
-      -background [option get . scrollbarBackground Sdr] \
-      -borderwidth 1 -relief flat
+    if {[winfo exists $win.descl]==0} {
+	label $win.descl -text [tt "Description:"]
+	frame $win.df
+	text $win.df.desc -width 40 -height 5 -relief sunken -borderwidth 2 \
+		-bg [option get . entryBackground Sdr] \
+		-yscroll "$win.df.sb set"\
+		-wrap word
+	scrollbar $win.df.sb -command "$win.df.desc yview" \
+		-background [option get . scrollbarBackground Sdr] \
+		-borderwidth 1 -relief flat
 #TBD
 #      -foreground [option get . scrollbarForeground Sdr] \
 #      -activeforeground [option get . scrollbarActiveForeground Sdr] 
 
 
 
-    tixAddBalloon $win.df.desc Text [tt "Enter a short description of your session here"]
+	tixAddBalloon $win.df.desc Text [tt "Enter a short description of your session here"]
 
 
-    #this shouldn't really list the widgets by name
-    bind $win.df.desc <Tab> "focus $win.url.f0.e;break"
-    bind $win.df.desc <Shift-Tab> "focus $win.f0.entry;break"
-
+	#this shouldn't really list the widgets by name
+	bind $win.df.desc <Tab> "focus $win.url.f0.e;break"
+	bind $win.df.desc <Shift-Tab> "focus $win.f0.entry;break"
+	if {[string compare $aid "new"]!=0} { 
+	    #	$win.df.desc insert 0.0 [text_wrap $ldata($aid,desc) 40] 
+	    $win.df.desc insert 0.0 $ldata($aid,desc)
+	}    
+	proc get_new_session_desc {} [format {
+	    %s.df.desc get 0.0 end-1c
+	} $win ]
+    }
+    pack $win.descl -side top -anchor w
     pack $win.df.desc -side left -fill both -expand true
     pack $win.df.sb -side left -fill y
     pack $win.df -side top -fill both -expand true
-    if {[string compare $aid "new"]!=0} { 
-#	$win.df.desc insert 0.0 [text_wrap $ldata($aid,desc) 40] 
-	$win.df.desc insert 0.0 $ldata($aid,desc)
-    }    
-    proc get_new_session_desc {} {
-	.new.df.desc get 0.0 end-1c
-    }
 }
 
 proc new_mk_session_url {win aid} {
     global ldata
-    frame .new.url -borderwidth 2 -relief groove
-    pack .new.url -side top -fill x -expand true -ipady 2 -ipadx 2 -pady 2
-    frame .new.url.f0 
-    pack .new.url.f0 -side top -fill x -expand true
-    label .new.url.f0.l -text URL:
-    pack .new.url.f0.l -side left
-    entry .new.url.f0.e -width 30 -relief sunken -borderwidth 2 \
-	-bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    tixAddBalloon .new.url.f0.e Entry [tt "You can enter a URL here to provide additional information about your session.\n\nA URL is a reference to a web page. E.g. http://www"]
-    pack .new.url.f0.e -side left -fill x -expand true
-    button .new.url.f0.b -text "Test URL" \
-	-highlightthickness 0 \
-	-command \
-	{ .new.url.f0.e select from 0; \
-	  .new.url.f0.e select to end; \
-	  catch {selection get} url; \
-	  timedmsgpopup "Testing URL - please wait" $url 5000; \
-	  stuff_mosaic }
-    tixAddBalloon .new.url.f0.b Button [tt "Click here to test the URL entered in the box to the left of this button"]
-    pack .new.url.f0.b -side left
-    if {[string compare $aid "new"]!=0} {
-	if {$ldata($aid,uri)!=0} {
-	    .new.url.f0.e insert 0 $ldata($aid,uri)
+    if {[winfo exists $win.url]==0} {
+	frame $win.url -borderwidth 2 -relief groove
+	frame $win.url.f0 
+	label $win.url.f0.l -text URL:
+	entry $win.url.f0.e -width 30 -relief sunken -borderwidth 2 \
+		-bg [option get . entryBackground Sdr] \
+		-highlightthickness 0
+	tixAddBalloon $win.url.f0.e Entry [tt "You can enter a URL here to provide additional information about your session.\n\nA URL is a reference to a web page. E.g. http://www"]
+	button $win.url.f0.b -text "Test URL" \
+		-highlightthickness 0 \
+		-command \
+		{ $win.url.f0.e select from 0; \
+		$win.url.f0.e select to end; \
+		catch {selection get} url; \
+		timedmsgpopup "Testing URL - please wait" $url 5000; \
+		stuff_mosaic }
+	tixAddBalloon $win.url.f0.b Button [tt "Click here to test the URL entered in the box to the left of this button"]
+	if {[string compare $aid "new"]!=0} {
+	    if {$ldata($aid,uri)!=0} {
+		$win.url.f0.e insert 0 $ldata($aid,uri)
+	    }
 	}
+	proc get_new_session_uri {} [format {
+	    %s.url.f0.e get
+	} $win ]
     }
-    proc get_new_session_uri {} {
-	.new.url.f0.e get
-    }
+    pack $win.url -side top -fill x -expand true -ipady 2 -ipadx 2 -pady 2
+    pack $win.url.f0 -side top -fill x -expand true
+    pack $win.url.f0.l -side left
+    pack $win.url.f0.e -side left -fill x -expand true
+    pack $win.url.f0.b -side left
 }
 
 proc new_mk_session_admin {win aid scope} {
     global zone send medialist ttl ldata
     #admin scope frame
-    frame $win -relief groove -borderwidth 2
-    if {$scope=="admin"} {pack $win -side left -fill both -expand true}
-    label $win.l -text "Area Reached:"
+    if {[winfo exists $win]==0} {
+	frame $win -relief groove -borderwidth 2
+	label $win.l -text "Area Reached:"
 
-    tixAddBalloon $win.l Label [tt "The area reached determines the \
+	tixAddBalloon $win.l Label [tt "The area reached determines the \
 range of the session.  People outside this area will not be able to receive it."]
 
-    pack $win.l -side top -anchor w
-    pack [frame $win.f] -side top -fill both -expand true
-    text $win.f.lb -width 15 -height 6 -relief flat \
-	 -relief sunken -borderwidth 1 -yscroll "$win.f.sb set" \
-	 -highlightthickness 0
-    pack $win.f.lb -side left -fill both -expand true
-    scrollbar $win.f.sb -borderwidth 1 -command "$win.f.lb yview" \
-	 -highlightthickness 0
-    pack $win.f.sb -side right -fill y -expand true
-    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
-	$win.f.lb insert [expr $i+1].0 "$zone(name,$i)"
-	$win.f.lb tag add line$i [expr $i+1].0 end-1c
-	$win.f.lb tag configure line$i -background\
-	    [option get . background Sdr]
-	$win.f.lb insert end " \n"
-	$win.f.lb tag bind line$i <1> \
-	    [format {
+        frame $win.f
+        text $win.f.lb -width 15 -height 6 -relief flat \
+	    -relief sunken -borderwidth 1 -yscroll "$win.f.sb set" \
+	    -highlightthickness 0
+        scrollbar $win.f.sb -borderwidth 1 -command "$win.f.lb yview" \
+	    -highlightthickness 0
+        for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
+	    $win.f.lb insert [expr $i+1].0 "$zone(name,$i)"
+	    $win.f.lb tag add line$i [expr $i+1].0 end-1c
+	    $win.f.lb tag configure line$i -background\
+		    [option get . background Sdr]
+	    $win.f.lb insert end " \n"
+	    $win.f.lb tag bind line$i <1> \
+		    [format {
 		set ttl $zone(ttl,%s)
 		set addr [generate_address $zone(base_addr,%s) \
-			  $zone(netmask,%s) %s]
+			$zone(netmask,%s) %s]
 		if {$addr!=0} { \
-		    for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
-			%s.f.lb tag configure line$i -background\
+			for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
+		    %s.f.lb tag configure line$i -background\
 			    [option get . background Sdr]
-		    }
-		    %s.f.lb tag configure line%s -background\
-                     [option get . activeBackground Sdr]
-		    if {$addr!=1} {
-			set_new_session_addr conference $addr
-			foreach media $medialist {
-			    if {$send($media)==1} {
-				set_new_session_addr $media \
-				    [generate_address $zone(base_addr,%s) \
-				     $zone(netmask,%s)]
-			    }
+		}
+		%s.f.lb tag configure line%s -background\
+			[option get . activeBackground Sdr]
+		if {$addr!=1} {
+#		    set_new_session_addr conference $addr
+		    foreach media $medialist {
+			if {$send($media)==1} {
+#			    set_new_session_addr $media \
+#				    [generate_address $zone(base_addr,%s) \
+#				    $zone(netmask,%s)]
 			}
 		    }
-		    set zone(cur_zone) %s
 		}
-	    } $i $i $i $aid $win $win $i $i $i $i]
+		set zone(cur_zone) %s
+	    }
+	} $i $i $i $aid $win $win $i $i $i $i]
+	}
+	if {($scope=="admin")&&([string compare $aid "new"]==0)} {
+	    set ttl $zone(ttl,0)
+	} elseif {[string compare $aid "new"]!=0} {
+	    set ttl $ldata($aid,ttl)
+	} else {
+	    set ttl 15
+	}
+	$win.f.lb configure -state disabled
+	$win.f.lb tag configure line$zone(cur_zone) -background\
+		[option get . activeBackground Sdr]
     }
-    if {($scope=="admin")&&([string compare $aid "new"]==0)} {
-	set ttl $zone(ttl,0)
-    } elseif {[string compare $aid "new"]!=0} {
-	set ttl $ldata($aid,ttl)
-    } else {
-	set ttl 15
-    }
-    $win.f.lb configure -state disabled
-    $win.f.lb tag configure line$zone(cur_zone) -background\
-	[option get . activeBackground Sdr]
+    if {$scope=="admin"} {pack $win -side left -fill both -expand true}
+    pack $win.l -side top -anchor w
+    pack $win.f -side top -fill both -expand true
+    pack $win.f.lb -side left -fill both -expand true
+    pack $win.f.sb -side right -fill y -expand true
 }
 
 proc new_mk_session_media {win aid scope show_details} {
@@ -801,157 +889,216 @@ proc new_mk_session_media {win aid scope show_details} {
     global media_fmt media_proto media_attr media_layers
     global mediaenc sessionkey
     #multicast address and ttl
-    frame $win -relief groove -borderwidth 2
-    frame $win.f0
-    label $win.f0.l -text [tt "Address:"]
-    entry $win.f0.entry -width 20 -relief sunken\
-	 -bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    tixAddBalloon $win.f0.entry Entry [tt "A multicast address has been assigned you.  If you need to modify this, change this entry.
+    if {[winfo exists $win]==0} {
+	frame $win -relief groove -borderwidth 2
+	frame $win.f0
+	label $win.f0.l -text [tt "Address:"]
+	entry $win.f0.entry -width 20 -relief sunken\
+		-bg [option get . entryBackground Sdr] \
+		-highlightthickness 0
+	tixAddBalloon $win.f0.entry Entry [tt "A multicast address has been assigned you.  If you need to modify this, change this entry.
 
 Multicast addresses must be class D IP addresses.  These are of the form
       a.b.c.d 
 where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
-    if {[string compare $aid "new"]!=0} {
-	$win.f0.entry insert 0 $ldata($aid,multicast)	    
-    } else {
-        if {$scope=="admin"} {
-            $win.f0.entry insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
-        } else {
-            $win.f0.entry insert 0 [generate_address]
-        }
-    }
-    pack $win.f0.l -side left
-    pack $win.f0.entry -side left -fill x -expand true
+        if {[string compare $aid "new"]!=0} {
+	    $win.f0.entry insert 0 $ldata($aid,multicast)	    
+	} else {
+	    if {$scope=="admin"} {
+		$win.f0.entry insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
+	    } else {
+		$win.f0.entry insert 0 [generate_address]
+	    }
+	}
 
-    #Media
-    pack [frame $win.l] -side top -anchor w
-    label $win.l.1 -text [tt "Media:"] -anchor w -width 15
-    pack $win.l.1 -side left -anchor w -padx 10 
-    label $win.l.5 -text [tt "Protocol"] -anchor w -width 8
-    if {$show_details==1} {
-	pack $win.l.5 -side left -anchor w
-    }
-    label $win.l.2 -text [tt "Format"] -anchor w -width 9
-    pack $win.l.2 -side left -anchor w
-    label $win.l.3 -text [tt "Address"] -anchor w -width 13
-    if {($show_details==1)} {
-	pack $win.l.3 -side left -anchor w
-    }
-    label $win.l.6 -text [tt "Layers"] -anchor w -width 6
-    pack $win.l.6 -side left -anchor w
-    label $win.l.4 -text [tt "Port"] -anchor w -width 6
-    if {$show_details==1} {
-	pack $win.l.4 -side left -anchor w 
-    }
+	#Media
+	frame $win.l
+	label $win.l.1 -text [tt "Media:"] -anchor w -width 15
+	label $win.l.5 -text [tt "Protocol"] -anchor w -width 8
+	label $win.l.2 -text [tt "Format"] -anchor w -width 9
+	label $win.l.3 -text [tt "Address"] -anchor w -width 13
+	label $win.l.6 -text [tt "Layers"] -anchor w -width 6
+	label $win.l.4 -text [tt "Port"] -anchor w -width 6
 
-     label $win.l.7 -text [tt "Encryption"] -anchor w -width 12
-     pack $win.l.7 -side left -anchor w 
+	label $win.l.7 -text [tt "Encryption"] -anchor w -width 12
 
-    foreach attr [array names media_attr] {
-	unset media_attr($attr)
-    }
-    if {[string compare $aid "new"]!=0} {
-        for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
-	    set send($ldata($aid,$mnum,media)) 1
-#	    set media_attr($ldata($aid,$mnum,media)) $ldata($aid,$mnum,vars)
-#	    puts "vars: $ldata($aid,$mnum,vars)"
-	    foreach var $ldata($aid,$mnum,vars) {
-		set key [lindex [split $var ":"] 0]
-		set value [lindex [split $var ":"] 1]
-		if {$value==""} {
-		    set media_attr($ldata($aid,$mnum,media),$key) 1
-		} else {
-		    set media_attr($ldata($aid,$mnum,media),$key) $value
+	foreach attr [array names media_attr] {
+	    unset media_attr($attr)
+	}
+	if {[string compare $aid "new"]!=0} {
+	    for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+		set send($ldata($aid,$mnum,media)) 1
+		#set media_attr($ldata($aid,$mnum,media)) $ldata($aid,$mnum,vars)
+		#puts "vars: $ldata($aid,$mnum,vars)"
+		foreach var $ldata($aid,$mnum,vars) {
+		    set key [lindex [split $var ":"] 0]
+		    set value [lindex [split $var ":"] 1]
+		    if {$value==""} {
+			set media_attr($ldata($aid,$mnum,media),$key) 1
+		    } else {
+			set media_attr($ldata($aid,$mnum,media),$key) $value
+		    }
 		}
 	    }
 	}
-    }
     
-    foreach media $medialist {
+	foreach media $medialist {
 
-        if {[string compare $aid "new"]!=0} {
+	    if {[string compare $aid "new"]!=0} {
  
-          for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
-            if {$ldata($aid,$mnum,media)==$media} {
-              set localmnum $mnum
-              if { $ldata($aid,$mnum,mediakey) != "" } {
-                set mediaenc($media) 1
-              } else {
-                set mediaenc($media) 0
-              }
-            }
-          }
-
-        } else {
-# default to unencrypted media streams
-          set mediaenc($media) 0
-        }
-
-	frame $win.$media
-	pack $win.$media -side top -anchor w  -padx 10 -pady 2
-
-	button $win.$media.cb -command "togglemedia $win $media"
-	pack $win.$media.cb -side left
-	iconbutton $win.$media.mb -text $media -bitmap [get_icon $media] -width 10 -relief raised\
-	    -menu $win.$media.mb.menu 
-	pack $win.$media.mb -side left -fill y
-	create_menu $win.$media.mb.menu "" "" $media "create"
-
-	menubutton $win.$media.fmt -width 8  -relief raised\
-	    -menu $win.$media.fmt.menu
-	create_fmt_menu $win $win.$media.fmt $win.$media.layers \
-            [lindex [get_media_protos $media] 0] \
-	    [get_media_fmts $media [lindex [get_media_protos $media] 0]] $media
-
-	menubutton $win.$media.proto -width 6 -relief raised\
-	    -menu $win.$media.proto.menu
-	create_proto_menu $win $win.$media.proto $win.$media.layers \
-		$win.$media.fmt [get_media_protos $media] $media
-
-	entry $win.$media.addr -width 14 -relief sunken\
-	    -bg [option get . entryBackground Sdr] \
-	     -highlightthickness 0
-	menubutton $win.$media.layers -width 3 -relief raised\
-	     -menu $win.$media.layers.menu
-        create_layers_menu $win $win.$media.layers $media
-	entry $win.$media.port -width 6 -relief sunken\
-	    -bg [option get . entryBackground Sdr] \
-	     -highlightthickness 0
-
-          checkbutton $win.$media.b1 -variable mediaenc($media) \
-          -highlightthickness 0  \
-         -command "toggleenc $media $win"
- 
-        tixAddBalloon $win.$media.b1 Button [tt "Click here to toggle the $media encryption on/off."]
- 
-        entry $win.$media.enc -width 25 -relief sunken \
-            -bg [option get . entryBackground Sdr] \
-             -highlightthickness 0
- 
-        tixAddBalloon $win.$media.enc Entry [tt "The $media encryption key is shown here. You can replace the random key by typing your own key in this field."]
- 
-
-	set media_fmt($media) \
-	    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
-	set media_proto($media) [lindex [get_media_protos $media] 0]
-	set media_layers($media) \
-		[get_max_layers $media $media_proto($media) $media_fmt($media)]
-	if {([string compare $aid "new"]==0)&&($send($media)==1)} {
-	    if {$scope=="admin"} {
-		$win.$media.addr insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
+		for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+		    if {$ldata($aid,$mnum,media)==$media} {
+			set localmnum $mnum
+			if { $ldata($aid,$mnum,mediakey) != "" } {
+			    set mediaenc($media) 1
+			} else {
+			    set mediaenc($media) 0
+			}
+		    }
+		}
+		
 	    } else {
-		$win.$media.addr insert 0 [generate_address]
+# default to unencrypted media streams
+		set mediaenc($media) 0
 	    }
-	    setmediamode $media $win $send($media) 1
-	} elseif {([string compare $aid "new"]!=0)&&($send($media)==1)} { 
-	    setmediaflags $media $win $aid 
-	    setmediamode $media $win $send($media) 0
-	} else {
-	    setmediamode $media $win $send($media) 0
+
+	    frame $win.$media
+
+	    button $win.$media.cb -command "togglemedia $win $media"
+	    iconbutton $win.$media.mb -text $media -bitmap [get_icon $media] -width 10 -relief raised\
+		    -menu $win.$media.mb.menu 
+	    create_menu $win.$media.mb.menu "" "" $media "create"
+	    
+	    menubutton $win.$media.fmt -width 8  -relief raised\
+		    -menu $win.$media.fmt.menu
+	    create_fmt_menu $win $win.$media.fmt $win.$media.layers \
+		    [lindex [get_media_protos $media] 0] \
+		    [get_media_fmts $media [lindex [get_media_protos $media] 0]] $media
+
+	    menubutton $win.$media.proto -width 6 -relief raised\
+		    -menu $win.$media.proto.menu
+	    create_proto_menu $win $win.$media.proto $win.$media.layers \
+		    $win.$media.fmt [get_media_protos $media] $media
+
+	    entry $win.$media.addr -width 14 -relief sunken\
+		    -bg [option get . entryBackground Sdr] \
+		    -highlightthickness 0
+	    menubutton $win.$media.layers -width 3 -relief raised\
+		    -menu $win.$media.layers.menu
+	    create_layers_menu $win $win.$media.layers $media
+	    entry $win.$media.port -width 6 -relief sunken\
+		    -bg [option get . entryBackground Sdr] \
+		    -highlightthickness 0
+
+	    checkbutton $win.$media.b1 -variable mediaenc($media) \
+		    -highlightthickness 0  \
+		    -command "toggleenc $media $win"
+ 
+	    tixAddBalloon $win.$media.b1 Button [tt "Click here to toggle the $media encryption on/off."]
+ 
+	    entry $win.$media.enc -width 25 -relief sunken \
+		    -bg [option get . entryBackground Sdr] \
+		    -highlightthickness 0
+ 
+	    tixAddBalloon $win.$media.enc Entry [tt "The $media encryption key is shown here. You can replace the random key by typing your own key in this field."]
+ 
+
+	    set media_fmt($media) \
+		    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
+	    set media_proto($media) [lindex [get_media_protos $media] 0]
+	    set media_layers($media) \
+		    [get_max_layers $media $media_proto($media) $media_fmt($media)]
+	    if {([string compare $aid "new"]==0)&&($send($media)==1)} {
+		if {$scope=="admin"} {
+		    $win.$media.addr insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
+		} else {
+		    $win.$media.addr insert 0 [generate_address]
+		}
+		setmediamode $media $win $send($media) 1
+	    } elseif {([string compare $aid "new"]!=0)&&($send($media)==1)} { 
+		setmediaflags $media $win $aid 
+		setmediamode $media $win $send($media) 0
+	    } else {
+		setmediamode $media $win $send($media) 0
+	    }
+
+
+ 
+	    if {$show_details==1} {
+ 
+		if {[string compare $aid "new"]!=0} {
+ 
+		    if { $mediaenc($media) == 1} {
+			$win.$media.enc configure -bg [option get . entryBackground Sdr] \
+				-state normal -relief sunken
+			$win.$media.enc  delete 0 end
+			$win.$media.enc  insert 0 $ldata($aid,$localmnum,mediakey)
+		    } else {
+			$win.$media.enc  delete 0 end
+			$win.$media.enc configure -bg [option get . background Sdr] \
+				-relief groove -state disabled
+		    }
+ 
+		} else {
+ 
+		    if { $mediaenc($media) == 1 } {
+			$win.$media.enc configure -bg [option get . entryBackground Sdr] \
+				-state normal -relief sunken
+			$win.$media.enc  delete 0 end
+			$win.$media.enc  insert 0 $sessionkey($media)
+		    } else {
+			$win.$media.enc  delete 0 end
+			$win.$media.enc configure -bg [option get . background Sdr] \
+				-relief groove -state disabled
+		    }
+		    
+		}
+		
+	    } else {
+		if {[string compare $aid "new"]!=0} {
+		    if { $mediaenc($media) == 1} {
+			set sessionkey($media) $ldata($aid,$localmnum,mediakey)
+		    }
+		}
+	    }
+	    
+	    # end of media loop
 	}
+    
+
+	proc get_new_session_addr {media} [format {
+	    if {$media=="conference"} {
+		%s.f0.entry get
+	    } else {
+		%s.$media.addr get
+	    }
+	} $win $win]
+        proc set_new_session_addr {media str} [format {
+	    if {$media=="conference"} {
+		%s.f0.entry delete 0 end
+		%s.f0.entry insert 0 $str
+	    } else {
+		%s.$media.addr delete 0 end
+		%s.$media.addr insert 0 $str
+	    }
+	} $win $win $win $win]
 
 
+	proc get_new_session_port {media} [format {
+	    %s.$media.port get
+	} $win ]
+	proc get_new_session_proto {media} {
+	}
+	proc get_new_session_format {media} {
+	}
+    }
+    pack $win.f0.l -side left
+    pack $win.f0.entry -side left -fill x -expand true
+    pack $win.l -side top -anchor w
+    foreach media $medialist {
+	pack $win.$media -side top -anchor w  -padx 10 -pady 2
+	pack $win.$media.cb -side left
+	pack $win.$media.mb -side left -fill y
 	if {$show_details==1} {
 	    pack $win.$media.proto -side left -fill y -padx 2
 	}
@@ -964,84 +1111,33 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	    pack $win.$media.port -side left -padx 2
 	}
 
-        if {$show_details==1} {
-          pack $win.$media.b1 -side left
-        } else {
-          pack $win.$media.b1 -side left -padx 10m
-        }
- 
-        if {$show_details==1} {
-          pack $win.$media.enc -side left -padx 2
- 
-          if {[string compare $aid "new"]!=0} {
- 
-            if { $mediaenc($media) == 1} {
-              $win.$media.enc configure -bg [option get . entryBackground Sdr] \
-                -state normal -relief sunken
-              $win.$media.enc  delete 0 end
-              $win.$media.enc  insert 0 $ldata($aid,$localmnum,mediakey)
-            } else {
-              $win.$media.enc  delete 0 end
-              $win.$media.enc configure -bg [option get . background Sdr] \
-                -relief groove -state disabled
-            }
- 
-          } else {
- 
-           if { $mediaenc($media) == 1 } {
-             $win.$media.enc configure -bg [option get . entryBackground Sdr] \
-               -state normal -relief sunken
-             $win.$media.enc  delete 0 end
-             $win.$media.enc  insert 0 $sessionkey($media)
-           } else {
-             $win.$media.enc  delete 0 end
-             $win.$media.enc configure -bg [option get . background Sdr] \
-               -relief groove -state disabled
-           }
- 
-         }
- 
-        } else {
-          if {[string compare $aid "new"]!=0} {
-            if { $mediaenc($media) == 1} {
-              set sessionkey($media) $ldata($aid,$localmnum,mediakey)
-            }
-          }
-        }
-
-# end of media loop
+	if {$show_details==1} {
+	    pack $win.$media.b1 -side left
+	} else {
+	    pack $win.$media.b1 -side left -padx 10m
+	}
+	if {$show_details==1} {
+	    pack $win.$media.enc -side left -padx 2
+	}
     }
-    
-
+ 
+    pack $win.l.1 -side left -anchor w
+    if {$show_details==1} {
+	pack $win.l.5 -side left -anchor w
+    }
+    pack $win.l.2 -side left -anchor w
+    if {$show_details==1} {
+	pack $win.l.3 -side left -anchor w
+    }
+    pack $win.l.6 -side left -anchor w
+    if {$show_details==1} {
+	pack $win.l.4 -side left -anchor w 
+    }
+    pack $win.l.7 -side left -anchor w 
     if {$show_details==1} {
 	pack $win -fill x -side top -anchor w -pady 5
     } else {
 	pack $win -fill both -expand true -side top -anchor nw
-    }
-    proc get_new_session_addr {media} [format {
-	if {$media=="conference"} {
-           %s.f0.entry get
-        } else {
-           %s.$media.addr get
-        }
-    } $win $win]
-    proc set_new_session_addr {media str} [format {
-        if {$media=="conference"} {
-           %s.f0.entry delete 0 end
-	    %s.f0.entry insert 0 $str
-       } else {
-           %s.$media.addr delete 0 end
-	   %s.$media.addr insert 0 $str
-       }
-    } $win $win $win $win]
-
-
-    proc get_new_session_port {media} [format {
-	%s.$media.port get
-    } $win ]
-    proc get_new_session_proto {media} {
-    }
-    proc get_new_session_format {media} {
     }
 }
 
@@ -1049,12 +1145,12 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 proc new_mk_session_time_box {win box maxbox rpt_times menu_disabled} {
     global ifstyle
     if {($box==1)&&($ifstyle(create)=="norm")} {
-	label .new.f2.act.expl -font [resource infoFont] -text \
+	label $win.expl -font [resource infoFont] -text \
 	    "how often it takes place               when it first takes place                                      how long each time"
-	pack .new.f2.act.expl -side top
+	pack $win.expl -side top
     }
-    frame .new.f2.act.fb$box
-    set mb .new.f2.act.fb$box.m
+    frame $win.fb$box
+    set mb $win.fb$box.m
     menubutton $mb  -width 20 -anchor w\
 	-relief raised -borderwidth 1 -menu $mb.m
     menu $mb.m -tearoff 0
@@ -1065,70 +1161,72 @@ proc new_mk_session_time_box {win box maxbox rpt_times menu_disabled} {
 	    $mb.m add command -label $i -command "\
 		    $mb configure -text \"$i\";\
                     set rpt_menu_value($box) $ctr;\
-                    configure_rpt_menu $box .new.f2.act.fb$box;\
-                    configure_duration_box .new.f2.act.fd $maxbox"
+                    configure_rpt_menu $box $win.fb$box;\
+                    configure_duration_box $win.fd $maxbox"
 	} else {
 	    $mb.m add command -label $i -state disabled
 	}
 	incr ctr
     }
-    pack .new.f2.act.fb$box -side top
-    pack [label .new.f2.act.fb$box.l -text "from:"] -side left
-    day_widget .new.f2.act.fb$box.day now
-    pack [label .new.f2.act.fb$box.l1 -text "at"] -side left
-    time_widget .new.f2.act.fb$box.time now
-    pack [label .new.f2.act.fb$box.l2 -text "for"] -side left
-    duration_widget .new.f2.act.fb$box.duration 7200
-    pack [frame .new.f2.act.pad$box -height 10] -side top
-    configure_rpt_menu $box .new.f2.act.fb$box
+    pack $win.fb$box -side top
+    pack [label $win.fb$box.l -text "from:"] -side left
+    day_widget $win.fb$box.day now
+    pack [label $win.fb$box.l1 -text "at"] -side left
+    time_widget $win.fb$box.time now
+    pack [label $win.fb$box.l2 -text "for"] -side left
+    duration_widget $win.fb$box.duration 7200
+    pack [frame $win.pad$box -height 10] -side top
+    configure_rpt_menu $box $win.fb$box
 }
 
 proc new_mk_session_contact {win aid} {
     global ldata yourname yourphone youremail
-    frame $win -relief groove -borderwidth 2
-    label $win.l -text "Person to contact about this session:"
+    if {[winfo exists $win]==0} {
+	frame $win -relief groove -borderwidth 2
+	label $win.l -text "Person to contact about this session:"
 
-    tixAddBalloon $win.l Label [tt "Name, email address and telephone \
+	tixAddBalloon $win.l Label [tt "Name, email address and telephone \
 number of person to be contacted about the session. You can \
 edit the suggested address and telephone number. To edit the \
 default, choose \"Preferences\" in the session main session \
 window, then \"You\"."]
 
+        frame $win.f0 
+
+        label $win.f0.l -bitmap mail -anchor w
+        entry $win.f0.e -width 35 -relief sunken \
+		-bg [option get . entryBackground Sdr] \
+		-highlightthickness 0
+        tixAddBalloon $win.f0.e Entry [tt "Enter your name and email address here"]
+
+
+        frame $win.f1 
+        label $win.f1.l -bitmap phone -anchor w
+        entry $win.f1.e -width 35 -relief sunken \
+	    -bg [option get . entryBackground Sdr] \
+	    -highlightthickness 0
+        tixAddBalloon $win.f1.e Entry [tt "Enter your telephone number here"]
+
+        if {[string compare $aid "new"]!=0} { 
+	    foreach p $ldata($aid,phonelist) {
+		$win.f1.e insert 0 $p
+	    }
+	    foreach e $ldata($aid,emaillist) {
+		$win.f0.e insert 0 $e
+	    }
+	} else {
+	    $win.f1.e insert 0 "$yourname $yourphone"
+	    $win.f0.e insert 0 "$yourname <$youremail>"
+	}
+    }
     pack $win.l -side top -anchor nw
-    frame $win.f0 
     pack $win.f0 -side top -pady 3
-
-    label $win.f0.l -bitmap mail -anchor w
     pack $win.f0.l -side left -fill x -anchor s
-    entry $win.f0.e -width 35 -relief sunken \
-	-bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    tixAddBalloon $win.f0.e Entry [tt "Enter your name and email address here"]
     pack $win.f0.e -side bottom -anchor sw
-
-
-    frame $win.f1 
     pack $win.f1 -side top
-    label $win.f1.l -bitmap phone -anchor w
     pack $win.f1.l -side left -fill x
-    entry $win.f1.e -width 35 -relief sunken \
-	-bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0
-    tixAddBalloon $win.f1.e Entry [tt "Enter your telephone number here"]
     pack $win.f1.e -side left -fill x -expand true
     pack $win -side top -fill both -expand true
-
-    if {[string compare $aid "new"]!=0} { 
- 	foreach p $ldata($aid,phonelist) {
-	    $win.f1.e insert 0 $p
-	}
-	foreach e $ldata($aid,emaillist) {
-	    $win.f0.e insert 0 $e
-	}
-   } else {
-       $win.f1.e insert 0 "$yourname $yourphone"
-       $win.f0.e insert 0 "$yourname <$youremail>"
-    }
 }
 #AUTH do_add creatation
 proc new_mk_session_buttons {win aid} {
@@ -1601,7 +1699,7 @@ proc configure_rpt_menu {box win} {
     global has_times rpt_menu_value rpt_times duration_max
     global [set win].day
     global [set win].duration
-    .new.f2.act.fb$box.m configure -text [lindex $rpt_times $rpt_menu_value($box)]
+    $win.m configure -text [lindex $rpt_times $rpt_menu_value($box)]
     if {[lindex $has_times $rpt_menu_value($box)] == 0} {
 	foreach i {day.workaround time.workaround duration.workaround} {
 	    $win.$i configure -state disabled
@@ -1822,22 +1920,12 @@ proc create {} {
     global ttl dayix durationix send zone
     global timeofday minoffset hroffset media_attr media_fmt media_proto
     global media_layers medialist new_createtime sess_type
-    global rtp_payload sdrversion security
-    global mediaenc security
+    global rtp_payload sdrversion
+    global mediaenc
 
-#AUTH
-    global auth_type
-    global enc_type
-    global sess_auth_status
-    global sess_enc_status
-    global user_id asympass key_id
-    global validpassword
-    global validauth
-    global validfile
-    global validkey
 
     log "creating a session"
-    if {$ttl==0} { set ttl [.new.f3.rr.f.e get] }
+    if {$ttl==0} { set ttl [.new.f.f.f3.rr.f.e get] }
     if {($ttl < 0)|($ttl > 255)} {
 	errorpopup "Illegal Scope Value" "Scope value must be between 0 and 255"
 	log "user had entered an illegal scope value"
@@ -1845,8 +1933,8 @@ proc create {} {
     }
     set sess "v=0"
     set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
-    set sess "$sess\ns=[get_new_session_name .new]"
-    if {[get_new_session_name .new]==""} {
+    set sess "$sess\ns=[get_new_session_name .new.f.f]"
+    if {[get_new_session_name .new.f.f]==""} {
 	errorpopup "No Session Name" "You must give the session a name"
 	log "user had entered no session name"
 	return 0
@@ -1865,8 +1953,8 @@ proc create {} {
     if {$uri!=""} {
 	set sess "$sess\nu=$uri"
     }
-    set email [.new.you.f0.e get]
-    set phone [.new.you.f1.e get]
+    set email [.new.f.f.you.f0.e get]
+    set phone [.new.f.f.you.f1.e get]
     if {$email!=""} {
 	set sess "$sess\ne=$email"
     }
@@ -1877,7 +1965,7 @@ proc create {} {
     foreach i {1 2 3} {
       #the catch is here because the simple i/f only has one time entry
       catch {
-	set tmp [get_expiry_time .new.f2.act.fb$i $i .new.f2.act.fd.duration]
+	set tmp [get_expiry_time .new.f.f.f2.act.fb$i $i .new.f.f.f2.act.fd.duration]
 	    if {[lindex $tmp 0]!=0} {
 	    set starttime [lindex $tmp 0]
 	    set stoptime [lindex $tmp 1]
@@ -1965,72 +2053,8 @@ proc create {} {
 	} 
     }
 #    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
-    if {[info exists security]&&($security == "private")} {
-	set keyname [string trim [get_new_session_key] "\n"]
-	if {$keyname==0} {return 0};
-	log "new session was encrypted"
-    } else {
-	set keyname ""
-	log "new session was not encrypted"
-    }
-#    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
+    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl
 
-#AUTH - ensure passphrase entered if auth key selected
-	if { ($auth_type == "pgp" || $auth_type == "cpgp" || $auth_type =="none" ) } {
-     	set aauth "pgp"
-    }
-    if { ($auth_type == "x509" || $auth_type == "cx50" ) } {
-     	set aauth "x509"
-    }
-if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
-      set asym "pgp"
-        }
-  if { $enc_type == "x509" || $enc_type == "none"} {
-      set asym "x509"
-        }
- 
-    if { ($user_id(pgp,auth_cur_key_sel)!="") &&\
-         $asympass=="" } {
-                errorpopup "No Passphrase!"\
-                "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
-                 entered before authentication information can be \
-                 constructed for this session announcement."
-                log "User did not enter a passphrase for key certificate"
-                return 0
-    }
- set validpassword 0
- set validauth 0
- set validfile 0
-    set validkey 0
-#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $key_id(pgp,auth_cur_key_sel)
- 
-#authentication and Encryption
-createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aauth,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
-
-    if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
-        errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect passphrase for key certificate"
-        return 0
-    }
-    if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx50"  )} {
-        errorpopup "Secude failed" "The Signed DATA Failed for USER\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect passphrase for key certificate"
-        return 0
-    }
-    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx50" )} {
-        errorpopup "Length" "Authentication Lenght very big for the Sap session\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "User entered an incorrect ling Cert for key certificate"
-        return 0
-    }
-    if {$validfile==0 && ($enc_type =="pgp" || $enc_type=="x509")} {
-        errorpopup "File not created" "Probably public key is missing\
-                                     $user_id($aauth,auth_cur_key_sel).  Try again."
-        log "Cnnot create file on SDR home directory"
-        return 0
-    }
     update
     after 3000 write_cache
     log "new session announced at [getreadabletime]"
@@ -2332,106 +2356,3 @@ proc generate_port {media} {
 }
 
 
-# ------------------------------------------------------------
-# start of this part of PGP AUTHentication code (AUTH)
-# ------------------------------------------------------------
-proc set_auth_type {win type} {
-    global auth_type
-    global cert
-    set auth_type $type
-    switch $type {
-	none {
-            $win.auth.sel.mauth configure -text None
-            set cert "0"
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-        }
-        pgp {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text PGP
-            show_pgp_keys $win
-        }
-        x509 {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            set cert "cert"
-            $win.auth.sel.mauth configure -text X509
-            show_pkcs7_keys $win
-        }
-        cpgp {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text PGP+CERT
-            show_pgp_keys $win
-        }
-       cx50 {
-            clear_asym_keys $win x509
-            clear_asym_keys $win pgp
-            $win.auth.sel.mauth configure -text X509+CERT
-            set cert "path"
-            show_pkcs7_keys $win
-        }
-        other {
-            $win.auth.sel.mauth configure -text Unspecified
-
-        }
-    }
-}
-# ------------------------------------------------------------
-# end of this part of PGP AUTHentication code (AUTH)
-# ------------------------------------------------------------
- 
-proc set_enc_type {win type aid} {
-    global enc_type security
-    set enc_type $type
-    switch $type {
-        none {
-            $win.enc.sel.menc configure -text None
-            enc_clear_asym_keys $win x509
-            enc_clear_asym_keys $win pgp
-            set security public
-            clear_keys $win
-        }
-       des {
-            enc_clear_asym_keys $win x509
-            enc_clear_asym_keys $win pgp
-            clear_keys $win
-            $win.enc.sel.menc configure -text Des
-            set security private
-            enc_show_keys $win $aid
- 
-        }
-        pgp {
-            set security public
-            enc_clear_asym_keys $win x509
-            enc_clear_asym_keys $win pgp
-            clear_keys $win
-            $win.enc.sel.menc configure -text PGP
-            enc_show_pgp_keys $win $aid
-        }
-        x509 {
-            set security public
-            enc_clear_asym_keys $win x509
-            enc_clear_asym_keys $win pgp
-            $win.enc.sel.menc configure -text X509
-            enc_show_x509_keys $win $aid
-        }
-        other {
-            set security public
-            $win.enc.sel.menc configure -text Unspecified
-
-        }
-    }
-proc do_ad_creation {aid} {
-    global auth_old_key_sel key_id
-    global enc_old_key_sel
-    if {[string compare $auth_old_key_sel $key_id(pgp,auth_cur_key_sel)]==0 || [string compare $enc_old_key_sel $key_id(pgp,enc_cur_key_sel)]==0} {
-        ui_stop_session_ad $aid
-        destroy .new
-    } else {
- 
-        destroy .new
-    }
-}
-}
