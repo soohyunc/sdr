@@ -600,6 +600,7 @@ proc add_to_list {} {
   }
 
   set aid $advertid
+
   if {[info exists ldata($aid,sessid)] && [sesscmp $ldata($aid,sessid) $sessid] == 0} {
     if {[sesscmp $ldata($aid,sessvers) $sessvers] == 0} {
       # This is the same version we already have.
@@ -610,7 +611,15 @@ proc add_to_list {} {
       # We could also add "&& [random] < .75" to only update it
       # randomly after a minute, but for now this is probably OK since
       # the goal is to skip the hundreds of copies from rabid looping
-      if {$ldata($aid,lastheard) < [expr $ldata($aid,lastupdated) + 60]} {
+      # need to update if authenticated or encrypted as message changes
+      set ldata($aid,authtype) $sess_auth_type
+      set ldata($aid,enctype)  $sess_enc_type
+      if {$ldata($aid,authtype)=="none" && $ldata($aid,enctype)=="none"} {
+        set limit 60
+      } else {
+        set limit 0
+      }
+      if {$ldata($aid,lastheard) < [expr $ldata($aid,lastupdated) + $limit]} {
           debug "aid $aid name $session already have this version"
           popup_update $aid heard "Heard from $ldata($aid,heardfrom) at $ldata($aid,theard)"
           return
