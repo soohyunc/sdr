@@ -432,7 +432,11 @@ int load_keys(void)
   free(buf);
   return 0;
 }
+
 extern unsigned long hostaddr;
+#if HAVE_IPv6
+extern struct in6_addr hostaddr_v6;
+#endif
 
 /* ---------------------------------------------------------------------- */
 /* write_crypted_file - writes encrypted file to cache or keyfile         */
@@ -445,12 +449,16 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
   MD5_CTX context;
   struct timeval tv;
   struct advert_data *addata=NULL;
-  struct  advert_data *get_advert_info();	
+  struct advert_data *get_advert_info();	
   struct auth_info *authinfo=NULL;
   struct auth_header *auth_hdr;
-  struct sapv4_header *bp=NULL;
+  struct sap_header *bp=NULL;
   struct priv_header *priv_hdr=NULL;
+  int sap_hdr_len = SAPV4_HDR_LEN;
+  int addr_fam=IPv4;
+  u_int host;
 
+  char origsrc[128]="";
   char *ap=NULL;
   char *filename;
   char *buf=NULL, *encbuf=NULL, *p=NULL;
@@ -470,6 +478,14 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 #endif
 
   writelog(printf(" -- entered write_crypted_file (filename = %s) --\n",afilename);)
+
+	  sscanf(&data[2], "%s", origsrc);
+  if (strstr(origsrc,".") == NULL) {/* Checking for an IPv6 address */
+#ifdef HAVE_IPv6
+      sap_hdr_len = SAPV6_HDR_LEN;
+	  addr_fam=IPv6;
+#endif
+  }
 
 /*  no passphrase was entered - don't save!  */
 
@@ -508,14 +524,25 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
     bp = addata->sap_hdr;
 
     if (bp == NULL) {
-      bp=malloc(sizeof(struct sapv4_header));
-      memset(bp, 0, sizeof(struct sapv4_header));
+      bp=malloc(sap_hdr_len);
+      memset(bp, 0, sizeof(struct sap_header));
       bp->version  = 1;
       bp->authlen  = auth_len /4;
       bp->enc      = 1;
       bp->compress = 0;
       bp->msgid    = 0;
-      bp->src      = htonl(hostaddr);
+      /*bp->src      = htonl(hostaddr);*/
+
+	  if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+        memcpy((char *)bp+sizeof(struct sap_header), (char *) &hostaddr_v6, 16);
+        bp->addr     = 1;
+#endif
+	  } else {
+        host = (unsigned long)htonl(hostaddr);
+        memcpy((char *)bp+sizeof(struct sap_header), (char *) &host, 4);
+        bp->addr     = 0;
+	  }
     }
 
 /* if debugging have a look at the sap header */
@@ -529,7 +556,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 /* malloc the buffer */
 
     orglen = len;
-    buf = (char *)malloc(len+24+sizeof(struct sapv4_header)+auth_len+TIMEOUT+des_enc_hdrlen+addata->length);
+    buf = (char *)malloc(len+24+sap_hdr_len+auth_len+TIMEOUT+des_enc_hdrlen+addata->length);
 
 /* copy data to buf - note 1st 24 bytes are for checksum   */
 /* data is "n=......k=keyhere\nv=0......\nZ="              */
@@ -539,8 +566,8 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 
 /* copy sap_header following "Z="   */
 
-    memcpy(buf+24+len, bp,sizeof(struct sapv4_header));
-    bplen = sizeof(struct sapv4_header);
+    memcpy(buf+24+len, bp,sap_hdr_len);
+    bplen = sap_hdr_len;
 
 /* copy authentication header (2nd byte = signature length) */
 

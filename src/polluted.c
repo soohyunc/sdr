@@ -1053,7 +1053,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   FILE *file=NULL;
 
   struct auth_header auth_hdr;
-  struct sapv4_header *sap_hdr;
+  struct sap_header *sap_hdr;
   struct advert_data *addata=NULL;
   struct advert_data *get_advert_info();
 
@@ -1061,10 +1061,13 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   char tmpfilename[MAXFILENAMELEN];
   char *buf=NULL;
   char *tmpbuf=NULL, *newbuf=NULL;
+  char origsrc[128]="";
 
   int total,newlen,len1;
   int i=0, auth_len=0;
-  int sap_hdr_len=sizeof (struct sapv4_header);
+  int sap_hdr_len = SAPV4_HDR_LEN;
+  int addr_fam=IPv4;
+  u_int host;
 
 #ifdef WIN32  /* need to sort out the ~ on windows */
   struct stat sbuf;
@@ -1075,6 +1078,14 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 #endif
 
   writelog(printf(" -- entered write_authentication --\n");)
+
+  sscanf(&data[2], "%s", origsrc);
+  if (strstr(origsrc,".") == NULL) {/* Checking for an IPv6 address */
+#ifdef HAVE_IPv6
+      sap_hdr_len = SAPV6_HDR_LEN;
+	  addr_fam=IPv6;
+#endif
+  }
 
   addata = get_advert_info(advertid);
 
@@ -1127,17 +1138,28 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
 /* write the sap header into the buffer                            */
 
-  sap_hdr = (struct sapv4_header *)addata->sap_hdr;
+  sap_hdr = (struct sap_header *)addata->sap_hdr;
 
   if( sap_hdr == NULL) {
 
-    sap_hdr = (struct sapv4_header *)malloc(sap_hdr_len);
+    sap_hdr = (struct sap_header *)malloc(sap_hdr_len);
     sap_hdr->version  = 1;
     sap_hdr->authlen  = auth_len /4;	
     sap_hdr->enc      = 0;
     sap_hdr->compress = 0;
     sap_hdr->msgid    = 0;
-    sap_hdr->src      = htonl(hostaddr);
+    /*sap_hdr->src      = htonl(hostaddr);*/
+
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+      memcpy((char *)sap_hdr+sizeof(struct sap_header), (char *) &hostaddr_v6, 16);
+      sap_hdr->addr     = 1;
+#endif
+	} else {
+      host = (unsigned long)htonl(hostaddr);
+      memcpy((char *)sap_hdr+sizeof(struct sap_header), (char *) &host, 4);
+      sap_hdr->addr     = 0;
+	}
 
     memcpy(buf+len,sap_hdr,sap_hdr_len);
     len += sap_hdr_len;
@@ -1231,7 +1253,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 int write_encryption(char *afilename, char *data, int len , char *auth_type, char *enc_type,char *advertid)
 {
   FILE *file;
-  struct sapv4_header *bp=NULL;
+  struct sap_header *bp=NULL;
   struct advert_data *addata=NULL;
   struct priv_header *sapenc_p=NULL;
   struct auth_header *auth_hdr=NULL;
@@ -1239,12 +1261,15 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
   char *filename;
   char tmpfilename[MAXFILENAMELEN];
   char *buf=NULL;
+  char origsrc[128]="";
   int i=0, auth_len=0;
   int hdr_len=0;
   int orglen;
   int packetlength=0;
   struct advert_data *get_advert_info();
-  int sap_hdr_len = sizeof(struct sapv4_header);
+  int sap_hdr_len = SAPV4_HDR_LEN;
+  int addr_fam=IPv4;
+  u_int host;
 
 #ifdef WIN32  /* need to sort out the ~ on windows */
   struct stat sbuf;
@@ -1255,6 +1280,14 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 #endif
 
   writelog(printf(" -- entered write_encryption (filename = %s)\n",afilename);)
+
+  sscanf(&data[2], "%s", origsrc);
+  if (strstr(origsrc,".") == NULL) {/* Checking for an IPv6 address */
+#ifdef HAVE_IPv6
+      sap_hdr_len = SAPV6_HDR_LEN;
+	  addr_fam=IPv6;
+#endif
+  }
 
 /* get the information for the advert */
 
@@ -1301,7 +1334,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
 /* set up sap header */
 
-  bp = (struct sapv4_header *)addata->sap_hdr;
+  bp = (struct sap_header *)addata->sap_hdr;
 
   if (bp == NULL) {
     bp=malloc(sap_hdr_len);
@@ -1310,9 +1343,19 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
     bp->enc      = 1;
     bp->compress = 0;
     bp->msgid    = 0;
-    bp->src      = (unsigned long)htonl(hostaddr);
-  }
+    /*bp->src      = (unsigned long)htonl(hostaddr);*/
 
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+      memcpy((char *)bp+sizeof(struct sap_header), (char *) &hostaddr_v6, 16);
+      bp->addr     = 1;
+#endif
+	} else {
+      host = (unsigned long)htonl(hostaddr);
+      memcpy((char *)bp+sizeof(struct sap_header), (char *) &host, 4);
+      bp->addr     = 0;
+	}
+  }
 /* debug */
 
   writelog(printf("write_enc: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
