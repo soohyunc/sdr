@@ -355,7 +355,6 @@ proc build_interface {first {dirName {}}} {
     [cw].f3.help.m add command -label [tt "sdr Help"] \
             -command [list help [cw]]
     #tixAddBalloon [cw].f3.help.m Button "Turn these help messages on and off"
-    [cw].f3.help.m add command -label [tt "key setup"] -command {Help_asym asym_help}
  
    # button [cw].f3.help -text [tt "Help"] -relief raised -command [list help [cw]] \
     #   -padx 0 -pady 1 -borderwidth 1 -highlightthickness 0
