@@ -1,8 +1,21 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.6.X? ?? 1999
+  - Strip trailing CR from domain name on Solaris when reading from
+    /etc/resolv.conf; this solves the "can't advertise session" problem.
+
 2.6.1 K.Hasler@cs.ucl.ac.uk 30 Mar 1999
   - solaris/irix/windows release
+
+- fenner@research.att.com
+  - Tightened up SDP parser to catch more errors
+  - Handle compressed SAP, either compressed via gzip (as the SAP spec says)
+    or via zlib (as Real G2 does).  This should be clarified in the SAP spec,
+    as should the combination of compression and authentication.  To handle
+    compressed SAP, you need zlib (http://www.cdrom.com/pub/infozip/zlib/),
+    -DHAVE_ZLIB in CFLAGS, and -lz in LIBS.  See freebsd/Makefile.freebsd
+    (since FreeBSD ships with zlib).
 
 2.6.0 E.Whelan@cs.ucl.ac.uk 25 Feb 1999
 
