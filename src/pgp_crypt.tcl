@@ -717,13 +717,10 @@ proc pgp_check_encryption { irand } {
       set mykeylist [split $userw \n ]
 
       if {$test == 1} {
-        putlogfile "test = 1"
         set key [lindex $mykeylist 0]
         set interactive 0
     	set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output $key $irand $interactive]
-        putlogfile "debug - result = $result"
       } else {
-        putlogfile "test != 1"
         set recv_encstatus "failed"
         set recv_enc_asym_keyid "nonenone"
         set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) "none" "none" "none" "none" "none"] 
@@ -739,41 +736,30 @@ proc pgp_check_encryption { irand } {
 
     pgp_InterpretOutput $output pgpresult $key
 
-    putlogfile "pgpresult(ok) = $pgpresult(ok) "
-
     if {$pgpresult(ok) == 1} {
 
 # it all worked okay 
 
-      putlogfile "debug 1"
       set recv_enc_asym_keyid $pgpresult(keyid)
       set recv_encstatus "success"
       set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
-      putlogfile "debug 2"
       return 0
 
     } else {
 
 # there was some problem 
 
-      putlogfile "debug 3"
       set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output  $key $irand 0]
-      putlogfile "debug 4 - result = $result"
       pgp_InterpretOutput $output pgpresult $key
-      putlogfile "debug 5 - pgpresult(ok) = $pgpresult(ok)"
       if {$pgpresult(ok) == 1} {
-        putlogfile "debug 6"
         set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n  Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
         set recv_encstatus "success"
         set recv_enc_asym_keyid $pgpresult(keyid)
-        putlogfile "debug 7"
         return 0
       } else {
-        putlogfile "debug 8"
         set recv_encstatus "failed"
         set recv_enc_asym_keyid "nonenone"
         set recv_encmessage $pgpresult(msg)
-        putlogfile "debug 9"
       }
     }
 
@@ -997,11 +983,11 @@ proc pgpExec { arglist outvar key  irand  interactive  } {
  global  env
 
  putlogfile "entered pgpExec"
- putlogfile "arglist     = $arglist"
- putlogfile "outvar      = $outvar"
- putlogfile "key         = $key"
- putlogfile "irand       = $irand"
- putlogfile "interactive = $interactive"
+# putlogfile "arglist     = $arglist"
+# putlogfile "outvar      = $outvar"
+# putlogfile "key         = $key"
+# putlogfile "irand       = $irand"
+# putlogfile "interactive = $interactive"
 
  if {$interactive !=0 } {
    return [pgpExec_Interactive $arglist output $irand]
@@ -1010,9 +996,7 @@ proc pgpExec { arglist outvar key  irand  interactive  } {
      return [pgpExec_Batch $arglist output $irand]
    } else {
      set p [pgp_GetPass $key]
-     putlogfile "*** p = >$p<"
      if {[string length $p] == 0} {
-       putlogfile "string length >$p< = 0 so returning 0"
        return 0
      }
      return [pgpExec_Batch $arglist output $p]
@@ -1034,10 +1018,10 @@ proc pgpExec_Interactive { arglist outvar irand } {
         echo
         echo press Return...;
         read dummy"
-    putlogfile "shcmd = $shcmd"
+#    putlogfile "shcmd = $shcmd"
     set logfile "[glob -nocomplain [resource sdrHome]]/x$irand"
     set tclcmd {exec xterm -l -lf $logfile -title PGP -e sh -c $shcmd}
-    putlogfile "tclcmd = $tclcmd"
+#    putlogfile "tclcmd = $tclcmd"
     set result [catch $tclcmd]
     if [catch {open $logfile r} log] {
         set output ""
@@ -1054,7 +1038,7 @@ proc pgpExec_Interactive { arglist outvar irand } {
     #regsub "^.*Public key is required \[^\n]*\n" $output "" output
     #set output [string trim $output]
  
-    putlogfile "pgpExec_Interactive returning $result"
+#    putlogfile "pgpExec_Interactive returning $result"
     return $result
 }
 proc Misc_Map { var expr list } {
