@@ -804,7 +804,7 @@ proc pgp_InterpretOutput { in outvar key} {
 
      if { $pgpresult(userid) != "none" } {
        set tclcmdkey [ list exec pgp -kv  +batchmode=on]
-       set tclcmdkey [ concat $tclcmdkey $pgpresult(userid) ]
+       set tclcmdkey [ concat $tclcmdkey \"$pgpresult(userid)\" ]
        putlogfile "  pgp_InterpretOutput: $tclcmdkey"
        set resultkey [ catch $tclcmdkey output1 ]
        set keyinfo   [split $output1 "\n"]
