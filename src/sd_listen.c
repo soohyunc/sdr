@@ -3607,6 +3607,7 @@ int run_program(char *args) {
 #else
 int run_program(char *args) {
   pid_t pid;
+  int k;
   int i;
   char *ptr1, *ptr2, *nargv[40];
   pid = fork();
@@ -3634,12 +3635,17 @@ int run_program(char *args) {
     while(*ptr1==' ')
       *ptr1++='\0';
     if (*ptr1=='\0') break;
-    nargv[i++]=ptr1;
     ptr2=strchr(ptr1, ' ');
-    /*cope with quoted strings*/
+    /* cope with quoted strings - strip off quotes as execvp() later */
+    /* stops tools removing them                                     */
     if (*ptr1=='"') {
+      nargv[i++]=ptr1+1;
       ptr2=strchr(ptr1+1,'"');
-      if (ptr2!=NULL) ptr2++;
+      if (ptr2!=NULL) {
+        *ptr2++='\0';
+      }
+    } else {
+      nargv[i++]=ptr1;
     }
     ptr1=ptr2;
     if (i==38) {
