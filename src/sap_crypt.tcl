@@ -794,12 +794,6 @@ proc create {} {
         }
       }
     }
-    if {[valid_mcast_address [get_new_session_addr conference]]==0} {
-        errorpopup "Invalid Multicast Address" \
-            "The multicast address specified in not a valid IP Class D address"
-        log "user had entered an invalid multicast address"
-        return 0
-    }
     set sess "$sess\na=tool:sdr $sdrversion"
     set sess "$sess\na=type:$sess_type"
     foreach media $medialist {
@@ -846,6 +840,12 @@ proc create {} {
                 set sess "$sess\nm=$media [get_new_session_port $media] RTP/AVP $rtp_payload(pt:$media_fmt($media))"
             } else {
                 set sess "$sess\nm=$media [get_new_session_port $media] $media_proto($media) $media_fmt($media)"
+            }
+            if {[valid_mcast_address [get_new_session_addr $media]]==0} {
+                errorpopup "Invalid Multicast Address" \
+                    "The multicast address specified is not a valid IP Class D address"
+                log "user had entered an invalid multicast address"
+                return 0
             }
             set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
             if {$media_layers($media)>1} {
