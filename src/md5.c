@@ -24,6 +24,8 @@ documentation and/or software.
  */
 
 #include <sys/types.h>
+#include <string.h>
+#include <stdio.h>
 #include "crypt.h"
 #include "md5.h"
 
@@ -304,6 +306,7 @@ unsigned int len;
   for (i = 0, j = 0; j < len; i++, j += 4)
  output[i] = ((UINT4)input[j]) | (((UINT4)input[j+1]) << 8) |
    (((UINT4)input[j+2]) << 16) | (((UINT4)input[j+3]) << 24);
+
 }
 
 /* Note: Replace "for loop" with standard memcpy if possible.
@@ -314,10 +317,7 @@ POINTER output;
 POINTER input;
 unsigned int len;
 {
-  unsigned int i;
-
-  for (i = 0; i < len; i++)
- output[i] = input[i];
+  memcpy( (void *) output, (const void *) input, (size_t) len );
 }
 
 /* Note: Replace "for loop" with standard memset if possible.
@@ -327,8 +327,5 @@ POINTER output;
 int value;
 unsigned int len;
 {
-  unsigned int i;
-
-  for (i = 0; i < len; i++)
- ((char *)output)[i] = (char)value;
+  memset( (void *) output, (unsigned char) value, (size_t) len );
 }
