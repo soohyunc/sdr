@@ -1,5 +1,6 @@
 #define sdr_width 48
 #define sdr_height 48
+#ifndef WIN32
 static char sdr_bits[] = {
    0xff, 0xff, 0xff, 0xff, 0x07, 0x00, 0x01, 0x00, 0x00, 0x20, 0x04, 0x00,
    0xf1, 0xff, 0xff, 0xa3, 0x05, 0x00, 0xf9, 0xff, 0xff, 0xa7, 0x05, 0x00,
@@ -25,3 +26,30 @@ static char sdr_bits[] = {
    0x80, 0x14, 0xe0, 0x07, 0xf8, 0x01, 0x80, 0xcf, 0xf0, 0x0f, 0xfc, 0x03,
    0x00, 0xa4, 0xf0, 0xff, 0xff, 0x03, 0x00, 0x7c, 0xf8, 0xff, 0xff, 0x07,
    0x00, 0x20, 0x08, 0x00, 0x00, 0x04, 0x00, 0xc0, 0xff, 0xff, 0xff, 0x07};
+#else
+static char sdr_bits[] = {
+   '\xff', '\xff', '\xff', '\xff', '\x07', '\x00', '\x01', '\x00', '\x00', '\x20', '\x04', '\x00',
+   '\xf1', '\xff', '\xff', '\xa3', '\x05', '\x00', '\xf9', '\xff', '\xff', '\xa7', '\x05', '\x00',
+   '\xfd', '\xff', '\xff', '\x2f', '\x04', '\x00', '\xfd', '\xff', '\xff', '\xaf', '\x05', '\x00',
+   '\xfd', '\xff', '\xff', '\xaf', '\x05', '\x00', '\x7d', '\x30', '\x1e', '\x2c', '\x04', '\x00',
+   '\xbd', '\xdf', '\xed', '\xad', '\x05', '\x00', '\x1d', '\xec', '\x06', '\xae', '\x05', '\x00',
+   '\xfd', '\x36', '\xdb', '\x2f', '\x04', '\x00', '\x05', '\xc3', '\xbd', '\x2f', '\x04', '\x00',
+   '\xfd', '\xff', '\xff', '\x2f', '\x04', '\x00', '\xfd', '\xff', '\xff', '\x2f', '\x04', '\x00',
+   '\xfd', '\x0f', '\xfc', '\x2f', '\x04', '\x00', '\xfd', '\xe7', '\xf9', '\xef', '\x07', '\x00',
+   '\xfd', '\xf7', '\xfb', '\x2f', '\x04', '\x00', '\xfd', '\xff', '\xf9', '\xef', '\x07', '\x00',
+   '\xfd', '\xff', '\xfc', '\x2f', '\x04', '\x00', '\xfd', '\x3f', '\xfe', '\xef', '\x07', '\x00',
+   '\xfd', '\x8f', '\xff', '\x2f', '\x04', '\x00', '\xfd', '\xe7', '\xfb', '\xef', '\x07', '\x00',
+   '\xfd', '\x07', '\xf8', '\x2f', '\x04', '\x00', '\xfd', '\xff', '\xff', '\xef', '\x07', '\x00',
+   '\xfd', '\xff', '\xff', '\x2f', '\x04', '\x00', '\xf9', '\xff', '\xff', '\xef', '\x07', '\x00',
+   '\xf1', '\xff', '\xff', '\x00', '\x00', '\x00', '\x01', '\x00', '\x00', '\xfe', '\x0f', '\x00',
+   '\xff', '\xff', '\xe7', '\xff', '\xff', '\x00', '\x00', '\x00', '\xf0', '\xff', '\xff', '\x03',
+   '\x00', '\x00', '\xfc', '\xff', '\xff', '\x0f', '\x00', '\x00', '\xfe', '\x01', '\xc0', '\x1f',
+   '\x00', '\x00', '\xfe', '\xfe', '\xdf', '\x1f', '\x00', '\x00', '\x7f', '\xfe', '\x9f', '\x3f',
+   '\x00', '\x80', '\x7f', '\x0f', '\xbc', '\x7f', '\x0c', '\x80', '\x3f', '\x07', '\x38', '\x7f',
+   '\x0b', '\x80', '\xbf', '\xe3', '\x71', '\x7f', '\x66', '\x00', '\x9f', '\x13', '\x72', '\x3e',
+   '\x52', '\x00', '\xc0', '\x13', '\xf2', '\x00', '\x3e', '\x03', '\xc0', '\x13', '\xf2', '\x00',
+   '\x90', '\x02', '\xc0', '\x13', '\xf2', '\x00', '\xf0', '\x19', '\xe0', '\xe3', '\xf1', '\x01',
+   '\x80', '\x14', '\xe0', '\x07', '\xf8', '\x01', '\x80', '\xcf', '\xf0', '\x0f', '\xfc', '\x03',
+   '\x00', '\xa4', '\xf0', '\xff', '\xff', '\x03', '\x00', '\x7c', '\xf8', '\xff', '\xff', '\x07',
+   '\x00', '\x20', '\x08', '\x00', '\x00', '\x04', '\x00', '\xc0', '\xff', '\xff', '\xff', '\x07'};
+#endif

@@ -1,6 +1,13 @@
 #define text_width 16
 #define text_height 16
+#ifndef WIN32
 static unsigned char text_bits[] = {
   0x06, 0x00, 0x09, 0x00, 0x09, 0x00, 0x0f, 0x00, 0x09, 0x00, 0xc9, 0x01,
   0x40, 0x02, 0x40, 0x02, 0xc0, 0x01, 0x40, 0x02, 0x40, 0xe2, 0xc0, 0x91,
   0x00, 0x10, 0x00, 0x10, 0x00, 0x90, 0x00, 0xe0, };
+#else
+static unsigned char text_bits[] = {
+  '\x06', '\x00', '\x09', '\x00', '\x09', '\x00', '\x0f', '\x00', '\x09', '\x00', '\xc9', '\x01',
+  '\x40', '\x02', '\x40', '\x02', '\xc0', '\x01', '\x40', '\x02', '\x40', '\xe2', '\xc0', '\x91',
+  '\x00', '\x10', '\x00', '\x10', '\x00', '\x90', '\x00', '\xe0', };
+#endif

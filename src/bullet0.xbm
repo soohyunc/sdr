@@ -1,5 +1,11 @@
 #define bullet0_width 11
 #define bullet0_height 11
+#ifndef WIN32
 static char bullet0_bits[] = {
    0x00, 0x00, 0x70, 0x00, 0xf8, 0x00, 0xfc, 0x01, 0xfe, 0x03, 0xfe, 0x03,
    0xfe, 0x03, 0xfc, 0x01, 0xf8, 0x00, 0x70, 0x00, 0x00, 0x00};
+#else
+static char bullet0_bits[] = {
+   '\x00', '\x00', '\x70', '\x00', '\xf8', '\x00', '\xfc', '\x01', '\xfe', '\x03', '\xfe', '\x03',
+   '\xfe', '\x03', '\xfc', '\x01', '\xf8', '\x00', '\x70', '\x00', '\x00', '\x00'};
+#endif

@@ -1,6 +1,13 @@
 #define audio_width 16
 #define audio_height 16
+#ifndef WIN32
 static unsigned char audio_bits[] = {
   0x00, 0x30, 0x00, 0x2c, 0x00, 0x33, 0xc0, 0x2c, 0x40, 0x23, 0xc0, 0x20,
   0x40, 0x20, 0x40, 0x28, 0x40, 0x3c, 0x40, 0x3e, 0x50, 0x3e, 0x78, 0x1c,
   0x7c, 0x08, 0x7c, 0x00, 0x38, 0x00, 0x10, 0x00, };
+#else
+tatic unsigned char audio_bits[] = {
+  '\x00', '\x30', '\x00', '\x2c', '\x00', '\x33', '\xc0', '\x2c', '\x40', '\x23', '\xc0', '\x20',
+  '\x40', '\x20', '\x40', '\x28', '\x40', '\x3c', '\x40', '\x3e', '\x50', '\x3e', '\x78', '\x1c',
+  '\x7c', '\x08', '\x7c', '\x00', '\x38', '\x00', '\x10', '\x00', };
+#endif

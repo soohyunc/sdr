@@ -2,7 +2,14 @@
 #define clock_height 16
 #define clock_x_hot 7
 #define clock_y_hot 7
+#ifndef WIN32
 static char clock_bits[] = {
    0x00, 0x00, 0xe0, 0x03, 0x18, 0x0c, 0x84, 0x10, 0x84, 0x10, 0x82, 0x20,
    0x82, 0x20, 0x82, 0x23, 0x02, 0x20, 0x02, 0x20, 0x04, 0x10, 0x04, 0x10,
    0x18, 0x0c, 0xf8, 0x0f, 0xfc, 0x1f, 0x00, 0x00};
+#else
+static char clock_bits[] = {
+   '\x00', '\x00', '\xe0', '\x03', '\x18', '\x0c', '\x84', '\x10', '\x84', '\x10', '\x82', '\x20',
+   '\x82', '\x20', '\x82', '\x23', '\x02', '\x20', '\x02', '\x20', '\x04', '\x10', '\x04', '\x10',
+   '\x18', '\x0c', '\xf8', '\x0f', '\xfc', '\x1f', '\x00', '\x00'};
+#endif

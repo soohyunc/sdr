@@ -1,6 +1,13 @@
 #define broadcast_width 16
 #define broadcast_height 16
+#ifndef WIN32
 static char broadcast_bits[] = {
    0x88, 0x08, 0x84, 0x10, 0x92, 0x24, 0xca, 0x29, 0xca, 0x29, 0x92, 0x24,
    0x84, 0x10, 0x88, 0x08, 0x80, 0x00, 0x80, 0x00, 0x40, 0x01, 0x40, 0x01,
    0xc0, 0x01, 0x20, 0x02, 0xe0, 0x03, 0x10, 0x04};
+#else
+static char broadcast_bits[] = {
+   '\x88', '\x08', '\x84', '\x10', '\x92', '\x24', '\xca', '\x29', '\xca', '\x29', '\x92', '\x24',
+   '\x84', '\x10', '\x88', '\x08', '\x80', '\x00', '\x80', '\x00', '\x40', '\x01', '\x40', '\x01',
+   '\xc0', '\x01', '\x20', '\x02', '\xe0', '\x03', '\x10', '\x04'};
+#endif
