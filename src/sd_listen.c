@@ -671,7 +671,6 @@ int load_cache_entry(
 /* we have authentication info */
 
 	  irand = (random()&0xffff);
-          writelog(printf("recv_packets: (3)new random irand= %d\n",irand);)
 	  advert[data_len-3]=0;
 	  new_len=(len+1)-abs((p-buf)+data_len);
 	  newbuf= (char *)malloc(new_len);
@@ -772,6 +771,8 @@ int load_cache_entry(
             strcpy(addata->aid, aid);
           }
         }
+
+/* think this should be a little later - just around queue_ad */
 
         if((origsrc==hostaddr)&&(strcmp(trust,"trusted")==0)) {
           if (strcmp(key,"")!=0) {
@@ -891,10 +892,9 @@ int load_cache_entry(
 
 	    if (addata==NULL) {
 	      addata=(struct advert_data *)calloc(1,sizeof(struct advert_data));
+              addata->sapauth_p=NULL; 
             }
-/* should this be inside the above loop ? */
 	    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof( struct priv_header));
-            addata->sapauth_p=NULL;
 
 /* store encryption in memory */
 
@@ -918,6 +918,10 @@ int load_cache_entry(
 	      strcpy(encstatus, "noenc");
 	      strcpy(encmessage, "none");
 	    }
+
+/* need a new random number */
+
+	irand = (random()&0xffff);
 
 	    if (bp->authlen !=0 && (strcmp(authtype,"none") != 0 )) {
               auth_len=bp->authlen*4;
@@ -1583,8 +1587,10 @@ void recv_packets(ClientData fd)
 
 /* buf should have been cast into bp now so check what it looks like */
 
-    irand = (random()&0xffff);
-    writelog(printf("recv_packets: (1)new random irand= %d\n",irand);)
+/* moved this into the bp->enc loop */
+/*    irand = (random()&0xffff); */
+/*    writelog(printf("recv_packets: (1)new random irand= %d\n",irand);) */
+
     if (bp->authlen !=0) {
       auth_len=bp->authlen*4;
       auth_p = (struct auth_header *)  ((char *)bp + sizeof(struct sap_header)); 
@@ -1597,6 +1603,7 @@ void recv_packets(ClientData fd)
 /*      Note - encrypted data includes timeout                    */
 
     if (bp->enc==1) {
+      irand = (random()&0xffff); 
       enc_p=(struct priv_header *) ( (char *)bp + sizeof(struct sap_header) + auth_len+4);
 
       writelog(printf("pgp priv  header follows\n");)
@@ -1731,6 +1738,7 @@ void recv_packets(ClientData fd)
 
 /* check authentication */
 
+          irand = (random()&0xffff);
 	  if ( auth_p->auth_type == 1 || auth_p->auth_type == 3 ) {
 	    authstatus_p=check_authentication(auth_p, ((char *)bp+sizeof (struct sap_header)+2), new_data, newlength, auth_len, asym_keyid, irand,authmessage);
           } else {
