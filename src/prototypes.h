@@ -173,9 +173,6 @@ void force_numeric(char *str);
 void splat_tcl_special_chars(char *str);
 void warn_tcl_special_chars(char *str);
 void read_old_style_cache();
-#ifdef LISTEN_FOR_SD
-void read_sd_cache();
-#endif
 int extract_ttl(char *addrstr);
 int extract_layers(char *addrstr);
 int check_net_type(char *in, char *ip);

@@ -148,10 +148,6 @@ char *strerror(int i);
 
 #define SAP_GROUP        "224.2.127.254"
 #define SAP_PORT         9875
-#ifdef LISTEN_FOR_SD
-#define OLD_SAP_GROUP	"224.2.127.255"
-#define	OLD_SAP_PORT	9876
-#endif
 #define SIP_GROUP        "224.0.1.75"
 #define SIP_PORT        5060
 
