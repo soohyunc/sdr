@@ -142,7 +142,7 @@ long lrand48();
 void srand48(long seedval);
 double drand48();
 
-#if !defined(WIN32)&&!defined(SGI)&&!defined(AIX41)&&!defined(HPUX)
+#if !defined(WIN32)&&!defined(SGI)&&!defined(AIX41)&&!defined(_HPUX_SOURCE)
 int gethostname(char * name, size_t namelen);
 #endif
 
