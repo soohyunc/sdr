@@ -53,12 +53,14 @@ proc enc_pgp_get_key_list {win aid} {
     return 1
   }
 
-  set tclcmd [ list exec pgp -kv $env(PGPPATH)/pubring.pgp]
+# view the keys on the public keyring
+
+  set tclcmd [ list exec pgp -kv $env(PGPPATH)/pubring.pgp ]
   catch $tclcmd keylist
   pgp_InterpretOutput $keylist pgpresult 1
 
-  if {$pgpresult(ok) != 1} {
-    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)/$keyring" 10000
+  if {$pgpresult(ok) == 1} {
+    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)pubring.pgp" 10000
     return 1
   }
 
@@ -1060,7 +1062,7 @@ proc pgp_GetPass { key } {
 
         while 1 {
 
-          set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection s not being used)"} passw ]
+          set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection is not being used)"} passw ]
 
           putlogfile "pgp_GetPass - result is >$result< and passw is >$passw<"
 
@@ -1095,7 +1097,7 @@ proc pgp_GetPass { key } {
 
     while 1 {
 
-      set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection s not being used)"} passw ]
+      set result [catch {Misc_GetPass "Enter PGP passphrase" "You have received an announcement encrypted for $key.\n\nA passphrase is needed to unlock the required secret key.\n\n(Your passphrase may be compromised if SDR is not running\nlocally and a secure connection is not being used)"} passw ]
 
       putlogfile "pgp_GetPass - result is >$result< and passw is >$passw<"
 
