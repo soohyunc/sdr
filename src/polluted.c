@@ -158,14 +158,6 @@ int build_packet(char *buf, char *adstr, int len, int encrypt,
     memcpy(ap, authinfo->signature, authinfo->sig_len);
     ap += authinfo->sig_len;
 
-/* add key certificate if needed */
-/* obsolete - will be removed    */
-
-    if (authinfo->auth_type == authPGPC) {
-      memcpy(ap, authinfo->keycertificate, authinfo->key_len);
-      ap += authinfo->key_len;
-    }
-
 /* add any necessary padding to the auth_header */
 
     if (authinfo->pad_len != 0) {
@@ -375,7 +367,7 @@ int ui_createsession(dummy, interp, argc, argv)
   authstatus  = (char *)malloc(AUTHSTATUSLEN);
   authmessage = (char *)malloc(AUTHMESSAGELEN);
 
-  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 ) {
+  if ( strcmp(argv[7],"pgp")==0 ) {
 
 /* create the advert_data structure */
 
@@ -546,7 +538,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
 /* generate the new data structure and call gen_auth_info */
 
-    if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 ) {
+    if ( strcmp(argv[7],"pgp")==0 ) {
 
       new_len = gen_new_data(data,new_data,argv[6],addata);
 
@@ -795,12 +787,6 @@ int gen_new_data(char *adstr,
 
     switch  (authinfo->auth_type) {
 
-      case authPGPC:
-      case authX509C:
-
-        auth_len = authinfo->sig_len+authinfo->key_len+AUTH_HEADER_LEN+authinfo->pad_len;
-        break;
-
       case authPGP:
       case authX509:
 
@@ -1030,8 +1016,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   auth_hdr.siglen    = addata->authinfo->siglen; 
 
   if (addata->authinfo != NULL) {
-    auth_len = addata->authinfo->key_len 
-               + addata->authinfo->sig_len 
+    auth_len = addata->authinfo->sig_len 
                + addata->authinfo->pad_len
                + AUTH_HEADER_LEN;
   }
@@ -1084,14 +1069,6 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
     memcpy(buf+len,addata->authinfo->signature,addata->authinfo->sig_len);
     len += addata->authinfo->sig_len;
-
-/* copy key certificate to buffer */
-/* obsolete - will be removed     */
-
-    if(addata->authinfo->auth_type==authPGPC ) {
-      memcpy(buf+len,addata->authinfo->keycertificate,addata->authinfo->key_len);
-      len+=addata->authinfo->key_len;
-    }
 
 /* copy padding to the buffer */
 
@@ -1202,7 +1179,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
   authinfo = addata->authinfo; 
 
   if (authinfo != NULL) {
-    auth_len = authinfo->key_len+authinfo->sig_len+authinfo->pad_len+AUTH_HEADER_LEN;
+    auth_len = authinfo->sig_len+authinfo->pad_len+AUTH_HEADER_LEN;
     auth_hdr = (struct  auth_header *)malloc(AUTH_HEADER_LEN);
     auth_hdr->auth_type = authinfo->auth_type;
     auth_hdr->padding   = authinfo->padding;
@@ -1268,13 +1245,6 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
     memcpy(buf+len, authinfo->signature,authinfo->sig_len);
     len += authinfo->sig_len;
-
-/* certificate - obsolete and will be removed */
-
-    if(authinfo->auth_type==authPGPC || authinfo->auth_type==authX509C) {
-      memcpy(buf+len,authinfo->keycertificate,authinfo->key_len);
-      len += authinfo->key_len;
-    }
 
 /* padding for auth header */
 

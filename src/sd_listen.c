@@ -663,10 +663,7 @@ int load_cache_entry(
 	    auth_hdr=(struct auth_header *)((char *)bp+sizeof(struct sap_header));
             addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
 
-/* will remove the cpgp option soon - it is when a certificate is also sent */
-/* this has been removed from the spec and isn't a good idea anyway         */
-
-	    if (strcmp(authtype,"pgp") == 0 ||  strcmp(authtype, "cpgp")==0 ) {
+	    if (strcmp(authtype,"pgp") == 0) {
 
 	      authstatus = check_authentication(auth_hdr, 
 			    new_data, newlength, auth_len, tmp_keyid, 
@@ -972,10 +969,6 @@ int load_cache_entry(
                 strcpy(authtype, "pgp");
               } else if ( auth_hdr->auth_type == authX509) {
                 strcpy(authtype,"x509");
-              } else if  ( auth_hdr->auth_type == authPGPC) {
-                strcpy(authtype, "cpgp");
-              } else if  ( auth_hdr->auth_type == authX509C) {
-                strcpy(authtype,"cx50");
               } else {
 	        printf("lce: unknown authtype (%d) in auth header",auth_hdr->auth_type);
                 retval = -1;
@@ -984,7 +977,7 @@ int load_cache_entry(
 
 /* call the appropriate check_authentication routine */
 
-              if (auth_hdr->auth_type==authPGP || auth_hdr->auth_type==authPGPC) {
+              if (auth_hdr->auth_type==authPGP) {
 
 /* PGP authentication has been used */
 
@@ -1750,12 +1743,8 @@ void recv_packets(ClientData fd)
 
        if (auth_hdr->auth_type == authPGP) {
          strcpy(authtype, "pgp");
-       } else if (auth_hdr->auth_type == authPGPC) {
-         strcpy(authtype, "cpgp");
        } else if (auth_hdr->auth_type == authX509) {
          strcpy(authtype, "x509");
-       } else if (auth_hdr->auth_type == authX509C) {
-         strcpy(authtype, "cx50");
        } else {
          writelog(printf("recv_pkts: bad auth_type=%d\n",auth_hdr->auth_type);)
          goto bad;
@@ -1767,7 +1756,7 @@ void recv_packets(ClientData fd)
 
 /* check authentication */
 
-      if (auth_hdr->auth_type==authPGP || auth_hdr->auth_type==authPGPC) {
+      if (auth_hdr->auth_type==authPGP) {
 
 /* PGP authentication used */
 
@@ -1928,7 +1917,6 @@ void recv_packets(ClientData fd)
 
 	   if (advert->authinfo!=NULL) {
 	     free(advert->authinfo->signature);
-	     free(advert->authinfo->keycertificate);
 	     free(advert->authinfo);
 	   }
 	   writelog(printf("RP: advert->authinfo freed (%x)\n", (unsigned int)(advert->authinfo)); )
@@ -2946,15 +2934,7 @@ int timed_send_advert(ClientData cd)
 
   if (addata->authinfo != NULL ){
 
-    if (addata->authinfo->auth_type == authX509C ||
-             addata->authinfo->auth_type == authPGPC   ) {
-      auth_len = addata->authinfo->sig_len + AUTH_HEADER_LEN + 
-                   addata->authinfo->key_len + addata->authinfo->pad_len;
-    } else { 
-      auth_len = addata->authinfo->sig_len + AUTH_HEADER_LEN + 
-                   addata->authinfo->pad_len;
-    }
-
+    auth_len=addata->authinfo->sig_len+AUTH_HEADER_LEN+addata->authinfo->pad_len;
   } else {
     auth_len = 0;
   }
@@ -3170,19 +3150,9 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
 /* this will be changed at some time as it doesn't agre with the spec */
 /* also the certificate types are obsolete and will be removed        */
 
-  if ( (strcmp(auth_type,"cpgp")==0 ) && (strcmp(auth_status, "failed")!=0) ) {
-
-    auth_len = addata->authinfo->sig_len + addata->authinfo->key_len + 
-                AUTH_HEADER_LEN + addata->authinfo->pad_len;
-
-  } else if ((strcmp(auth_type,"pgp")==0)&&(strcmp(auth_status,"failed")!=0)) {
+  if ((strcmp(auth_type,"pgp")==0) && (strcmp(auth_status,"failed")!=0)) {
 
     auth_len = addata->authinfo->sig_len + AUTH_HEADER_LEN + 
-                   addata->authinfo->pad_len;
-
-  } else if ((strcmp(auth_type,"cx50")==0)&&(strcmp(auth_status,"failed")!=0)) {
-
-    auth_len = addata->authinfo->sig_len + AUTH_HEADER_LEN +
                    addata->authinfo->pad_len;
 
   } else if ((strcmp(auth_type,"x509")==0)&&(strcmp(auth_status,"failed")!=0)) {
@@ -3198,9 +3168,6 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
     if (addata->authinfo != NULL) {
       if (addata->authinfo->signature != NULL) {
         free(addata->authinfo->signature);
-      }
-      if (addata->authinfo->keycertificate != NULL) {
-        free(addata->authinfo->keycertificate);
       }
       if (addata->authinfo != NULL) {
         free(addata->authinfo);
