@@ -1020,8 +1020,6 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 		setmediamode $media $win $send($media) 0
 	    }
 
-
- 
 	    if {$show_details==1} {
  
 		if {[string compare $aid "new"]!=0} {
@@ -1961,7 +1959,7 @@ proc get_new_media_key {media} {
   global ifstyle sessionkey
  
   if {$ifstyle(create)=="tech"} {
-    set win .new.f1
+    set win .new.f.f.media
     set sessionkey($media) [$win.$media.enc get]
   }
  
