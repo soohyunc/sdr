@@ -38,460 +38,545 @@
 #include "crypt.h"
 #include "md5.h"
 #include "prototypes.h"
-#ifdef AUTH
 #include "prototypes_crypt.h"
-#endif
 #ifndef WIN32
 #include <fcntl.h>
 #endif
 
-
 extern struct keydata* keylist;
 extern char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
+
 /*#define DEBUG*/
+
 #define MAXMSGLEN 1024
-#ifdef AUTH
 char *authtxt_fname="txt";
 char *authsig_fname="sig";
 char *authkey_fname="pgp";
 char *enctxt_fname="txt";
 char *sapenc_fname="pgp";
 
-#endif
-
-#ifdef AUTH
 /* ---------------------------------------------------------------------- */
-/* generate_authentication_info - creates the authentication signature    */
-/*                                and extracts the key certificate and    */
-/*                                places them in separate files           */
+/* generate_authentication_info                                           */
+/*                                                                        */
+/* 1) write data to file - irand.txt                                      */
+/* 2) call pgp_create_signature - output written to irand.sig             */
+/* 3) read in irand.sig and store this in the addata->authinfo struture   */
+/* 4) fill in the rest of the advert_data->authinfo structure             */
+/*                                                                        */
 /* ---------------------------------------------------------------------- */
-int generate_authentication_info(char *data,int len, char *authstatus, 
-				 int irand,char *authmessage,
-				 int authmessagelen)
+int generate_authentication_info(char *data,
+                                  int len, 
+                                 char *authstatus, 
+                                 char *authmessage,
+				  int authmessagelen,
+                   struct advert_data *addata,
+                                 char *auth_type)
 {
-    FILE *auth_fd=NULL;
-    char *code=NULL;
-    char *homedir=NULL, *fulltxt=NULL;
+    FILE *auth_fd=NULL, *sig_fd=NULL, *key_fd=NULL;
+
+    struct auth_info *authinfo;
+    struct stat sbuf, sbufk;
+    char *fulltxt=NULL, *fullsig=NULL, *fullkey=NULL;
+    char *homedir=NULL;
     char *irandstr=NULL;
+    char *code=NULL;
     char *auth_message=NULL;
-    int messagelen;
+    char *encsig=NULL, *keycert=NULL;
+    int  irand;
+    int tmplength;
 
-    writelog(printf("*** edmund  entered generate_authentication_info\n");)
+    writelog(printf("entered generate_authentication_info\n");)
 
-    irandstr = (char *)malloc(10);
-    fulltxt = (char *)malloc(MAXFILENAMELEN);
-  
-    homedir=(char *)getenv("HOME");
+/* generate a random number to be used as a unique file identifier */
+
+    irand    = (lblrandom()&0xffff);
+
+/* malloc the filename space */
+
+    fulltxt  = (char *)malloc(MAXFILENAMELEN);
+    fullsig  = (char *)malloc(MAXFILENAMELEN);
+    fullkey  = (char *)malloc(MAXFILENAMELEN);
+
+    homedir  = (char *)getenv("HOME");
+
 #ifdef WIN32
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
+    sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
+    sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
 #else
-    sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, authtxt_fname);
+    sprintf(fulltxt, "%s/.sdr/%d.%s",  homedir, irand, authtxt_fname);
+    sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
+    sprintf(fullkey, "%s/.sdr/%d.%s",  homedir, irand, authkey_fname);
 #endif
+
+    writelog(printf("gen_auth_info fulltxt is %s\n",fulltxt);)
+    writelog(printf("gen_auth_info fullsig is %s\n",fullsig);)
+    writelog(printf("gen_auth_info fullkey is %s\n",fullkey);)
+
+/* need the random number as a string for use in tcl code (pgp) */
+
+    irandstr = (char *)malloc(10);
     sprintf(irandstr, "%d", irand);
 
-    writelog(printf("generate_authentication_info filename is %s\n",fulltxt);)
+/* open a file (irand.txt) and write the data to it for use by PGP */
 
     auth_fd=fopen(fulltxt, "w");
     if (auth_fd == NULL) {
-     writelog(printf (" cannot open %s\n", fulltxt);)
-     fclose(auth_fd);
-     memcpy(authstatus, "failed",6);
-     Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
-     return 0;
+      writelog(printf ("Cannot open %s\n", fulltxt);)
+      strcpy(authstatus, "failed");
+      Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
+      return 1;
+    } else {
+      fwrite(data, 1, len, auth_fd);
+      fclose(auth_fd);
     }
-    fwrite(data, 1, len, auth_fd);
-    fclose(auth_fd);
- 
-    /* Executes the TCL script that calls PGP */
-    Tcl_VarEval(interp, "pgp_create_signature ",  irandstr, NULL);
-    code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY); 
-    writelog(printf("\nReturn Code= %s\n", code);)
-    if (strncmp(code,"1",1) != 0 ) {
-        writelog(printf("INCORRECT PASSWORD OR File not created\n"); )
-        Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
-        return 0;
-    }
-    auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
-    strncpy(authmessage,auth_message, authmessagelen);
-    strcpy(authstatus, "Authenticated");
-
-    writelog(printf("generate_authentication_info: authmessage = \n%s\n",auth_message);)
-    writelog(printf("generate_authentication_info: authstatus  = %s\n",authstatus);)
-
-    free(irandstr);
     free(fulltxt);
-    return 1;
-}
- 
-/* ---------------------------------------------------------------------- */
-/* check_authentication - processes incoming authentication info for      */
-/*                        integrity and assurance of originator           */
-/* ---------------------------------------------------------------------- */
-char *check_authentication(struct auth_header *auth_p, char *authinfo,
-                         char *data, int data_len, int auth_len,
-                         char *asym_keyid, int irand,char *authmessage,
-			 int authmessagelen)
-{
-  FILE *sig_fd=NULL, *key_fd=NULL, *auth_fd=NULL;
-  int sig_len, key_len, pad_len, messagelen;
-  char *key_id=NULL, *auth_status=NULL, *auth_message=NULL;
-  char *homedir=NULL;
-  char *fulltxt=NULL, *fullsig=NULL, *fullkey=NULL, *irandstr=NULL;
 
-  fulltxt  = (char *)malloc(MAXFILENAMELEN);
-  fullsig  = (char *)malloc(MAXFILENAMELEN);
-  fullkey  = (char *)malloc(MAXFILENAMELEN);
-  irandstr = (char *)malloc(10);
- 
-  writelog(printf("entered check_authentication\n");)
-  writelog(printf("check_auth: auth_p      = %x\n",auth_p);)
-  writelog(hexdump(auth_p, AUTH_HEADER_LEN);)
-  writelog(printf("check_auth: authinfo    = %s\n",authinfo);)
-  writelog(hexdump(authinfo, auth_len);)
-  writelog(printf("check_auth: data        = %s\n",data);)
-  writelog(printf("check_auth: data_len    = %d\n",data_len);)
-  writelog(printf("check_auth: auth_len    = %d\n",auth_len);)
-  writelog(printf("check_auth: asym_keyid  = %s\n",asym_keyid);)
-  writelog(printf("check_auth: irand       = %d\n",irand);)
-  writelog(printf("check_auth: authmessage = %s\n",authmessage);)
+/* Call PGP to generate the signature file (irand.sig) */
 
-  sig_len = auth_p->siglen * 4;
-  key_len = (auth_len - sig_len) - 2;
+    Tcl_VarEval(interp, "pgp_create_signature ", irandstr, NULL);
+    code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY); 
+    writelog(printf("rc from pgp_create_signature = %s\n", code);)
 
-/* remove padding, if necessary */
+/* Check return code - 0 = okay, 1 = problem */
 
-  if ( auth_p->padding )
-  {
-    pad_len  = *(authinfo+(auth_len-2)-1);
-    key_len -= pad_len;
-    writelog(printf("Padding Length=%d\n", *(authinfo+(auth_len-2)-1));)
-  }
- 
-/* quick check to see if things look okay */
-
-  if ( auth_p->auth_type == 1 && key_len != 0 ) {
-    writelog(printf("check_auth: Error: have authtype %d and key_len %d\n",auth_p->auth_type,key_len);)
-    return("failed");
-
-  }
-
-  writelog(printf("Key Certificate=%d bytes\n", key_len);)
- 
-  /* Extract the signature and key certificate from the packet and */
-  /* store in files. */
-
-  homedir=(char *)getenv("HOME");
-#ifdef WIN32
-  sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
-  sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
-  sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
-#else
-  sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, authtxt_fname);
-  sprintf(fullsig, "%s/.sdr/%d.%s", homedir, irand, authsig_fname);
-  sprintf(fullkey, "%s/.sdr/%d.%s", homedir, irand, authkey_fname);
-#endif
-  sprintf(irandstr, "%d", irand);
-
-/* signature file */
-
-  sig_fd=fopen(fullsig, "w");
-  if (sig_fd == NULL)
-  {
-    writelog(printf("Cannot open %s\n", fullsig);)
-    fclose(sig_fd);
-    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-    return ("failed");
-  } else {
-    if (sig_len > MAXADSIZE) {
-      fprintf(stderr, "Signature length impossibly large:%d\n", sig_len);
-      abort();
-    }
-    if ( fwrite(authinfo, 1, sig_len, sig_fd) < sig_len )
-    {
-      writelog(printf("Error writing signature to file\n\r");)
-      fclose(sig_fd);
-      Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-      return ("failed");
-    }
-    fclose(sig_fd);
-  }
-  free(fullsig);
-
-/* key file */
- 
-  key_fd=fopen(fullkey, "w");
-  if (key_fd == NULL)
-  {
-    writelog(printf("Cannot open %s\n", fullkey);)
-    fclose(key_fd);
-    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-    return ("failed");
-  } else {
-    writelog(printf(" check auth_p->auth_type %d\n",auth_p->auth_type);)
-    if (auth_p->auth_type == 3 || auth_p->auth_type == 4)
-    {
-      authinfo += sig_len;
-      if ( fwrite(authinfo, 1, key_len, key_fd) < key_len )
-      {
-        writelog(printf("Error writing key certificate to file\n\r");)
-        fclose(key_fd);
-        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-        return ("failed");
-      } else {
-        fclose(key_fd);
-      }
-    }
-  }
-  free(fullkey);
- 
-/* REMINDER: need to store end_time and keyid too if encrypted session    */
-/* Refer to SAP spec for encrypted announcements with authentication!     */
-
-/* authentication file */
-
-  auth_fd=fopen(fulltxt, "w");
-  if (auth_fd == NULL)
-  {
-    writelog(printf("Cannot open %s\n", fulltxt);)
-    fclose(auth_fd);
-    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-    return ("failed");
-  } else {
-    if ( fwrite(data, 1, data_len, auth_fd) < data_len )
-    {
-      writelog(printf("Error writing SDP data to file\n\r");)
-      fclose(auth_fd);
-      Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-      return ("failed");
+    if (strncmp(code,"0",1) != 0 ) {
+      writelog(printf("PGP file not created or incorrect PGP password\n"); )
+      Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
+      return 1;
     } else {
-      fclose(auth_fd);
+      auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
+      strncpy(authmessage,auth_message, authmessagelen);
+      strcpy(authstatus, "Authenticated");
     }
-  }
-  free(fulltxt);
- 
-/* Executes a TCL script that invokes PGP to check signature info */
 
-  Tcl_VarEval(interp, "pgp_check_authentication ", irandstr, NULL);
- 
-/* The script returns the (PGP)Key ID used and the authentication status  */
-/* (either FAILED, INTEGRITY (only), or TRUSTWORTHY)                      */
+    writelog(printf("gen_auth_info: authmessage :\n%s\n",authmessage);)
+    writelog(printf("gen_auth_info: authstatus  = %s\n",authstatus);)
 
-  key_id = Tcl_GetVar(interp, "recv_asym_keyid", TCL_GLOBAL_ONLY);
-  if (key_id != NULL) {
-    memcpy(asym_keyid, key_id, 8);
-  }
+/* now we want to read the signature and possibly key into advert_data      */
+/* set authinfo to point to the authinfo part of main advert_data structure */
 
-  auth_status  = Tcl_GetVar(interp, "recv_authstatus",  TCL_GLOBAL_ONLY);
-  auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
+    authinfo = addata->authinfo;
 
-  if(auth_message != NULL) {
-    messagelen = strlen(auth_message);
-    writelog(printf("edmund:c_a: messagelen   = %d\n",messagelen);)
-    writelog(printf("edmund:c_a: auth_message = %s\n",auth_message);)
-    writelog(printf("edmund:c_a: auth_status  = %s\n",auth_status);)
-    strncpy(authmessage,auth_message,authmessagelen);
-  } else {
-    writelog(printf("edmund:c_a: auth_message is NULL (error was %s)\n",interp->result);)
-    strncpy(authmessage,"No message was produced", authmessagelen);
-    return ("failed");
- }
+/* open the file which should have been output by PGP (irand.sig) */
 
-  writelog(printf("edmund: c_a: authstatus at return = %s\n",auth_status);)
-  free(irandstr);
-  return (auth_status);
-}
- 
-/* ---------------------------------------------------------------------- */
-/* store_authentication_in_memory - reads the key certificate and         */
-/*                                  signature information from the local  */
-/*                                  files and places them in memory, in   */
-/*                                  an advert_data structure              */
-/* ---------------------------------------------------------------------- */
-int store_authentication_in_memory(struct advert_data *addata, char *auth_type , int irand)
-{
-  FILE *sig_fd=NULL, *key_fd=NULL;
-  struct stat sbuf;
-  struct stat sbufk;
-  struct auth_info *authinfo;
-  char *keycert=NULL,*homedir=NULL,*irandstr=NULL;
-  char *fullsig=NULL,*fullkey=NULL, *encsig=NULL;
-  int test_len;
- 
-  writelog(printf("Entered store_authentication_in_memory\n");)
+    sig_fd = fopen(fullsig, "r");
 
-/* Open all files and read data */
-
-  fullsig  = (char *)malloc(MAXFILENAMELEN);
-  fullkey  = (char *)malloc(MAXFILENAMELEN);
-  irandstr = (char *)malloc(10);
-
-  homedir=(char *)getenv("HOME");
-#ifdef WIN32
-  sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
-  sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
-#else
-  sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
-  sprintf(fullkey, "%s/.sdr/%d.%s",  homedir, irand, authkey_fname);
-#endif
-
-  sprintf(irandstr, "%d", irand);
-
-  writelog(printf("store_auth: fullsig = %s\n",fullsig);)
-  writelog(printf("store_auth: fullkey = %s\n",fullkey);)
-
-  authinfo = addata->authinfo;
-  authinfo->version = 1;
-
-/* signature file */
-
-  sig_fd=fopen(fullsig, "r");
-  if (sig_fd == NULL) {
-    writelog(printf("Cannot open %s\n", fullsig);)
-    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-    fclose(sig_fd);
-    return 0;
-  } else {
-    stat(fullsig,&sbuf);
-/* set up temporary signature memory */
-    encsig = (char *)malloc(sbuf.st_size);
-    if(( fread(encsig,1,  sbuf.st_size ,sig_fd))!= sbuf.st_size) {
-      writelog(printf("store_auth: problem reading in sig file\n");)
-      fclose(sig_fd);
-      return 0;
-    }
-    authinfo->sig_len = sbuf.st_size;
-    writelog(printf("sig_len: %d\n", authinfo->sig_len);)
-    if ((authinfo->sig_len % 4) != 0) {
-      writelog(printf( " Signature is not a Multiple of 4\n");)
-      authinfo->siglen = (authinfo->sig_len +1) / 4 ;
-      authinfo->signature = (char *)malloc(authinfo->sig_len+1);
-      memcpy (authinfo->signature, encsig,authinfo->sig_len);
-      /*XXX the following line is clearly bogus but what was it
- 	meant to do???  it used to read:
-        memcpy(authinfo->signature+1,'\0',1);
-        but the second parameter needs to be a pointer.
-        However, it still sets the 2nd byte of the sig to \0*/
-      /*memcpy(authinfo->signature+1,"\0",1);*/
-    } else {
-      authinfo->siglen = (authinfo->sig_len) / 4 ;
-      writelog(printf( "signature length is %d\n",authinfo->siglen);)
-      authinfo->signature = (char *)malloc(authinfo->sig_len);
-      memcpy (authinfo->signature, encsig,authinfo->sig_len);
-    }
-    writelog(printf("%d chars read of signature\n", authinfo->sig_len);)
-    fclose(sig_fd);
-    free(encsig);
-  }
-  free(fullsig);
-
-/* read in key file */
-
-  if( strncmp(auth_type,"cpgp",4) == 0 || strncmp(auth_type,"cx50",4) == 0) { 
-    key_fd=fopen(fullkey, "r");
-    if (key_fd == NULL) {
-      writelog(printf("Cannot open %s\n", fullkey);)
+    if (sig_fd == NULL) {
+      writelog(printf("gen_auth_info: cannot open %s\n", fullsig);)
       Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-      fclose(key_fd);
-      return 0;
-    } else {
-/* set yp temporary key memory */
-      stat(fullkey,&sbufk);
-      keycert = (char *)malloc(sbufk.st_size);
-      if(( fread(keycert,1,  sbufk.st_size ,key_fd))!= sbufk.st_size) {
-        writelog(printf("problem reading in key file for authentication\n");)
-        fclose(key_fd);
-        free(keycert);
-      } else {
-        authinfo->key_len = sbufk.st_size;
-        authinfo->keycertificate=(char *)malloc(authinfo->key_len);
-        memcpy(authinfo->keycertificate,keycert,authinfo->key_len);
+      return 1;
+    } else { 
 
-        if (authinfo->key_len > 1024 ) {
-          writelog(printf("Sorry, Key Certificate is too large...\n");)
-          authinfo->key_len = 0;
+/* read in file to temporary signature memory */
+/* checking that read in the whole file       */
+
+      stat(fullsig,&sbuf);
+      encsig = (char *)malloc(sbuf.st_size);
+
+      if (( fread(encsig,1,  sbuf.st_size ,sig_fd))== sbuf.st_size) {
+        authinfo->sig_len = sbuf.st_size;
+        writelog(printf("gen_auth_info: sig_len = %d\n", authinfo->sig_len);)
+
+/* check the signature is a multiple of 4 bytes and divide by 4 to get */
+/* size in words to include in the SAP header (space constraints)      */
+/* how does adding 1 guarantee it is divisible by 4 ?                  */
+
+        if ((authinfo->sig_len % 4) != 0) {
+          writelog(printf( "gen_auth_info: signature not a multiple of 4\n");)
+          authinfo->siglen = (authinfo->sig_len +1) / 4 ;
+          authinfo->signature = (char *)malloc(authinfo->sig_len+1);
+          memcpy (authinfo->signature, encsig,authinfo->sig_len);
+
+/* XXX the following line is clearly bogus but what was it meant to do???  */
+/* it used to read: memcpy(authinfo->signature+1,'\0',1); but the second   */
+/* parameter needs to be a pointer.  However, it still sets the 2nd byte of*/
+/* the sig to \0                                                           */
+
+          /*memcpy(authinfo->signature+1,"\0",1);*/
+
+        } else {
+          authinfo->siglen    = (authinfo->sig_len) / 4 ;
+          tmplength = (int)authinfo->sig_len;
+          authinfo->signature = (char *)malloc(tmplength);
+          memcpy (authinfo->signature, encsig, authinfo->sig_len);
         }
-        writelog(printf("%d chars read of key certificate\n\r", authinfo->key_len);)
-        fclose(key_fd);
-        free(keycert);
+        fclose(sig_fd);
+        free(encsig);
+
+      } else {
+/* amount read in doesn't match length of file */
+        writelog(printf("gen_auth_info: problem reading in sig file\n");)
+        fclose(sig_fd);
+        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+        return 1;
       }
     }
-  } else {
-    authinfo->key_len =0;
-    authinfo->keycertificate=NULL;
-  }
-  free(fullkey);
 
-/* To add the authetication used pgp or X509 Plus the certificate*/
+    free(fullsig);
 
-  if (memcmp(auth_type,"cpgp",4) == 0) {
-    authinfo->auth_type = 3;
-  } else  if (memcmp(auth_type,"cx50",4) == 0) {
-    authinfo->auth_type = 4;
-  } else  if (memcmp(auth_type,"pgp", 3) == 0) {
-    authinfo->auth_type = 1;
-  } else  if (memcmp(auth_type,"x509",4) == 0) {
-    authinfo->auth_type = 2;
-  } else {
-    writelog(printf("something is wrong auth_type isnot pgp or x509\n");)
-  }
-  writelog(printf("auth_type = %s \n", auth_type);)
-     
-/* There actually needs to be a better check here: if the total length of  */
-/* the SAP packet (including SAP header, data, encryption info, and        */
-/* authentication info) exceeds the MAXADSIZE value, then the entire       */
-/* key certificate should be transmitted in a separated packet.  This      */
-/* requires a new header specification or modification to the SAP spec.    */
-/* The alternative is to allow fragmentation of the single SAP packet, or  */
-/* to disallow long key certs (limit to max 3 signatories and 512-bit keys */
- 
-/* Padding is required to ensure that auth info aligned to 32-bit boundary */
+/* see if the auth_type needs the certificate sending as well */
+/* obsolete - will be removed                                 */
 
-  if(authinfo->auth_type==1 || authinfo->auth_type==2) {
+    if ( strncmp(auth_type,"cpgp",4) == 0) {
+
+/* open key file (irand.pgp) and read in the key */
+
+      key_fd = fopen(fullkey, "r");
+
+      if (key_fd == NULL) {
+        writelog(printf("gen_auth_info: cannot open %s\n", fullkey);)
+        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+        return 1;
+      } else {
+
+/* read in file to temporary certificate memory */
+
+        stat(fullkey,&sbufk);
+        keycert = (char *)malloc(sbufk.st_size);
+
+        if(( fread(keycert, 1, sbufk.st_size ,key_fd)) != sbufk.st_size) {
+          writelog(printf("gen_auth_info: problem reading in key file\n");)
+          fclose(key_fd);
+          free(keycert);
+        } else {
+          authinfo->key_len = sbufk.st_size;
+          writelog(printf("gen_auth_info: key_len = %d\n", authinfo->key_len);)
+          authinfo->keycertificate = (char *)malloc(authinfo->key_len);
+          memcpy(authinfo->keycertificate,keycert,authinfo->key_len);
+  
+          if (authinfo->key_len > 1024 ) {
+            writelog(printf("Certificate too large (%d)\n", authinfo->key_len);)
+            authinfo->key_len = 0;
+          }
+          fclose(key_fd);
+          free(keycert);
+        }
+      }
+    } else {
+      authinfo->key_len = 0;
+      authinfo->keycertificate = NULL;
+    }
+    free(fullkey);
+
+/* have now read in sig and key file into the advert_data structure */
+/* Now fill in the rest of the advert_data -> authinfo              */
+
+/* auth_type */
+
+    if (memcmp(auth_type,"pgp",3) == 0) {
+      authinfo->auth_type = 1;
+    } else  if (memcmp(auth_type,"cpgp", 4) == 0) {
+      authinfo->auth_type = 3;
+    } else {
+      writelog(printf("gen_auth_info: unknown auth_type: (%s)\n", auth_type);)
+    }
+
+/* padding - must be aligned to 32-bit boundary and                      */
+/* there is a 2 byte auth_header - 2nd byte is signature length. This is */
+/* not in agreement with the spec as the sig length shouldn't be there   */
+
+  if ( authinfo->auth_type == 1 ) {
     authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
+    if (authinfo->pad_len == 4) {
+      authinfo->pad_len = 0;
+    }
+    authinfo->autlen  = (authinfo->sig_len+2+authinfo->pad_len) / 4 ;
   } else {
     authinfo->pad_len = 4-((authinfo->sig_len+authinfo->key_len+2) % 4);
+    authinfo->autlen=(authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len)/4;
   }
+
+/* padding bit */
 
   if (authinfo->pad_len != 0) {
       authinfo->padding = 1;
   }
-  
-  if(authinfo->auth_type==1 || authinfo->auth_type==2) {
-    test_len = (authinfo->sig_len+2+authinfo->pad_len) /4;
-  } else {
-    test_len = (authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len) / 4;
-  }
 
-  authinfo->autlen = test_len;
-  if (authinfo->autlen != test_len) {
-    writelog(printf ("auth header too big %d , %d \n", test_len ,authinfo->autlen);)
-    return 2;
-  }
+/* version - always 1 at moment */
 
-  Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-  free(irandstr);
-  return 1;
+    authinfo->version = 1;
+
+/* clean up the PGP files */
+
+    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+    free(irandstr);
+
+    return 0;
 }
+
 /* ---------------------------------------------------------------------- */
-int generate_encryption_info(char *data, char *encstatus, int irand,
-			     char *encmessage, int encmessagelen)
+/* check_authentication - processes incoming authentication info for      */
+/*                        integrity and assurance of originator           */
+/* ---------------------------------------------------------------------- */
+char *check_authentication(struct auth_header *auth_p, 
+                        char *data, 
+			int  data_len, 
+			int  auth_len,
+                        char *asym_keyid, 
+			char *authmessage,
+			int  authmessagelen,
+			struct advert_data *addata, 
+			char *auth_type)
 {
-    FILE *enc_fd=NULL;
-    FILE *auth_fd=NULL;
-    char *code;
+    FILE *auth_fd=NULL, *sig_fd=NULL, *key_fd=NULL;
+    char *fulltxt=NULL, *fullsig=NULL, *fullkey=NULL;
+    char *homedir=NULL;
+    char *irandstr=NULL;
+  
+    int irand, sig_len, key_len, pad_len, messagelen;
+    char *key_id=NULL, *auth_status=NULL, *auth_message=NULL;
+
+    struct auth_info *authinfo;
+  
+    writelog(printf("entered check_authentication\n");)
+
+/* generate a random number to be used as a unique file identifier */
+
+    irand    = (lblrandom()&0xffff);
+
+/* malloc the filename space */
+
+    fulltxt  = (char *)malloc(MAXFILENAMELEN);
+    fullsig  = (char *)malloc(MAXFILENAMELEN);
+    fullkey  = (char *)malloc(MAXFILENAMELEN);
+
+    homedir  = (char *)getenv("HOME");
+
+#ifdef WIN32
+    sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
+    sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
+    sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
+#else
+    sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, authtxt_fname);
+    sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
+    sprintf(fullkey, "%s/.sdr/%d.%s",  homedir, irand, authkey_fname);
+#endif
+
+    writelog(printf("chk_auth fulltxt is %s\n",fulltxt);)
+    writelog(printf("chk_auth fullsig is %s\n",fullsig);)
+    writelog(printf("chk_auth fullkey is %s\n",fullkey);)
+
+/* need the random number as a string for use in tcl code (pgp) */
+
+    irandstr = (char *)malloc(10);
+    sprintf(irandstr, "%d", irand);
+
+/* determine length of key and signature */
+
+    sig_len = auth_p->siglen * 4;
+    key_len = (auth_len - sig_len) - 2;
+
+/* remove padding, if necessary */
+
+    if ( auth_p->padding ) {
+      pad_len = *((char *)auth_p+auth_len-1);
+      key_len -= pad_len;
+      writelog(printf("chk_auth: pad len=%d\n",pad_len);)
+    }
+ 
+/* quick check to see if things look okay */
+
+    if ( auth_p->auth_type == 1 && key_len != 0 ) {
+      writelog(printf("chk_auth: Error: have authtype %d and key_len %d\n",auth_p->auth_type,key_len);)
+      return("failed");
+    }
+
+/* Extract the signature and key certificate from packet and store in files */
+
+/* signature file - irand.sig */
+
+    sig_fd=fopen(fullsig, "w");
+    if (sig_fd == NULL) {
+      writelog(printf("chk_auth: cannot open %s\n", fullsig);)
+      Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+      return ("failed");
+    } else {
+      if (sig_len > MAXADSIZE) {
+        fprintf(stderr, "chk_auth: sig_len impossibly large: %d\n",sig_len);
+        abort();
+      }
+      if ( fwrite((char *)auth_p+AUTH_HEADER_LEN, 1, sig_len, sig_fd) < sig_len ) {
+        writelog(printf("chk_auth: error writing signature to file\n");)
+        fclose(sig_fd);
+        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+        return ("failed");
+      }
+      fclose(sig_fd);
+    }
+    free(fullsig);
+  
+/* key file - irand.pgp */
+ 
+    if (auth_p->auth_type == authPGPC) {
+      key_fd=fopen(fullkey, "w");
+      if (key_fd == NULL) {
+        writelog(printf("Cannot open %s\n", fullkey);)
+        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+        return ("failed");
+      } else {
+        if ( fwrite((char *)auth_p+sig_len+AUTH_HEADER_LEN,1,key_len,key_fd)<key_len) {
+          writelog(printf("chk_auth: error writing certificate to file\n");)
+          fclose(key_fd);
+          Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+          return ("failed");
+        } else {
+          fclose(key_fd);
+        }
+      }
+    }
+    free(fullkey);
+ 
+/* REMINDER: need to store end_time and keyid too if encrypted session    */
+/* Refer to SAP spec for encrypted announcements with authentication!     */
+
+/* authentication file - irand.txt */
+
+    auth_fd=fopen(fulltxt, "w");
+    if (auth_fd == NULL) {
+      writelog(printf("chk_auth: cannot open %s\n", fulltxt);)
+      Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+      return ("failed");
+    } else {
+      if ( fwrite(data, 1, data_len, auth_fd) < data_len ) {
+        writelog(printf("chk_auth: error writing SDP data to file\n");)
+        fclose(auth_fd);
+        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+        return ("failed");
+      } else {
+        fclose(auth_fd);
+      }
+    }
+    free(fulltxt);
+ 
+/* Call PGP to check signature info */
+
+    Tcl_VarEval(interp, "pgp_check_authentication ", irandstr, NULL);
+ 
+/* The script returns the (PGP)Key ID used and the authentication status  */
+/* (either FAILED, INTEGRITY (only), or TRUSTWORTHY)                      */
+
+    key_id = Tcl_GetVar(interp, "recv_asym_keyid", TCL_GLOBAL_ONLY);
+    if (key_id != NULL) {
+      memcpy(asym_keyid, key_id, 8);
+    }
+
+    auth_status  = Tcl_GetVar(interp, "recv_authstatus",  TCL_GLOBAL_ONLY);
+    auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
+
+    if(auth_message != NULL) {
+      messagelen = strlen(auth_message);
+      if (messagelen >= AUTHMESSAGELEN) {
+        messagelen = AUTHMESSAGELEN - 1;
+      }
+      writelog(printf("chk_auth: messagelen   = %d\n",messagelen);)
+      writelog(printf("chk_auth: auth_message = %s\n",auth_message);)
+      writelog(printf("chk_auth: auth_status  = %s\n",auth_status);)
+      strncpy(authmessage,auth_message,messagelen);
+      strcpy(authmessage+messagelen+1,(char *)"\0");
+    } else {
+      writelog(printf("chk_auth: auth_message is NULL (error was %s)\n",interp->result);)
+      strncpy(authmessage,"No message was produced", authmessagelen);
+      return ("failed");
+   }
+
+/* the rest of this routine was store_authentication_in_memory() */
+/* want to store signature and certificate in main addata        */
+
+   authinfo = addata->authinfo;
+
+   authinfo->auth_type = auth_p->auth_type;
+   authinfo->version   = 1;
+   authinfo->siglen    = auth_p->siglen;
+   authinfo->sig_len   = auth_p->siglen * 4;
+
+/* signature */
+
+   authinfo->signature = (char *)malloc(authinfo->sig_len);
+   memcpy(authinfo->signature,(char *)auth_p+AUTH_HEADER_LEN,authinfo->sig_len);
+
+/* authentication type and certificate */
+   
+   authinfo->auth_type = auth_p->auth_type;
+
+   if (authinfo->auth_type == authPGPC && key_len < 1025) {
+     authinfo->key_len = key_len;
+     authinfo->keycertificate = (char *)malloc(authinfo->key_len);
+     memcpy(authinfo->keycertificate,auth_p+AUTH_HEADER_LEN+sig_len,authinfo->key_len);
+   } else {
+     authinfo->key_len = 0;
+     authinfo->keycertificate = NULL;
+     if (key_len > 1024) {
+      writelog(printf("chk_auth: key_len = %d (too large)\n",key_len);)
+     }
+   }
+
+/* padding - must be aligned to 32-bit boundary and                      */
+/* there is a 2 byte auth_header - 2nd byte is signature length. This is */
+/* not in agreement with the spec as the sig length shouldn't be there   */
+
+   if ( authinfo->auth_type == authPGP ) {
+     authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
+     authinfo->autlen  = (authinfo->sig_len+2+authinfo->pad_len) / 4 ;
+   } else {
+     authinfo->pad_len = 4-((authinfo->sig_len+authinfo->key_len+2) % 4);
+     authinfo->autlen=(authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len)/4;
+   }
+
+/* padding bit */
+
+   if (authinfo->pad_len != 0) {
+     authinfo->padding = 1;
+   }
+
+/* clean up the PGP files */
+
+    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+    free(irandstr);
+
+   return (auth_status);
+}
+ 
+/* ---------------------------------------------------------------------- */
+/* generate_encryption_info                                               */
+/*                                                                        */
+/* 1) write data to file - irand.txt                                      */
+/* 2) call pgp_encrypt - output written to irand.pgp                      */
+/* 3) read in irand.pgp and store this in addata->priv_header             */
+/* 4) fill in the rest of the addata->priv_header structure               */
+/*                                                                        */
+/* ---------------------------------------------------------------------- */
+int generate_encryption_info(char *data, 
+                             char *encstatus, 
+			     char *encmessage, 
+                             int  encmessagelen,
+                   struct advert_data *addata,
+                                 char *enc_type)
+{
+    FILE *enc_fd=NULL, *txt_fd=NULL;
+    struct priv_header *sapenc_p=NULL;
+    struct stat sbuf;
     char *homedir=NULL, *encfulltxt=NULL, *encfullenc=NULL;
+    char *code;
     char *irandstr=NULL;
     char *enc_message=NULL;
-    int  messagelen;
+    char *encbuf=NULL, *ac=NULL;
+    int  irand, i;
  
-    writelog(printf("entered generate_encryption\n");)
+    writelog(printf("entered gen_enc_info\n");)
  
+/* generate a random number to use for the unique filenames */
+
+    irand = (lblrandom()&0xffff);
+
+/* malloc the filename space */
+
     encfulltxt  = (char *)malloc(MAXFILENAMELEN);
     encfullenc  = (char *)malloc(MAXFILENAMELEN);
-    irandstr    = (char *)malloc(10);
 
-    homedir=(char *)getenv("HOME");
+    homedir = (char *)getenv("HOME");
+
 #ifdef WIN32
     sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
     sprintf(encfullenc, "%s\\sdr\\%d.%s", homedir, irand, sapenc_fname);
@@ -499,83 +584,182 @@ int generate_encryption_info(char *data, char *encstatus, int irand,
     sprintf(encfulltxt, "%s/.sdr/%d.%s", homedir, irand, enctxt_fname);
     sprintf(encfullenc, "%s/.sdr/%d.%s", homedir, irand, sapenc_fname);
 #endif
+
+    writelog(printf("gen_enc_info: encfulltxt = %s\n",encfulltxt);)
+    writelog(printf("gen_enc_info: encfullenc = %s\n",encfullenc);)
+
+/* need the random number as a string to pass to the tcl PGP code */
+
+    irandstr = (char *)malloc(10);
     sprintf(irandstr, "%d", irand);
-
-    writelog(printf("gen_enc: encfulltxt = %s\n",encfulltxt);)
-    writelog(printf("gen_enc: encfullenc = %s\n",encfullenc);)
  
-/* encryption file */
+/* open a file and write data to it (irand.txt) */
 
-    auth_fd=fopen(encfulltxt, "w");
-    if (auth_fd == NULL) {
-     writelog(printf(" cannot open %s\n", encfulltxt);)
-     fclose(auth_fd);
-     memcpy(encstatus, "failed",6);
+    txt_fd=fopen(encfulltxt, "w");
+    if (txt_fd == NULL) {
+     writelog(printf(" gen_enc_info: Cannot open %s\n", encfulltxt);)
+     strcpy(encstatus,"failed");
      Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-     return 0;
+     return 1;
     } else {
-      fwrite(data, 1, strlen(data), auth_fd);
-      fclose(auth_fd);
+      fwrite(data, 1, strlen(data), txt_fd);
+      fclose(txt_fd);
     }
+    free(encfulltxt);
  
-/* Executes the TCL script that calls PGP */
+/* Call PGP to encrypt the file (output to irand.pgp) */
 
-    Tcl_VarEval(interp, "pgp_create_encryption ", irandstr, NULL);
-
+    Tcl_VarEval(interp, "pgp_encrypt ", irandstr, NULL);
     code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY);
-    if (strcmp(interp->result,"1") != 0 ) {
-      /* printf("File has not been created\n"); */
+    writelog(printf("rc from pgp_encrypt = %s\n", code);)
+
+/* Check return code - 0 = okay, 1 = problem */
+
+    if (strncmp(code,"0",1) != 0 ) {
+      writelog(printf("gen_enc_info: PGP encrypted file not created\n"); )
       Tcl_VarEval(interp, "enc_pgp_cleanup  ", irandstr, NULL);
-      return 0;
-    }
-
-/* It either works or fails */
-
-    enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
-    if(enc_message !=NULL) {
-      strncpy(encmessage,enc_message,encmessagelen);
+      return 1;
     } else {
-      writelog(printf(" The Message is empty string, Result is %s \n" ,interp->result);)
-      strncpy(encmessage,"No mesage were produced",encmessagelen);
+      enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
+      if(enc_message != NULL) {
+        strncpy(encmessage,enc_message,encmessagelen);
+        strcpy(encstatus, "Encrypted");
+      } else {
+        writelog(printf("gen_enc_info: enc_message is empty: %s \n" ,
+             interp->result);)
+        strcpy(encmessage,"No message was produced");
+      }
     }
 
-    memcpy(encstatus, "Encrypted",9);
+/* now read in the encrypted file and fill in the advert_data->priv_header */
+/* set sapenc_p to point to the priv_header in the main advert_data */
 
-/* check to see if it has encrypted the file */
+    sapenc_p = addata->sapenc_p;
+
+/* version is always 1 at the moment */
+
+    sapenc_p->version  = 1;
+    sapenc_p->enc_type = PGP;
+
+/* open the encrypted file which should have been written by PGP */
 
     enc_fd= fopen(encfullenc,"r");
+
     if (enc_fd == NULL) {
-      writelog(printf("Cannot open %s\n", encfullenc);)
+      writelog(printf("gen_enc_info: cannot open %s\n", encfullenc);)
       Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-      fclose(enc_fd);
-      return 0;
+      return 1;
+    } else {
+
+/* read encrypted data into buffer */
+
+      stat(encfullenc, &sbuf);
+      encbuf =(char *)malloc(sbuf.st_size);
+
+      if (( fread(encbuf,1,  sbuf.st_size ,enc_fd))!= sbuf.st_size) {
+        writelog(printf("gen_enc_info: problem reading encrypted file\n");)
+        fclose(enc_fd);
+        free(encbuf);
+        Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+        return 1;
+      }
     }
+
     fclose(enc_fd);
 
+/* set priv_header->encd_len */
+
+    sapenc_p->encd_len = sbuf.st_size;
+
+/* don't need to read the plain text file in as we already have "data" */
+/* set priv_header->txt_len and priv_header->txt_data                  */
+
+    sapenc_p->txt_len  = strlen(data);
+    sapenc_p->txt_data = (char *)malloc(sapenc_p->txt_len);
+    memcpy(sapenc_p->txt_data, data, sapenc_p->txt_len);
+
+/* set the padding length - need 2 bytes for the generic header */
+
+    sapenc_p->pad_len = 4-(((sapenc_p->encd_len)+ENC_HEADER_LEN) % 4);
+    if (sapenc_p->pad_len == 4) {
+      sapenc_p->pad_len = 0;
+    }
+    if (sapenc_p->pad_len != 0) {
+      sapenc_p->padding = 1;
+    }
+
+/* set the header length */
+
+    sapenc_p->hdr_len = (sapenc_p->pad_len +  sapenc_p->encd_len +2) / 4;
+    writelog(printf("gen_enc_info: sapenc_p->hdr_len=%d\n",sapenc_p->hdr_len);)
+
+/* copy the encrypted data into the priv_header */
+
+    sapenc_p->enc_data =(char *)malloc(sapenc_p->pad_len +  sapenc_p->encd_len);
+    memcpy(sapenc_p->enc_data,encbuf, sapenc_p->encd_len);
+    free(encbuf);
+
+/* now sort out the extra padding bytes */
+
+    ac = (char *)(sapenc_p->enc_data)+sapenc_p->encd_len;
+
+    if (sapenc_p->pad_len != 0) {
+      for (i=0; i<(sapenc_p->pad_len-1); ++i) {
+        ac[i] = 0;
+      }
+      ac[i] = sapenc_p->pad_len;
+    }
+
+    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
     free(irandstr);
-    free(encfullenc);
-    free(encfulltxt);
 
-    return 1;
+    return 0;
 }
-char *check_encryption(struct priv_header *enc_p, char *encinfo,
-		       char *data, int data_len, int hdr_len,
-		       char *enc_asym_keyid, int irand,
-		       char *encmessage, int encmessagelen)
+/*-------------------------------------------------------------------*/
+/* check the encryption: enc_p pts to the start of the priv header   */
+/* - this is v. similar to generate_encryption_info except that this */
+/*   starts with encrypted and ends with plain. They should really be*/
+/*   one routine                                                     */
+/*-------------------------------------------------------------------*/
+int check_encryption(	struct priv_header *enc_p, 
+	        	char *data, 
+			int   data_len, 
+	       		char *enc_asym_keyid,
+	       		char *encmessage, 
+			int   encmessagelen,
+			struct advert_data *addata,
+			char *enc_type)
 {
-  FILE *enc_fd=NULL;
-  char *enc_status_p=NULL, *enc_status=NULL;
-  char *enc_message=NULL, *key_id=NULL, *irandstr=NULL, *homedir=NULL;
-  char *encfulltxt=NULL, *encfullenc=NULL;
- 
-  writelog(printf("*** edmund entered check_encryption");)
-  homedir=getenv("HOME");
-  writelog(printf("check_encryption: homedir = %s ; irand = %d\n",homedir,irand);)
+  FILE *enc_fd=NULL, *txt_fd=NULL;
+  struct priv_header *sapenc_p;
+  struct stat sbuf;
+  char *homedir=NULL, *encfulltxt=NULL, *encfullenc=NULL;
+  char *code=NULL;
+  char *irandstr=NULL;
+  char *enc_message=NULL;
+  char *decrypt=NULL, *ac;
+  int   i, irand;
+  int padlen;
 
-  encfulltxt = (char *)malloc(MAXFILENAMELEN);
-  encfullenc = (char *)malloc(MAXFILENAMELEN);
-  irandstr   = (char *)malloc(10);
-  enc_status = (char *)malloc(10);
+  char *enc_status=NULL, *key_id=NULL;
+  int   hdr_len;
+ 
+  writelog(printf(" -- entered check_encryption --\n");)
+
+/* set up shorthand */
+
+  hdr_len = enc_p->hdr_len * 4;
+
+/* generate a random number to use for the unique filenames */
+
+  irand = (lblrandom()&0xffff);
+
+/* malloc the filename space */
+
+  encfullenc  = (char *)malloc(MAXFILENAMELEN);
+  encfulltxt  = (char *)malloc(MAXFILENAMELEN);
+
+  homedir = (char *)getenv("HOME");
 
 #ifdef WIN32
   sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
@@ -584,234 +768,177 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   sprintf(encfulltxt, "%s/.sdr/%d.%s", homedir, irand, enctxt_fname);
   sprintf(encfullenc, "%s/.sdr/%d.%s", homedir, irand, sapenc_fname);
 #endif
-  sprintf(irandstr, "%d", irand);
- 
-  writelog(printf("edmund: check_encryption: encfulltxt = %s\n",encfulltxt);)
-  writelog(printf("edmund: check_encryption: encfullenc = %s\n",encfullenc);)
 
-/* remove padding, if necessary */
+  writelog(printf("chk_enc: encfullenc is %s\n",encfullenc);)
+  writelog(printf("chk_enc: encfulltxt is %s\n",encfulltxt);)
 
-  if ( enc_p->padding )
-  {
-    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len-2));)
-    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len-1));)
-    writelog(printf("Padding Length=%d\n", *(encinfo+hdr_len));)
-    hdr_len= (hdr_len-2) - (*(encinfo+hdr_len-1)) ;
+/* need the random number as a string for use in tcl code (pgp) */
+
+    irandstr = (char *)malloc(10);
+    sprintf(irandstr, "%d", irand);
+
+/* look to see how much padding and figure out non-generic hdr length */
+/* need to know this so we know how much data to write out            */
+
+  if ( enc_p->padding != 0 ) {
+    padlen = *((char *)enc_p+hdr_len-1);
+    hdr_len = hdr_len - ENC_HEADER_LEN - padlen; 
+  } else {
+    hdr_len -= ENC_HEADER_LEN;
   }
  
-/* Extract signature and certificate from packet and store in files  */
- 
+/* open a file and write encrypted data to it (irand.pgp) */
+
   enc_fd=fopen(encfullenc, "w");
-  if (enc_fd == NULL)
-  {
-    writelog(printf("Cannot open %s\n", encfullenc);)
-    fclose(enc_fd);
+  if (enc_fd == NULL) {
+    writelog(printf("chk_enc: cannot open %s\n", encfullenc);)
     Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-    return ("failed");
+    return 1;
+  } else {
+    if ( fwrite((char *)data+ENC_HEADER_LEN, 1, hdr_len, enc_fd) < hdr_len ) {
+      writelog(printf("chk_enc: Error writing SDP data to file\n\r");)
+      fclose(enc_fd);
+      Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+      return 1;
+    }
   }
- 
-  if ( fwrite(data, 1, hdr_len, enc_fd) < hdr_len )
-  {
-    writelog(printf("Error writing SDP data to file\n\r");)
-    fclose(enc_fd);
-    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-    return ("failed");
-  }
+  free(encfullenc);
   fclose(enc_fd);
  
-/* Executes a TCL script that invokes PGP to check  info */
-
-  writelog(printf("edmund: check_encryption: calling pgp_check_encryption \n");)
+/* call PGP to decrypt the data */
 
   Tcl_VarEval(interp, "pgp_check_encryption ", irandstr, NULL);
-  enc_status_p = Tcl_GetVar(interp, "recv_encstatus", TCL_GLOBAL_ONLY);
+  code = Tcl_GetVar(interp, "recv_encstatus", TCL_GLOBAL_ONLY);
 
-/* watch out as Tcl doesn't return well terminated strings */
+/* Check return code - "success" or "failed" */
 
-  if (enc_status_p == NULL) {
-    return ("failed");
+  enc_status = (char *)malloc(10);
+
+  if (strncmp(code,"success",7) != 0 ) {
+    strcpy(enc_status,"failed");
+    return 1;
   } else {
-    if (strncmp(enc_status_p,"succes", 6) != 0) {
-      strcpy(enc_status,"failed");
-    } else {
-      strcpy(enc_status, "success");
-    }
-    writelog(printf("edmund:c_e: enc_status = %s\n",enc_status);)
+    strcpy(enc_status, "success");
   }
 
-/* ditto for Tcl strings - PGP keyids are 8 bytes */
+/* retrieve the key_id */
 
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
+
   if (key_id == NULL) {
-    return ("failed");
+    return 1;
   } else {
-#ifdef NEVER
-    strncat(enc_asym_keyid, 
-    assert(strlen(key_id) < 9);
-    memcpy(enc_asym_keyid, key_id, strlen(key_id));
-#else
     memcpy(enc_asym_keyid, key_id, 8);
-#endif
-    writelog(printf("edmund: c_e: enc_asym_keyid = %s\n",enc_asym_keyid);)
   }
+
+/* retrieve the message */
 
   enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
+
   if (enc_message == NULL) {
-    writelog(printf("The Decryption did not produce any message %s\n",interp->result);)
+    writelog(printf("chk_enc: no message %s\n",interp->result);)
     strncpy(encmessage,"No Encryption Message", encmessagelen);
-    return ("failed");
+    return 1;
   } else {
-    writelog(printf("strlen(enc_message) = %d\n",strlen(enc_message));)
     strncpy(encmessage,enc_message,encmessagelen);
-    writelog(printf("edmund:c_e: encmessage = %s\n",encmessage);)
+    writelog(printf("chk_enc: encmessage = %s\n",encmessage);)
   }
-
-  writelog(printf("edmund:c_e: encstatus %s\n",enc_status);)
-
-  free(encfullenc);
-  free(encfulltxt);
-  free(irandstr);
 
 /* enc_status is not a well terminated string - should be sorted out earlier */
 /* but as a quick fix just look at the first 7 characters :)                 */
-  if ( strncmp(enc_status, "success",7) == 0 ) {
-    return ("success");
-  } else {
-    return ("failed");
+
+  if ( strncmp(enc_status, "success",7) != 0 ) {
+    free(enc_status);
+    return 1;
   }
+  free(enc_status);
 
-}
-int store_encryption_in_memory(struct advert_data *addata, char *enc_type, int irand)
-{
-  FILE *enc_fd=NULL,*auth_fd=NULL;
-  struct stat sbuf;
-  struct stat sbufd;
-  char *encbuf=NULL,*ac;
-  struct priv_header *sapenc_p;
-  char *decrypt=NULL;
-  char *homedir=NULL;
-  char *encfullenc=NULL, *encfulltxt=NULL;
-  char *irandstr=NULL;
-  int i;
- 
-  writelog(printf("entered store_encryption\n");)
- 
-/* Open all files and read data */
- 
-  encfullenc = (char *)malloc(MAXFILENAMELEN);
-  encfulltxt = (char *)malloc(MAXFILENAMELEN);
-  irandstr   = (char *)malloc(10);
-
-  homedir=(char *)getenv("HOME");
-#ifdef WIN32
-  sprintf(encfullenc, "%s\\sdr\\%d.%s", homedir, irand, sapenc_fname);
-  sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
-#else
-  sprintf(encfullenc, "%s/.sdr/%d.%s", homedir, irand, sapenc_fname);
-  sprintf(encfulltxt, "%s/.sdr/%d.%s", homedir, irand, enctxt_fname);
-#endif
-  sprintf(irandstr, "%d", irand);
- 
-  writelog(printf("edmund: store_enc: encfulltxt = %s\n",encfulltxt);)
-  writelog(printf("edmund: store_enc: encfullenc = %s\n",encfullenc);)
+/* now read in the plain text file and fill in the advert_data->priv_header */
 
   sapenc_p = addata->sapenc_p;
-  sapenc_p->version = 1;
- 
-/* set up the encryption type */
 
-  if (strcmp(enc_type,"pgp") == 0) {
-    sapenc_p->enc_type = PGP;
-  } else  if (strcmp(enc_type,"x509") == 0) {
-    sapenc_p->enc_type = PKCS7;
+/* version is always 1 at the moment */
+/* type is always PGP as this covers PGP & PGP+CERT - X509 has own routine */
+/* PGP+CERT is obsolete and will be removed                                */
+
+  sapenc_p->version  = 1;
+  sapenc_p->enc_type = PGP;
+
+/* open plain text file which should have been written by PGP */
+
+  txt_fd = fopen(encfulltxt,"r");
+
+  if (txt_fd == NULL) {
+    writelog(printf("chk_enc: cannot open %s\n", encfulltxt);)
+    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+    return 1;
   } else {
-   sapenc_p->enc_type = 0;
-  }
-  writelog(printf("store_enc: enc_type = %s \n", enc_type);)
- 
-/* open encryption file */
 
-  enc_fd= fopen(encfullenc,"r");
-  if (enc_fd == NULL) {
-    writelog(printf("Cannot open %s\n", encfullenc);)
-    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-    fclose(enc_fd);
-    return 0;
-  }
+/* read plain text into buffer */
 
-/* open txt file */
+    stat(encfulltxt, &sbuf);
+    decrypt = (char *)malloc(sbuf.st_size);
 
-  auth_fd= fopen(encfulltxt,"r");
-  if (auth_fd == NULL) {
-    writelog(printf("Cannot open %s\n", encfulltxt);)
-    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-    fclose(auth_fd);
-    return 0;
-  }
-
-/* read encrypted data in */
-
-  stat(encfullenc, &sbuf);
-  encbuf =(char *)malloc(sbuf.st_size);
-  if(( fread(encbuf,1,  sbuf.st_size ,enc_fd))!= sbuf.st_size) {
-    writelog(printf("store_enc: problem reading encrypted file\n");)
-    fclose(enc_fd);
-    free(encbuf);
-   }
-#ifdef EDNEVER
-   writelog(printf(" encrypted data %s \n", encbuf);)
-#endif
-   sapenc_p->encd_len=sbuf.st_size;
-   writelog(printf("store_enc:  sapenc_p->encd_len = %d \n", sapenc_p->encd_len);)
-
-/* read txt file in */
-
-   stat(encfulltxt, &sbufd);
-   decrypt = (char *)malloc(sbufd.st_size);
-   if(( fread(decrypt,1,  sbufd.st_size ,auth_fd))!= sbufd.st_size) {
-     writelog(printf("store_enc: problem reading plaintext file\n");)
-     fclose(auth_fd);
-     free(decrypt);
-   }
-
-  sapenc_p->txt_len= sbufd.st_size;
-/*  sapenc_p->txt_data=(char *)malloc(sapenc_p->txt_len); */
-  sapenc_p->txt_data=(char *)malloc(sbufd.st_size);
-  memcpy(sapenc_p->txt_data, decrypt, sbufd.st_size);
-
-/* close the files */
-
-  fclose(enc_fd);
-  fclose(auth_fd);
-   
-  sapenc_p->pad_len = 4-((sapenc_p->encd_len+2) % 4);
-  if (sapenc_p->pad_len != 0) {
-      sapenc_p->padding = 1;
-  }
-
-  sapenc_p->hdr_len = (sapenc_p->pad_len +  sapenc_p->encd_len +2) / 4;
-  writelog(printf("store_enc:  sapenc_p->hdr_len = %d \n", sapenc_p->hdr_len);)
-  sapenc_p->enc_data =(char *)malloc(sapenc_p->pad_len +  sapenc_p->encd_len);
-  memcpy(sapenc_p->enc_data,encbuf, sapenc_p->encd_len);
-  ac=(char *)(sapenc_p->enc_data)+sapenc_p->encd_len;
-
-  if (sapenc_p->pad_len != 0) {
-    for (i=0; i<(sapenc_p->pad_len-1); ++i) {
-      ac[i] = 0;
+    if ( (fread(decrypt,1,sbuf.st_size,txt_fd)) != sbuf.st_size) {
+      writelog(printf("chk_enc: problem reading %s\n",encfulltxt);)
+      fclose(txt_fd);
+      free(decrypt);
+      Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+      return 1;
     }
-    ac[i] = sapenc_p->pad_len;
   }
-  writelog(printf("store_enc: encrypted data %s \n", sapenc_p->enc_data);)
 
-  free(encbuf);
-  free(decrypt);
-
-  Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
-  free(encfullenc);
   free(encfulltxt);
-  free(irandstr);
+  fclose(txt_fd);
 
-  return 1;
-}
+/* set priv_header->txt_len and priv_header->txt_data */
+
+    sapenc_p->txt_len  = sbuf.st_size;
+    sapenc_p->txt_data = (char *)malloc(sbuf.st_size);
+    memcpy(sapenc_p->txt_data, decrypt, sapenc_p->txt_len);
+
+/* set up encrypted data length                                  */
+/* this is the length of the data which was passed in originally */
+
+    sapenc_p->encd_len = hdr_len;
+
+/* set the padding length - need 2 bytes for generic header */
+
+    sapenc_p->pad_len = 4-((sapenc_p->encd_len+ENC_HEADER_LEN) % 4);
+    if (sapenc_p->pad_len == 4) {
+      sapenc_p->pad_len = 0;
+    }
+    if (sapenc_p->pad_len != 0) {
+      sapenc_p->padding = 1;
+    }
+
+/* set the header length */
+
+    sapenc_p->hdr_len = (sapenc_p->pad_len +  sapenc_p->encd_len +2) / 4;
+
+/* set the encrypted data up */
+
+    sapenc_p->enc_data = (char *)malloc(sapenc_p->pad_len+sapenc_p->encd_len);
+    memcpy(sapenc_p->enc_data, data+ENC_HEADER_LEN, data_len-ENC_HEADER_LEN);
+
+/* fill in the padding */
+
+    ac=(char *)(sapenc_p->enc_data)+sapenc_p->encd_len;
+
+    if (sapenc_p->pad_len != 0) {
+      for (i=0; i<(sapenc_p->pad_len-1); ++i) {
+        ac[i] = 0;
+      }
+      ac[i] = sapenc_p->pad_len;
+    }
+
+/* free some space */
  
-#endif
+    free(decrypt);
+
+    Tcl_VarEval(interp, "enc_pgp_cleanup ", irandstr, NULL);
+    free(irandstr);
+
+    return 0;
+
+}
