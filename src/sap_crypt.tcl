@@ -369,7 +369,7 @@ proc submit_pass {win mode msgwin str} {
 	if {[load_keys]==1} {
 	    $msgwin configure -text "Loading cached sessions"
 	    update
-	    load_from_cache
+	    load_from_cache_crypt
 	    $msgwin configure -text "$str"
 	} else {
 	    $win.f.e.workaround set ""
