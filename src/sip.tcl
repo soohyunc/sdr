@@ -134,6 +134,10 @@ proc qcreate {} {
     set ldata($aid,vars) "tool:$ldata($aid,tool)\ntype:$ldata($aid,type)"
     set ldata($aid,key) ""
     set ldata($aid,lastheard) [gettimeofday]
+    set ldata($aid,sap_addr) ""
+    set ldata($aid,sap_port) ""
+    set ldata($aid,started) 0
+    set ldata($aid,list) ""
     set medianum 0
     foreach media $medialist {
         if {$send($media)==1} {
@@ -1171,7 +1175,7 @@ proc sip_connection_succeed {id msg} {
     catch {$f.l2 configure -text "connected"}
     catch {pack forget $f.hangup}
     set sip_request_status($id) connected
-    if {$ldata($aid,list)==""} {
+    if {$ldata($sip_request_aid($id),list)==""} {
 	#no need to add it to the display list if it's already displayed
 	add_to_display_list  $sip_request_aid($id) priv
     }
