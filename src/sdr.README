@@ -1,5 +1,5 @@
 
-July 8th 1999
+July 16th 1999
 
                   Session Directory Tool (SDR)
 
@@ -8,7 +8,7 @@ July 8th 1999
 
 SDR is a session directory tool designed to allow the advertisement and 
 joining of multicast conferences on the Mbone. It was originally modelled 
-on sd written by Van Jacobson at LBNL, but implements a later version of 
+on SD written by Van Jacobson at LBNL, but implements a later version of 
 the session description protocol than sd does. SDR was originally written 
 under the MICE and MERCI projects at UCL by Mark Handley who now works for 
 ISI. 
@@ -41,9 +41,9 @@ for these is not yet fully standardised.
 3) INSTALLATION
    ------------
 
-The binary version of SDR can be downloaded from the web. This is a tarred
-file comprising the gzipped SDR binary and theis README file. The tarred 
-file must be untarred and then the SDR binary unzipped before it can be run.
+The UNIX binary version of SDR is a tarred file comprising of the gzipped 
+SDR binary and this README file. The tarred file must be untarred and then 
+the SDR binary unzipped before it can be run.
 
 If you are using the experimental version and want to use PGP authentication
 and/or encryption you must set up a PGPSTATE variable with the value 1.
@@ -55,7 +55,7 @@ and/or encryption you must set up a PGPSTATE variable with the value 1.
 4) LATEST VERSION
    --------------
 
-The most recent version is 2.6.3 (released June '99 (stable)/July '99 (exp))
+The most recent version is 2.7/2.7e (released July '99 (stable)/July '99 (exp))
 
 
 5) SECURITY ALERT
@@ -63,20 +63,14 @@ The most recent version is 2.6.3 (released June '99 (stable)/July '99 (exp))
 
 A serious security problem was discovered in SDR, by Olaf Kirch which 
 allowed users to execute arbitrary code with the privileges of the sdr 
-user. This problem existed in all recent versions of sdr and affected 
-both unix and windows versions. You should not use any version of SDR 
+user. This problem existed in all recent versions of SDR and affected 
+both UNIX and Windows versions. You should not use any version of SDR 
 earlier than version 2.6.3 which was released on Friday 25th June 1999. 
 
 
 6) CHANGES  FROM EARLIER VERSIONS
    ------------------------------
 
- 2.6.3 - fixed security problem with SIP code allowing evaluation of tcl
-         commands
-
-       - uses common tcl/tk libraries allowing for easier installation
-
-
-For a full list of differences between various releases of SDR please see
+For a list of differences between various releases of SDR please see
 the "CHANGES" file in the Source Code.
 
