@@ -637,8 +637,6 @@ proc new_mk_session_security {win aid} {
 
 proc enc_show_keys {win aid} {
     global keylist security
- 
- 
 
      set keyfile "[glob -nocomplain [resource sdrHome]]/keys"
     if {([file exists $keyfile] == 0)} {
@@ -663,13 +661,13 @@ proc enc_show_keys {win aid} {
 }
 
 proc get_new_session_key { } {
-  set selkey [.new.f3.l.enc.keys.lb curselection]
+  set selkey [.new.f.f.security.enc.keys.lb curselection]
   if {$selkey==""} {
     errorpopup "No Key Selected" "You must select a key for encryption"
     log "user selected no key"
     return 0
   }
-  .new.f3.l.enc.keys.lb get [lindex $selkey 0]
+  .new.f.f.security.enc.keys.lb get [lindex $selkey 0]
 }
 
  
