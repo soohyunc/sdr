@@ -117,7 +117,7 @@ int ui_webto(dummy, interp, argc, argv)
 #ifdef DEBUG
       printf("Page: %s\n", end+1);
 #endif
-      strcpy(webdata, "Content-Type: text/html\n\n");
+      strcpy(webdata, "HTTP/1.0 200 OK\nContent-Type: text/html\n\n");
       for(i=0;i<no_of_help;i++) 
 	{
 	  if(strcmp(end+1,help[i])==0)
