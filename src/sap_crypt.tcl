@@ -468,9 +468,16 @@ proc new_mk_session_security {win aid} {
         }
 
     }
-    proc get_new_session_key {} [format {
-	%s.f.lb get [lindex [%s.f.lb curselection] 0]
-    } $win $win ]
+}
+
+proc get_new_session_key { } {
+  set selkey [.new.f3.l.f.lb curselection]
+  if {$selkey==""} {
+    errorpopup "No Key Selected" "You must select a key for encryption"
+    log "user selected no key"
+    return 0
+  }
+  .new.f3.l.f.lb get [lindex $selkey 0]
 }
 
 proc toggle_security {win} {
