@@ -710,7 +710,7 @@ proc add_to_display_list {aid list} {
 
     #check if it's already displayed
     foreach index [array names ix] {
-	if {[string compare $ix($index) $list,$aid]==0} { 
+        if {[string compare "[string range $index 0 3],$ix($index)" "$list,$aid"]==0} {
 	    debug "session already displayed - why are we here?"
 	    return 0
 	}
@@ -2129,7 +2129,7 @@ proc allprefprocs {what {arg2 {}}} {
     global prefprocs
 
     foreach i $prefprocs {
-	pref_$i $what $arg2
+	catch { pref_$i $what $arg2 }
     }
     debug "allprefprocs $what .. done"
 }
@@ -3824,7 +3824,7 @@ parse_plugins "[resource sdrHome]/plugins" yes
 sdr2.2_fix_cache
 
 # Set up the order of items in the preferences window
-set prefprocs "show ifstyle tools web pers people"
+set prefprocs "show ifstyle tools web pers people security"
 
 #Check for old ~/.sdr.tcl
 if {([file isfile [glob -nocomplain ~]/.sdr.tcl]) && !([file isfile [resource sdrHome]/sdr.tcl])} {
