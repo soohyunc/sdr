@@ -90,10 +90,10 @@ int parse_announcement(int enc, char *data, int length,
 
  if (src == hfrom || src != hostaddr) {
     parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"trusted",recvkey ,
-                NULL, NULL, 0, NULL,NULL, NULL, 0, NULL,NULL,NULL);
+                NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
   } else {
     parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"untrusted",recvkey,
-                NULL, NULL, 0, NULL,NULL, NULL, 0, NULL,NULL,NULL);
+                NULL, NULL, NULL, NULL,NULL, NULL, NULL, NULL,NULL,NULL);
   }
 
   return 0;
@@ -398,6 +398,7 @@ int ui_createsession(dummy, interp, argc, argv)
     if ( rc != 0 ) {
       Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "validauth",     "0", TCL_GLOBAL_ONLY);
+      free(data);
       return 1;
     } else {
       Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
@@ -415,6 +416,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
     if ( !rc ) {
       Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
+      free(data);
       return TCL_OK;
     } else {
       Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
@@ -424,6 +426,7 @@ int ui_createsession(dummy, interp, argc, argv)
       strcpy(authstatus, "Authenticated");
       if (store_x509_authentication_in_memory(addata , argv[7], irand) == 2 ) {
         Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
+        free(data);
         return TCL_OK;
       } else {
         Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
@@ -467,6 +470,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
     if ( rc != 0 ) { 
       Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+      free(data);
       return 1;
     } else {
       Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
@@ -482,6 +486,7 @@ int ui_createsession(dummy, interp, argc, argv)
     if (!generate_x509_encryption_info(data, encstatus, irand, 
 				       encmessage, ENCMESSAGELEN)) {
       Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+      free(data);
       return TCL_OK;
     } else {
       Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
@@ -566,6 +571,7 @@ int ui_createsession(dummy, interp, argc, argv)
     if ( rc != 0 ) {
       Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "validauth",     "0", TCL_GLOBAL_ONLY);
+      free(data);
       return 1;
     } else {
       Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);

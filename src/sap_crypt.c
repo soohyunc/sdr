@@ -362,6 +362,7 @@ int save_keys(void)
                      no_of_keys*(sizeof(struct keyfile)), passphrase,
                      "none", NULL);
 
+  free(buf);
   load_keys();
   return 0;
 }
@@ -658,6 +659,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
   len+=24;
 
   encbuf=Encrypt(buf, &len);
+  free(buf);
 #ifdef NOTDEF
   printf("encrypted len=%d, padding=%d\n",len, padding);
 #endif
