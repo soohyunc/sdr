@@ -1,6 +1,7 @@
 CC=gcc -g
 INCLUDES=-I/usr/openwin/include -I/usr/local/include
-LIB_DIR=/usr/local/lib
+#LIB_DIR=/usr/local/lib
+LIB_DIR=/cs/research/sec/auchentoshan/ucacewh/local/lib
 LIBS=	$(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a \
 	-R/usr/openwin/lib -L/usr/openwin/lib -lX11 \
 	-lm -lnsl -ldl -lsocket -lresolv
