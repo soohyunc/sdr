@@ -540,7 +540,7 @@ proc new_mk_session_security {win aid} {
     $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
         -command "set_auth_type $win cpgp"
     $win.auth.sel.mauth.menu add command -label "X509+CERT"\
-        -command "set_auth_type $win cx509"
+        -command "set_auth_type $win cx50"
  
     frame $win.auth.keys
     pack $win.auth.keys -side top -pady 2 -fill both -expand true
