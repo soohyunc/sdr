@@ -136,9 +136,13 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
  
 int get_sdr_home(char str[])
 {
+#ifdef WIN32
   announce_error(Tcl_GlobalEval(interp, "resource sdrHome"),
 		 "resource sdrHome");
   strcpy(str, interp->result);
+#else
+  strcpy(str, getenv("HOME"));
+#endif
   return 0;
 }
 
@@ -285,7 +289,11 @@ int save_keys(void)
     }
 
   get_sdr_home(keyfilename);
+#ifdef WIN32
+  strcat(keyfilename, "\\sdr\\keys");
+#else
   strcat(keyfilename, "/keys");
+#endif
 
   write_crypted_file(keyfilename, buf, no_of_keys*(sizeof(struct keyfile)), passphrase);
   load_keys();
@@ -307,7 +315,11 @@ int load_keys(void)
 #endif
 
   get_sdr_home(keyfilename);
+#ifdef WIN32
+  strcat(keyfilename, "\\sdr\\keys");
+#else
   strcat(keyfilename, "/keys");
+#endif
 
   stat(keyfilename, &sbuf);
   buf=malloc(sbuf.st_size);
