@@ -713,20 +713,31 @@ int parse_sip_url(char *url, char* user, char *passwd, char *host,
 {
   char *buf, *ptr1, *ptr2, *ptr3;
   buf=strdup(url);
-  if (is_a_sip_url(url)==0) {
+  /*have to extract the URL from the common name first*/
+  if (strchr(buf, '<')==NULL) {
+    ptr1=buf;
+  } else {
+    ptr1=strchr(buf, '<')+1;
+    if (strchr(ptr1, '>')==NULL) {
+      fprintf(stderr, "No unmatched open brace in URL: %s\n", url);
+      return -1;
+    } else {
+      *strchr(ptr1, '>')='\0';
+    }
+  }
+  if (is_a_sip_url(ptr1)==0) {
     if ((strncmp(buf, "http:", 5)==0)||
 	(strncmp(buf, "ftp:", 4)==0)||
 	(strncmp(buf, "mailto:", 7)==0)||
 	(strncmp(buf, "gopher:", 7)==0)||
 	(strncmp(buf, "news:", 5)==0)) {
       /*it's really not a SIP URL*/
-      fprintf(stderr, "Not a SIP URL: %s\n", url);
+      fprintf(stderr, "Not a SIP URL: %s\n", ptr1);
       return -1;
     }
     /*it didn't start "sip:" but might still be OK - take the chance*/
-    ptr1=buf;
   } else {
-    ptr1=buf+4;
+    ptr1=ptr1+4;
   }
   ptr2=strchr(ptr1, '@');
   if (ptr2==NULL) {

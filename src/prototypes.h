@@ -149,7 +149,10 @@ void recv_packets();
 int timed_send_advert(ClientData cd);
 #ifdef AUTH
 
-int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, u_int len, u_int auth_len, struct auth_header *sapauth_h,u_int hdr_len, struct priv_header *sapenc_h);
+int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, 
+		u_int len, u_int auth_len, struct auth_info *sapauth_h,
+		u_int hdr_len, struct priv_header *sapenc_h,
+		struct sap_header **sap_hdr);
  
  
 int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, char * address, int port, unsigned char ttl, char * keyname, char *auth_type, char *authstatus, char *enctype, char *encstatus, struct advert_data *addata);

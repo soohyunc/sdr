@@ -46,6 +46,27 @@
 #define MAXFILENAMELEN	256
 #define MAXKEYLEN 256
 #define MAXALIAS 80
+#define MAXMEDIA 10
+#define MAXPHONE 10
+#define MAXBW 10
+#define MAXKEY 10
+#define MAXTIMES 10
+#define MAXRPTS 10
+#define MAXVARS 20
+#define MAX_SOCKS 20
+#define TMPSTRLEN 1024
+
+#define AIDLEN 20
+#define TMPKEYIDLEN 8
+#define ASYMKEYIDLEN 9
+#define AUTHTYPELEN 6
+#define ENCTYPELEN 6
+#define AUTHSTATUSLEN 14
+#define ENCSTATUSLEN 14
+#define AUTHMESSAGELEN 400
+#define ENCMESSAGELEN 400
+#define NRANDSTRLEN 10
+#define TRUSTLEN 20
 
 #define GUI 1
 #define NO_GUI 0
@@ -146,7 +167,7 @@ char *strerror(int i);
 
 #ifndef WIN32
 /* to debug uncomment the following line */
-/* #define writelog(a) a */
+/*#define writelog(a) a*/
 #define writelog(a)
 #else
 #define writelog(a)
@@ -180,8 +201,8 @@ struct advert_data {
   char *data;
   int tx_sock;
 #ifdef AUTH
-  struct auth_header *sapauth_p;
-  struct sap_header *sap_p;
+  struct auth_info *authinfo;
+  struct sap_header *sap_hdr;
   struct priv_header *sapenc_p;
 #endif
   unsigned char ttl;
@@ -212,6 +233,21 @@ struct sap_header {
 
 
 #ifdef AUTH
+/*we use this to store info about authentication*/
+struct auth_info {
+  u_int auth_type;
+  u_int padding;
+  u_int version;
+  u_int siglen;
+  u_int autlen;
+  u_int pad_len;
+  u_int sig_len;
+  u_int key_len;
+  char *signature;
+  char *keycertificate;
+};
+
+/*this is the actual header that goes in the packets*/
 struct auth_header {
 #ifdef DIFF_BYTE_ORDER
   u_int auth_type:4;
@@ -223,13 +259,10 @@ struct auth_header {
   u_int auth_type:4;
 #endif
   u_int siglen:8;
-  u_int autlen:8;
-  u_int pad_len;
-  u_int sig_len;
-  u_int key_len;
-  char *signature;
-  char *keycertificate;
 };
+/*beware sizeof(struct auth_header) doesn't return 2!!!*/
+#define AUTH_HEADER_LEN 2
+
 struct priv_header {
 #ifdef DIFF_BYTE_ORDER
   u_int enc_type:4;

@@ -546,7 +546,7 @@ proc sip_send_ack {fd dstuser origuser id cseq} {
 	    set msg "$msg\r\nVia: SIP/2.0/$transport [gethostaddr]"
 	    set msg "$msg\r\nCall-ID:$id"
 	    set msg "$msg\r\nCseq:[lindex $cseq 0] ACK"
-	    set msg "$msg\r\nFrom:$youremail"
+	    set msg "$msg\r\nFrom:sip:$youremail"
 	    set msg "$msg\r\nTo:$origuser"
 	    set msg "$msg\r\nUser-Agent:sdr/$sdrversion"
 	    set msg "$msg\r\nContent-length:0\r\n\r\n"
@@ -600,7 +600,7 @@ proc sip_send_bye {fd dstuser origuser id cseq} {
     set msg "$msg\r\nVia: SIP/2.0/$transport [gethostaddr]"
     set msg "$msg\r\nCall-ID:$id"
     set msg "$msg\r\nCseq:[expr [lindex $cseq 0] + 1] BYE"
-    set msg "$msg\r\nFrom:$youremail"
+    set msg "$msg\r\nFrom:sip:$youremail"
     set msg "$msg\r\nTo:$origuser"
     set msg "$msg\r\nUser-Agent:sdr/$sdrversion"
     #XXX should a BYE include a body??

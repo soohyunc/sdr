@@ -2,6 +2,9 @@
 <B><pre>
 
 2.5.8
+  - Add workaround for Irix bug where timezone sometimes contains an
+    unmatched quote.
+  - Fix SIP From URL in ACK and BYE requests.
 
 2.5.7 Released 24 September 1998
   - Fix compilation on FreeBSD
