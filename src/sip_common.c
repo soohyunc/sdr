@@ -44,7 +44,7 @@
 #include "dns.h"
 #include "prototypes.h"
 #include <tcl.h>
-/* #define DEBUG */
+#define DEBUG
 #define MAXINVITES 20
 
 extern int sip_udp_rx_sock;
@@ -368,13 +368,25 @@ char *sip_get_dstname(char *msg)
   return res;
 }
 
-char *sip_get_method(char *msg)
+int sip_get_method(char *msg)
 {
-  static char method[20];
+  char method[20];
   strncpy(method, msg, 19);
   if (strchr(method, ' ')!=0)
     *strchr(method, ' ')='\0';
-  return &method[0];
+  if (strcmp(method, "INVITE")==0)
+    return INVITE;
+  if (strcmp(method, "OPTIONS")==0)
+    return OPTIONS;
+  if (strcmp(method, "REGISTER")==0)
+    return REGISTER;
+  if (strcmp(method, "ACK")==0)
+    return ACK;
+  if (strcmp(method, "BYE")==0)
+    return BYE;
+  if (strcmp(method, "CANCEL")==0)
+    return CANCEL;
+  return METHOD_UNKNOWN;
 }
 
 int is_a_sip_request(char *msg)
@@ -582,7 +594,9 @@ int extract_field(char *buf, char *field_ret, int retlen, char *field)
   strcpy(ufield, field);
   strcat(ufield, ":");
   flen=strlen(ufield);
+#ifdef NOTDEF
   printf("extract_field: %s\n", field);
+#endif
   while (1)
   {
     if (strncasecmp(ptr, ufield, flen)==0)
@@ -590,12 +604,16 @@ int extract_field(char *buf, char *field_ret, int retlen, char *field)
       ptr+=flen;
       while(*ptr==' ') ptr++;
       while((*ptr!='\r')&&(retlen>1)) {
+#ifdef NOTDEF
 	printf("%c", *ptr);
+#endif
 	*field_ret++=*ptr++;
 	retlen--;
       }
       *field_ret='\0';
+#ifdef NOTDEF
       printf("<-returning\n");
+#endif
       return 0;
     }
     ptr=strchr(ptr,'\n');
@@ -794,7 +812,9 @@ int parse_sip_path (char *path, char *version, int *transport,
     ptr1=buf+4;
   } else if (strncmp(buf, "v:", 2)==0) {
     ptr1=buf+2;
-  } else goto invalid_path;
+  } else {
+    ptr1=buf;
+  }
   /*skip whitespace*/
   while(*ptr1==' ') ptr1++;
   if (strncmp(ptr1, "SIP/", 4)==0)
@@ -803,7 +823,7 @@ int parse_sip_path (char *path, char *version, int *transport,
   if (ptr2==NULL) {
     /*transport unspecified*/
     ptr2=strchr(ptr1, ' ');
-    if (*ptr2==0) goto invalid_path;
+    if (ptr2==NULL) goto invalid_path;
     *ptr2='\0';
     if (version!=NULL)
       strcpy(version, ptr1);
@@ -814,7 +834,7 @@ int parse_sip_path (char *path, char *version, int *transport,
       strcpy(version, ptr1);
     ptr1=ptr2+1;
     ptr2=strchr(ptr1, ' ');
-    if (*ptr2==0) goto invalid_path;
+    if (ptr2==NULL) goto invalid_path;
     *ptr2='\0';
     if (transport!=NULL) {
       if (strcmp(ptr1, "UDP")==0) {

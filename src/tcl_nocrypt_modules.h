@@ -23,7 +23,7 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_cli};
 
-#define MAX_UI_FN 26
+#define MAX_UI_FN 27
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -52,7 +52,8 @@ const char *ui_fn_name[MAX_UI_FN]=
   "sip_parse_path",
   "ui_quit",
   "set_sipalias",
-  "getpid"
+  "getpid",
+  "run_program"
 };
 
 void *ui_fn[MAX_UI_FN]=
@@ -82,5 +83,6 @@ void *ui_fn[MAX_UI_FN]=
   ui_sip_parse_path,
   ui_quit,
   ui_set_sipalias,
-  ui_getpid
+  ui_getpid,
+  ui_run_program
 };

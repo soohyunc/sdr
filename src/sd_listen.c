@@ -1320,11 +1320,8 @@ char *argv[];
 
 /* comment out the sip listen so if crash can restart okay while debugging */
 
-    sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);
+    /*    sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);*/
     sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
-#ifdef NOTDEF
-    sip_udp_tx_sock=sip_tx_init(SIP_GROUP, SIP_PORT, (char)1);
-#endif
 
     if (sip_udp_rx_sock!=-1)
       linksocket(sip_udp_rx_sock, TK_READABLE, (Tcl_FileProc*)sip_recv_udp);
@@ -4118,3 +4115,59 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 }
 
 #endif 
+
+int run_program(char *args) {
+  pid_t pid;
+  int i,k;
+  char *ptr1, *ptr2, *nargv[40];
+  pid = fork();
+  if (pid>0)
+    return pid;
+  /*if we're here, we're the child*/
+  /*we need to clear up all the files the parent had open - if we don't 
+    do this we might have problems restarting sdr unless all the apps
+    have been closed.  That's the problem with TCL exec that prevents
+    us using it.*/
+  close(sip_udp_rx_sock); 
+  close(sip_tcp_rx_sock); 
+  for(i=0;i<no_of_rx_socks;i++)
+    close(rxsock[i]);
+  for(i=0;i<no_of_tx_socks;i++)
+    close(txsock[i]);
+  /*OK, now we're ready to exec the child process*/
+  i=0;
+  ptr1=args;
+  while(ptr1!=NULL) {
+    while(*ptr1==' ')
+      *ptr1++='\0';
+    if (*ptr1=='\0') break;
+    nargv[i++]=ptr1;
+    ptr2=strchr(ptr1, ' ');
+    /*cope with quoted strings*/
+    if (*ptr1=='"') {
+      ptr2=strchr(ptr1+1,'"');
+      if (ptr2!=NULL) ptr2++;
+    }
+    ptr1=ptr2;
+    if (i==38) {
+      /*XXX*/
+      fprintf(stderr, "too many args to command to be run!\n");
+      break;
+    }
+  }
+  nargv[i]=NULL;
+#ifdef DEBUG
+  for(k=0;k<i;k++)
+    printf(">%s<\n",nargv[k]);
+#endif
+  execvp(nargv[0], nargv);
+
+  /*what, still here?*/
+  /*something went wrong with the exec...*/
+  fprintf(stderr, "Failed to execute ");
+  for(i=0;nargv[i]!=NULL;i++)
+    fprintf(stderr, "%s ", nargv[i]);
+  fprintf(stderr, "\n");
+  exit(0);
+}
+

@@ -15,6 +15,14 @@
 #define BLOCKSIZE 100000
 #define READSIZE 1024
 
+#define METHOD_UNKNOWN 0
+#define INVITE 1
+#define OPTIONS 2
+#define REGISTER 3
+#define ACK 4
+#define CANCEL 5
+#define BYE 6
+
 typedef struct connection_s {
   int fd;
   int used;

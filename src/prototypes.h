@@ -48,7 +48,7 @@ int is_a_sip_reply(char *msg);
 int parse_sip_reply(int fd, char *msg, char *addr);
 char *sip_get_dstname(char *msg);
 char *sip_get_callid(char *msg);
-char *sip_get_method(char *msg);
+int sip_get_method(char *msg);
 int sip_udp_listen(char *address, int port);
 int sip_tcp_listen(int port);
 int sip_tcp_accept(connection conns[]);
@@ -113,6 +113,8 @@ int ui_sip_parse_url(ClientData dummy, Tcl_Interp *interp,
 int ui_sip_parse_path(ClientData dummy, Tcl_Interp *interp, 
 			   int argc, char **argv);
 int ui_sip_close_tcp_connection(ClientData dummy, Tcl_Interp *interp, 
+			   int argc, char **argv);
+int ui_run_program(ClientData dummy, Tcl_Interp *interp, 
 			   int argc, char **argv);
 void initnames();
 

@@ -445,3 +445,16 @@ int ui_sip_close_tcp_connection(dummy, interp, argc, argv)
 {
   return (sip_close_tcp_connection(argv[1]));
 }
+
+int ui_run_program(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  int i;
+  int pid;
+  pid=run_program(argv[1]);
+  sprintf(interp->result, "%d", pid);
+  return TCL_OK;
+}

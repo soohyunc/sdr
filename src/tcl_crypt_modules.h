@@ -28,9 +28,9 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_sap_crypt, tcl_pgp_crypt, tcl_pkcs7_crypt, tcl_cli};
 #ifdef AUTH
-#define MAX_UI_FN 38
+#define MAX_UI_FN 39
 #else
-#define MAX_UI_FN 36
+#define MAX_UI_FN 37
 #endif
 
 const char *ui_fn_name[MAX_UI_FN]=
@@ -71,6 +71,7 @@ const char *ui_fn_name[MAX_UI_FN]=
   "save_keys",
   "write_crypted_file",
   "make_random_key",
+  "run_program",
 #ifdef AUTH
   "write_authentication",
   "write_encryption"
@@ -115,6 +116,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_save_keys,
   ui_write_crypted_file,
   ui_make_random_key,
+  ui_run_program,
 #ifdef AUTH
   ui_write_authentication,
   ui_write_encryption

@@ -687,7 +687,7 @@ proc list_reverse {list} {
 }
 
 proc apply_startup_rule {aid media proto fmt rule attrlist} {
-    global sd_sess
+    global sd_sess tcl_platform
     global sd_$media
     global macros macrokeys
     global attrflags noattrflags noattrlist macrovalues
@@ -795,7 +795,11 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
 	catch {puts \"$rule\"}
 	catch {eval puts \"$rule\"}
     }
-    set pid [eval exec $rule &]
+    if {$tcl_platform(platform) == "windows"} {
+	set pid [eval exec $rule &]
+    } else {
+	set pid [run_program $rule]
+    }
 
     #keep track of the pid so we can see if the tools are still running...
     for {set i 0} {$i<$ldata($aid,medianum)} {incr i} {

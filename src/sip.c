@@ -45,7 +45,7 @@
 #endif
 #include "dns.h"
 #include "prototypes.h"
-/* #define DEBUG */
+#define DEBUG
 #define MAXINVITES 20
 
 extern int sip_udp_rx_sock;
@@ -84,6 +84,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
   char sipfdstr[10];
   char *dstname;
   char *srcuser, *dstuser, *path, *cseq, *callid;
+  int method;
   char u_at_h[80];
   char u_at_a[80];
   struct in_addr myhost;
@@ -127,6 +128,7 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	dstuser=malloc(80);
 	path=malloc(256);
 	cseq=malloc(80);
+	method=sip_get_method(buf);
 	extract_field(buf, callid, 80, "Call-ID");
 	extract_field(buf, srcuser, 80, "From");
 	extract_field(buf, dstuser, 80, "To");
@@ -134,13 +136,27 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	extract_field(buf, cseq, 80, "Cseq");
 	printf("path: >%s<\n", path);
 	printf("cseq: >%s<\n", cseq);
-	if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr ," ", 
-			callid, " {", srcuser, "} {", dstuser, "} {", 
-			path, "} {", cseq, "}", NULL)!=TCL_OK) {
+	switch(method) {
+	case INVITE:
+	case OPTIONS:
+	case BYE:
+	  if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr ," ", 
+			  callid, " {", srcuser, "} {", dstuser, "} {", 
+			  path, "} {", cseq, "}", NULL)!=TCL_OK) {
             Tcl_AddErrorInfo(interp, "\n");
             fprintf(stderr, "%s\n", interp->result);
             Tcl_VarEval(interp, "puts $errorInfo", NULL);
-	};
+	  };
+	  break;
+	case ACK:
+	  break;
+	case CANCEL:
+	  /*XXX should we send an ACK here?  I think so...*/
+	  break;
+	case REGISTER:
+	  /*XXX should send METHOD unsupported here*/
+	  break;
+	}
 	free(callid);free(srcuser);free(dstuser);free(path);free(cseq);
       }
     } else if(is_a_sip_reply(buf)) {

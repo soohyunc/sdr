@@ -121,7 +121,8 @@ int sip_recv_udp()
 int sip_recv_tcp(char *buf, int length, int sipfd, char *pktsrc)
 {
   int i;
-  char *dstname, *method;
+  char *dstname;
+  int method;
 
   /*XXXX if we got more than one request, this won't work*/
   buf[length]='\0';
@@ -135,7 +136,9 @@ int sip_recv_tcp(char *buf, int length, int sipfd, char *pktsrc)
       printf("It's a request\n");
 #endif
       method=sip_get_method(buf);
-      if ((strcmp(method, "INVITE")==0)||(strcmp(method, "OPTIONS")==0)) {
+      switch (method) {
+      case INVITE:
+      case OPTIONS:
 	dstname=sip_get_dstname(buf);
 	if (dstname!=NULL) {
 	  for(i=0;i<users;i++) {
@@ -146,14 +149,19 @@ int sip_recv_tcp(char *buf, int length, int sipfd, char *pktsrc)
 	    }
 	  }
         }
-      } else if (strcmp(method, "REGISTER")==0) {
+	break;
+      case REGISTER:
 	sip_register_request(sipfd, TCP, buf);
-      } else if (strcmp(method, "ACK")==0) {
+	break;
+      case ACK:
 	printf("got an ACK - don't handle this yet\n");
-      } else if (strcmp(method, "BYE")==0) {
+	break;
+      case BYE:
 	printf("got an BYE - don't handle this yet\n");
-      } else if (strcmp(method, "CANCEL")==0) {
+	break;
+      case CANCEL:
 	printf("got an CANCEL - don't handle this yet\n");
+	break;
       }
     }
   else if(is_a_sip_reply(buf))

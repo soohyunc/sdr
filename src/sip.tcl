@@ -17,6 +17,7 @@ set qpmway {1 1 1}
 #    ringing - we sent a request and the remote end says its ringing
 #    connected - we got back a 200 response
 #    declined - we got back a failure and have no more options for this call
+#    hungup - we hung up on a call we initiated.
 #
 #sip_invites holds the list of request ids that a server has outstanding
 #sip_invite_status holds the status of each of these
@@ -326,7 +327,7 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
     #user is the SIP name of the user at that location
     #the addr parameter should be zero when send_sip is called with
     #a new or modified request
-    putlogfile "send_sip: dstuser=$dstuser, user=$user, aid=$aid, id=$id, win=$win, addr=$addr, port=$port, ttl=$ttl"
+    puts "send_sip: dstuser=$dstuser, user=$user, aid=$aid, id=$id, win=$win, addr=$addr, port=$port, ttl=$ttl"
 
     global youremail no_of_connections sip_request_status sip_request_addrs
     global sip_requests
@@ -336,7 +337,7 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
         set addr [lookup_host $addr]
     } else {
 	set res [sip_parse_url $dstuser]
-	putlogfile "$dstuser --> $res"
+	puts "$dstuser --> $res"
 	set addr [lookup_host [lindex $res 2]]
 	if {$addr=="0.0.0.0"} {
 	    msgpopup "Invalid Address" "The hostname $host is not known"
@@ -417,7 +418,7 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
     set msg "$msg\r\nVia: SIP/2.0/$transport [gethostaddr]"
     set msg "$msg\r\nCall-ID:$id"
     set msg "$msg\r\nCseq: 0 INVITE"
-    set msg "$msg\r\nFrom:$youremail"
+    set msg "$msg\r\nFrom:sip:$youremail"
     set msg "$msg\r\nTo:$user"
     set msg "$msg\r\nUser-Agent:sdr/$sdrversion"
     set msg "$msg\r\nContent-type:application/sdp"
@@ -477,9 +478,11 @@ proc sip_check_tcp_connection_status {user id aid win} {
 proc sip_send_ack {fd dstuser origuser id cseq} {
     global youremail sdrversion sip_requests sip_request_status
     if {[lsearch $sip_requests $id]!=-1} {
+	puts "sip_request_status($id)==$sip_request_status($id)"
 	if {($sip_request_status($id)=="progressing") || \
 		($sip_request_status($id)=="ringing") || \
 		($sip_request_status($id)=="unknown") || \
+		($sip_request_status($id)=="declined") || \
 		($sip_request_status($id)=="connected")} {
 	    #the call is in progress or already connected
 	    set res [sip_parse_url $dstuser]
@@ -515,17 +518,19 @@ proc sip_send_ack {fd dstuser origuser id cseq} {
 		sip_send_udp $addr $ttl $port $msg 
 	    } else {
 		sip_send_tcp_request $fd $addr $ttl $port $msg 
-		putlogfile "about to close connection"
+		puts "about to close connection"
 		sip_close_tcp_connection $id
-		putlogfile "connection closed"
+		puts "connection closed"
 	    }
 	} else {
 	    #the call is not in a useful state - either the far end
 	    #confused us, or we hung up.
+	    puts here1
 	    sip_send_bye $fd $dstuser $origuser $id $cseq
 	}
     } else {
 	#we have no record of this call
+	puts here2
 	sip_send_bye $fd $dstuser $origuser $id $cseq
     }
 }
@@ -549,7 +554,7 @@ proc sip_send_bye {fd dstuser origuser id cseq} {
     set transport [lindex $res 4]
     if {$transport=="NONE"} {set transport "UDP"}
 
-    putlogfile "sip_send_bye: $addr, $port, $ttl, $maddr"
+    puts "sip_send_bye: $addr, $port, $ttl, $maddr"
     set msg "BYE $dstuser SIP/2.0"
     if {$maddr!=""} {
 	if {$ttl==0} {set ttl 16}
@@ -909,7 +914,7 @@ proc sip_send_accept_invite {fd id srcuser dstuser path sdp cseq} {
 		\"$path\" \"$sdp\" {$cseq}"
     }
     set tag ";tag=$sip_invite_tag($id)"
-    putlogfile "**tag: $tag"
+    puts "**tag: $tag"
     set msg "SIP/2.0 200 OK"
     set msg "$msg\r\n$path"
     set msg "$msg\r\nCall-ID:$id"
@@ -1020,7 +1025,7 @@ proc sip_send_cancelled {fd id srcuser dstuser path cseq} {
 
 proc sip_send_reply {fd callid path msg} {
     set res [sip_parse_path $path]
-    putlogfile "$path ---> $res"
+    puts "$path ---> $res"
     set version [lindex $res 0]
     set transport [lindex $res 1]
     set host [lindex $res 2]
@@ -1028,6 +1033,7 @@ proc sip_send_reply {fd callid path msg} {
     set ttl [lindex $res 4]
     if {$port==0} {set port 5060}
     set addr [lookup_host $host]
+    puts "$host -> $addr"
     if {$addr=="0.0.0.0"} {
         msgpopup "Invalid Address" "The hostname $host is not known"
         return 0
@@ -1485,7 +1491,7 @@ proc sip_connection_succeed {id msg} {
 
 proc sip_cancel_connection {id hostaddr} {
     global sip_request_addrs
-    putlogfile "sip_cancel_connection $id $hostaddr"
+    puts "sip_cancel_connection $id $hostaddr"
     if {$hostaddr=="all"} {
 	#need to cancel all requests made for this call-ID
 	set list [array names sip_request_addrs]
@@ -1686,9 +1692,9 @@ proc enter_new_address {menu entry} {
 
 proc ab_activity args {
     global ab
-    putlogfile "$args"
+    puts "$args"
     set type [lindex $args 1]
-    putlogfile "var: $ab($type), first: $ab(first)"
+    puts "var: $ab($type), first: $ab(first)"
     if {$type=="url"} {
 	if {([string length $ab(url)]>4)&&($ab(first)=="")} {
 	    if {$ab(first)==""} {set ab(first) url}
