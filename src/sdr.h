@@ -115,7 +115,6 @@ time_t time(time_t *);
 #endif /* WIN32 */
 
 #ifdef SUNOS4
-#define NEEDSTRERROR
 char *strerror(int i);
 #endif
 

@@ -1,12 +1,12 @@
 CC=gcc -g
-INCLUDES=-I/usr/openwin/include -I/cs/research/mice/speedy/common/sun4/include
-LIB_DIR=/cs/research/mice/speedy/common/sun4/lib
-LIBS=	$(LIB_DIR)/libtk41.a $(LIB_DIR)/libtcl75.a \
+INCLUDES=-I/usr/openwin/include -I/cs/research/mice/starship/common/sun4/include
+LIB_DIR=/cs/research/mice/starship/common/sun4/lib
+LIBS=	$(LIB_DIR)/libtk80.a $(LIB_DIR)/libtcl80.a \
 	-L/usr/openwin/lib -lX11 \
 	-lm
 
-LIBRARY_TCL = $(LIB_DIR)/tcl7.5
-LIBRARY_TK = $(LIB_DIR)/tk4.1
+LIBRARY_TCL = $(LIB_DIR)/tcl8.0
+LIBRARY_TK = $(LIB_DIR)/tk8.0
 CFLAGS=$(INCLUDES) -DSUNOS4 -Wall -DNEEDSTRERROR -DCANT_MCAST_BIND
 all::	sdr
 install:

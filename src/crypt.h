@@ -3,14 +3,6 @@
  *
  */
 
-#ifndef u_char 
-typedef unsigned char u_char;
-#endif 
-
-#ifndef u_int
-typedef unsigned int u_int;
-#endif
-
 #define CRYPT
 
 int	Null_Key();
