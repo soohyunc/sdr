@@ -1,6 +1,6 @@
 CC          = gcc -g -O
 INCLUDES    = -I../../tk-8.0/generic -I../../tcl-8.0/generic -I../../common
-LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/libtcl8.0.a ../../common/libcommon.a -L/usr/X11R6/lib -lX11 -lc -lm -ldl -lresolv
+LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/libtcl8.0.a ../../common/libuclmmbase.a -L/usr/X11R6/lib -lX11 -lc -lm -ldl -lresolv
 CFLAGS      = $(INCLUDES) -Wall -DNORANDPROTO -DDIFF_BYTE_ORDER -DAUTH -DLinux
 
 all::	sdr
