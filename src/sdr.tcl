@@ -114,6 +114,9 @@ proc initialise_resources {} {
     option add *headerFont \
 	-*-helvetica-bold-r-normal--14-*-iso8859-1 \
 	widgetDefault
+    option add *largeFont \
+	-*-helvetica-bold-r-normal--24-*-iso8859-1 \
+	widgetDefault
     option add *mediumFont \
 	-*-helvetica-medium-r-normal--12-*-iso8859-1 \
 	widgetDefault
@@ -128,6 +131,7 @@ proc initialise_resources {} {
     if {$tmp==0} {
         option add *font 8x13 100
         option add *infoFont 6x9 100
+	option add *largeFont 9x15bold 100
         option add *headerFont 9x15 100
         option add *mediumFont 8x13 100
         option add *italfont 8x13bold 100
@@ -1228,6 +1232,29 @@ proc highlight_url {win {inbrowser 0}} {
    }
 }
 
+proc bounce_phone {win} {
+    if {[winfo exists $win]} {
+	switch [lindex [$win configure -bitmap] 4] {
+	    phone1 {
+		$win configure -bitmap phone3
+		after 70 "bounce_phone $win"
+	    }
+	    phone2 {
+		$win configure -bitmap phone4
+		after 70 "bounce_phone $win"
+	    }
+	    phone3 {
+		$win configure -bitmap phone2
+		after 70 "bounce_phone $win"
+	    }
+	    phone4 {
+		$win configure -bitmap phone1
+		after 400 "bounce_phone $win"
+	    }
+	}
+    }
+}
+
 proc popup {aid ifstyle msgsrc} {
   global ldata lang
 #  if {$i==""} {return}
@@ -1249,10 +1276,17 @@ proc popup {aid ifstyle msgsrc} {
       wm title $wname "Sdr: Session Information"
   } else {
       wm title $wname "Sdr: Incoming call from $msgsrc"
-      label $win.inv -text "Incoming Call"
-      pack $win.inv -side top
-      message $win.invmsg -aspect 800 -text "You have an incoming call from $msgsrc inviting you to join the following session"
-      pack $win.invmsg -side top -fill x -expand true
+      frame $win.inv -borderwidth 2 -relief groove
+      pack $win.inv -side top -fill x -expand true
+      label $win.inv.l -text "Incoming Call" -font [option get . largeFont Sdr]
+      pack $win.inv.l -side top
+      frame $win.inv.f -borderwidth 0 
+      pack $win.inv.f -side top -fill x -expand true
+      label $win.inv.f.phone -bitmap phone1
+      after 200 "bounce_phone $win.inv.f.phone"
+      pack $win.inv.f.phone -side left
+      message $win.inv.f.m -aspect 800 -text "You have an incoming call from $msgsrc inviting you to join the following session"
+      pack $win.inv.f.m -side left -fill x -expand true
       posn_win_midscreen $wname
   }
   frame $win.sn -borderwidth 0

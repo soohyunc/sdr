@@ -5,6 +5,27 @@ set qdurt {300 900 1800 3600}
 set qpurp {"Group Chat" "Small Meeting" "Large Meeting"}
 #set qpmway {0 1 1 1}
 set qpmway {1 1 1}
+
+#Notes:
+#SDR can be both a sip client and server
+#
+#sip_requests holds the list of request ids that a client has outstanding
+#sip_request_status holds the status of each of these
+#  possible values are:
+#    unknown - we sent a request and didn't get anything back yet
+#    progressing - we sent a request and got back a 100 trying reply
+#    ringing - we sent a request and the remote end says its ringing
+#    connected - we got back a 200 response
+#    declined - we got back a failure and have no more options for this call
+#
+#sip_invites holds the list of request ids that a server has outstanding
+#sip_invite_status holds the status of each of these
+#  possible values are:
+#    ringing - we alerted the user but no response yet
+#    accepted - we sent a 200 response
+#    connected - we sent a 200 response and got an ACK
+#    refused - we sent a failure response
+
 proc qcall {} {
     global scope qdurs qdurt qpurp qpmway medialist send youremail
     catch {destroy .qc}
@@ -301,7 +322,7 @@ proc send_sip {dstuser user aid id win addr} {
 
     if {[lsearch $sip_requests $id]!=-1} {
 	if {($sip_request_status($id)=="unknown") &&
-	    ($sip_request_count($id)>10)} {
+	    ($sip_request_count($id)>20)} {
 		sip_connection_fail $id "No response from remote site while trying to contact $sip_request_user($id)"
 		return 0
 	    }
@@ -344,7 +365,13 @@ proc send_sip {dstuser user aid id win addr} {
     if {[sip_user_pending $user $id $aid $win]==0} {
 	if {[sip_send_msg $msg $addr]==0} {
 	    set no_of_connections($id) 1
-	    after 2000 send_sip \"$dstuser\" \"$user\" $aid $id $win $addr
+	    if {($sip_request_status($id)=="progressing")||\
+		    ($sip_request_status($id)=="ringing")} {
+		set timer 5000
+	    } else {
+		set timer 1000
+	    }
+	    after $timer send_sip \"$dstuser\" \"$user\" $aid $id $win $addr
 	} else {
 	    sip_connection_fail $id "No-one is listening to invitations sent to $sip_request_user($id)"
 	}
@@ -552,26 +579,31 @@ proc sip_user_alert {msg} {
 }
 
 proc sip_handle_bye {id} {
-    global sip_invites sip_invite_status
-    puts "[array names sip_invite_status]"
-    puts "sip_handle_bye $sip_invite_status($id)"
+    global sip_invites sip_invite_status sessdetails
     if {[lsearch $sip_invites $id]!=-1} {
-	if {$sip_invite_status($id)=="connected"} {
+	if {$sip_invite_status($id)=="accepted"} {
 	    #Ooops, the caller hung up after we sent our response
 	    #notify the user and stop sending retransmissions of 
 	    #our 200 response
-	} elseif {($sip_invite_status($id)=="unknown") || \
-		($sip_invite_status($id)=="progressing") || \
-		($sip_invite_status($id)=="ringing")} {
+	    set sip_invite_status($id) refused
+	    set aid $sessdetails($id,aid)
+	    popdown $aid
+	    msgpopup "Sorry" "Caller $sessdetails($aid,srcuser) has hung up the connection."
+	} elseif {($sip_invite_status($id)=="ringing")} {
 	    #The caller hung up before we could get an answer from
 	    #the user
 	    #stop making all the noise and clear up
-	    puts b
+	    set sip_invite_status($id) refused
 	    timeout_ringing $id
+	} elseif {$sip_invite_status($id)=="connected"} {
+	    #We already got an ACK and now we get a BYE - we don't
+	    #perform this kind of call control in sdr
+	    set sip_invite_status($id) refused
+	    return
 	} else {
 	    #it's not clear what happened here, but set the call to
 	    #declined anyway
-	    set sip_invite_status($id) declined
+	    set sip_invite_status($id) refused
 	}
     } else {
 	#a bye for a call we have no knowledge of can be safely ignored
@@ -582,7 +614,12 @@ proc sip_handle_ack {id} {
     #since we're optimists we assume that when we send a 200 response 
     #the caller won't have hung up.  All we do is stop sending
     #retransmissions of our 200 response 
-    
+    global sip_invites sip_invite_status
+    if {[lsearch $sip_invites $id]!=-1} {
+	if {$sip_invite_status($id)=="accepted"} {
+	    set sip_invite_status($id) "connected"
+	}
+    }
 }
 
 proc sip_inform_user {id srcuser dstuser path sname sdp cseq} {
@@ -631,6 +668,10 @@ proc sip_ringing_user {id srcuser dstuser path cseq} {
 
 proc sip_accept_invite {aid} {
     global sessdetails sip_invite_status
+    if {$sip_invite_status($sessdetails($aid,id))!="accepted"} {
+	add_to_display_list $aid priv
+    }
+    set sip_invite_status($sessdetails($aid,id)) accepted
     sip_send_accept_invite \
 	$sessdetails($aid,id) \
 	$sessdetails($aid,srcuser) \
@@ -638,10 +679,6 @@ proc sip_accept_invite {aid} {
 	$sessdetails($aid,path) \
 	$sessdetails($aid,sdp) \
         $sessdetails($aid,cseq)
-    if {$sip_invite_status($sessdetails($aid,id))!="accepted"} {
-	add_to_display_list $aid priv
-    }
-    set sip_invite_status($sessdetails($aid,id)) accepted
     stop_ringing
 }
 
@@ -658,6 +695,31 @@ proc sip_refuse_invite {aid} {
 }
 
 proc sip_send_accept_invite {id srcuser dstuser path sdp cseq} {
+    global sip_invites sip_invite_status sip_invite_responses
+
+    #keep resending the response until we get an ACK, BYE, or timeout
+    set sip_invite_responses($id) 1
+    puts "sip_send_accept_invite $sip_invite_status($id)"
+    if {[lsearch $sip_invites $id]>=0} {
+	if {$sip_invite_status($id)!="accepted"} {
+	    catch {unset sip_invite_responses($id)}
+	    return
+	}
+	#resend a maximum of 10 times according to spec
+	if {$sip_invite_responses($id)>10} {
+	    unset sip_invite_responses($id)
+	    #we never got either an ACK or a NACK back in response 
+	    #to our 200 response - strictly speaking this is a failure
+	    #and we should notify the user.
+	    set sip_invite_status($id) failure
+	    return
+	}
+	#resend every 2 seconds according to spec
+	incr sip_invite_responses($id)
+	after 2000 "sip_send_accept_invite $id $srcuser $dstuser \
+		\"$path\" \"$sdp\" \"$cseq\""
+    }
+
     set msg "SIP/2.0 200 OK"
     set msg "$msg\r\n$path"
     set msg "$msg\r\nCall-ID:$id"
@@ -667,6 +729,7 @@ proc sip_send_accept_invite {id srcuser dstuser path sdp cseq} {
 	set msg "$msg\r\nCseq:$cseq"
     }
     set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
+    puts "------\nSending response to [lrange $path end end]\n$msg\n"
     sip_send_msg $msg [lrange $path end end]
 }
 
@@ -1097,12 +1160,18 @@ proc start_ringing {id} {
     global ringing_bell bells
     if {$ringing_bell==1} {
 	after cancel $bells(0)
-	set bells(0) [after 10000 timeout_ringing $id]
+	set bells(0) [after 15000 timeout_ringing $id]
 	return 0
     }
     set ringing_bell 1
     phone_ringing
-    set bells(0) [after 10000 timeout_ringing $id]
+    #the choice of timing the call out after 15 seconds is somewhat
+    #arbitrary.  If the sender conforms to the spec, they should resend
+    #the request every 5 seconds after they receive a RINGING response,
+    #so this allows for reasonable loss rates and yet doesn't let the
+    #ringing continue too long when the caller may have hung up and the
+    #BYE got lost.
+    set bells(0) [after 15000 timeout_ringing $id]
 }
 proc stop_ringing {} {
     global ringing_bell bells

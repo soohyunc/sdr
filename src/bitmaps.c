@@ -39,6 +39,10 @@ extern Tcl_Interp *interp;
 #include "uparrow.xbm"
 #include "downarrow.xbm"
 #include "phone.xbm"
+#include "phone1.xbm"
+#include "phone2.xbm"
+#include "phone3.xbm"
+#include "phone4.xbm"
 #include "mail.xbm"
 #include "eye.xbm"
 #include "audio.xbm"
@@ -63,6 +67,10 @@ void init_bitmaps()
   Tk_DefineBitmap(interp, Tk_GetUid("uparrow"), uparrow_bits, uparrow_width, uparrow_height);
   Tk_DefineBitmap(interp, Tk_GetUid("downarrow"), downarrow_bits, downarrow_width, downarrow_height);
   Tk_DefineBitmap(interp, Tk_GetUid("phone"), phone_bits, phone_width, phone_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("phone1"), phone1_bits, phone1_width, phone1_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("phone2"), phone2_bits, phone2_width, phone2_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("phone3"), phone3_bits, phone3_width, phone3_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("phone4"), phone4_bits, phone4_width, phone4_height);
   Tk_DefineBitmap(interp, Tk_GetUid("mail"), mail_bits, mail_width, mail_height);
   Tk_DefineBitmap(interp, Tk_GetUid("eye"), eye_bits, eye_width, eye_height);
   Tk_DefineBitmap(interp, Tk_GetUid("audio"), audio_bits, audio_width, audio_height);
