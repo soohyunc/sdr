@@ -2690,8 +2690,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 		if (*(cur + 1) != '=') {
 		    if (debug1)
 			fprintf(stderr,"no = at byte %d\n", end-data);
-	    dump(data2, origlen);
-			printf("no = at byte %d\n", end-data);
+			dump(data2, origlen);
+			fprintf(stderr, "no = at byte %d\n", end-data);
 		    goto errorleap;
 		}
                 switch (*cur) {
