@@ -14,6 +14,7 @@ int find_keyname_by_key(char *key, char *keyname);
 int set_pass_phrase(char *newphrase);
 int register_key(char *key, char *keyname);
 int delete_key(char *keyname);
+int make_random_key();
 
 /* ui_fns_crypt.c */
 int ui_set_passphrase(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
@@ -25,6 +26,7 @@ int ui_find_keyname_by_key(ClientData dummy, Tcl_Interp *interp, int argc, char 
 int ui_write_crypted_file(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_load_keys(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_save_keys();
+int ui_make_random_key();
  
 int init_security();
 
