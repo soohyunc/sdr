@@ -86,11 +86,15 @@ TCL2C = ./tcl2c
 WWWOBJS=www_fns.o www_ui.o www_ui_init.o www_main_ui.o www_main.o libs.o compat.o tclBasic.o generic_ui.o
 GWOBJS=sdr_gw_listen.o compat.o
 SERVOBJS=sdr_server.o compat.o store_entries.o server_http.o server_form.o server_parser.o server_html.o server_scope.o server_init.o generate_ids.o server_send.o
+SIP_SERVER_OBJS=sip_server.o sip_common.o
 
 sdr: $(OBJS) $(SDR_UI_FILES)
 	rm ../src/tcl_modules.h; \
 	$(CC) $(CFLAGS) $(OBJS) $(SDR_UI_FILES) \
 	-o sdr $(LIBS)
+
+sip_server: $(SIP_SERVER_OBJS)
+	$(CC) $(CFLAGS) $(SIP_SERVER_OBJS) -o sip_server $(SIP_SERVER_LIBS)
 
 $(SDR_HELP_FILES): tcl2c
 $(SDR_UI_FILES): tcl2c
@@ -113,6 +117,8 @@ sip.o:	../src/sip.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip.c
 sip_common.o:	../src/sip_common.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip_common.c
+sip_server.o:   ../src/sip_server.c ../src/sdr.h
+	$(CC) $(CFLAGS) -c ../src/sip_server.c
 sip_register.o:	../src/sip_register.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip_register.c
 bus.o:	../src/bus.c ../src/sdr.h

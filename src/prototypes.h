@@ -34,18 +34,18 @@ struct in_addr look_up_address(char *hostname);
 int sip_listen(char *address, int port);
 int is_a_sip_request(char *msg);
 int is_a_sip_reply(char *msg);
-int parse_sip_reply(char *msg);
+int parse_sip_reply(char *msg, char *addr);
 char *sip_get_dstname(char *msg);
 
 /*sip.c*/
 int sip_recv();
 int sip_tx_init(char *address, int port, char ttl);
-int parse_sip_success(char *msg);
-int parse_sip_progress(char *msg);
-int parse_sip_fail(char *msg);
-int parse_sip_fa(char *msg);
-int parse_sip_ringing(char *msg);
-int parse_sip_trying(char *msg);
+int parse_sip_success(char *msg, char *addr);
+int parse_sip_progress(char *msg, char *addr);
+int parse_sip_fail(char *msg, char *addr);
+int parse_sip_fa(char *msg, char *addr);
+int parse_sip_ringing(char *msg, char *addr);
+int parse_sip_trying(char *msg, char *addr);
 int sip_send(char *msg, int len, struct sockaddr_in *dst, int ttl);
 
 /*ui_fns.c*/

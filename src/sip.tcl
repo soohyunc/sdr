@@ -310,7 +310,8 @@ proc send_sip {dstuser user aid id win addr} {
     #the addr parameter should be zero when send_sip is called with
     #a new or modified request
 
-    global youremail no_of_connections sip_request_status sip_requests
+    global youremail no_of_connections sip_request_status sip_request_addrs
+    global sip_requests
     global sip_request_count sip_request_user sdrversion
 
     if {$addr!=0} {
@@ -319,6 +320,18 @@ proc send_sip {dstuser user aid id win addr} {
 	set addr [sip_map_url_to_addr $dstuser]
     }
     if {$addr==0} {return 0}
+
+    #we can handle calls to multiple remote sites simultaneously
+    #need to keep track of whether we've tried somewhere before
+    set addrstatus ""
+    catch {
+	set addrstatus $sip_request_addrs($id,$addr)
+    }
+    if {$addrstatus==""} {
+	set sip_request_addrs($id,$addr) "possible"
+    } elseif {$addrstatus=="failed"} {
+	return 0
+    }
 
     if {[lsearch $sip_requests $id]!=-1} {
 	if {($sip_request_status($id)=="unknown") &&
@@ -759,7 +772,7 @@ proc sip_send_method_unsupported {id srcuser dstuser path cseq} {
     sip_send_msg $msg [lrange $path end end]
 }
 
-proc sip_success {msg} {
+proc sip_success {msg pktsrc} {
     global sip_requests
     set lines [split $msg "\n"]
     puts $msg
@@ -816,7 +829,7 @@ proc sip_success {msg} {
     }
 }
 
-proc sip_status {msg} {
+proc sip_status {msg pktsrc} {
     set smode [lindex $msg 1]
     set reason [lindex $msg 2]
     debug "sip_status: $smode"
@@ -873,7 +886,7 @@ proc sip_status {msg} {
     }
 }
 
-proc sip_failure {msg} {
+proc sip_failure {msg pktsrc} {
     global no_of_connections
     set smode [lindex $msg 1]
     set reason [lindex $msg 2]
@@ -918,77 +931,77 @@ proc sip_failure {msg} {
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 400"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	401 {
 	    # Unauthorised
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was an authorization failure will contacting $dstuser"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	402 {
 	    # Payment required
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "$dstuser is requiring payment!"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	403 {
 	    # Forbidden
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "The remote server is refusing to connect your call"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	404 {
 	    #Not found
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "User $dstuser does not appear to exist"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	407 {
 	    #Method Not Allowed
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 407"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	408 {
 	    #Request Timeout
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 408"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	420 {
 	    #Bad extension
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 420"
 	    }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	}
 	480 {
 	    #temporarily unavailable
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "User $dstuser was unavailable"
 	    }
-	    sip_cancel_connection $id path
+	    sip_cancel_connection $id $pktsrc
 	}
 	481 {
 	    #Invalid call ID
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 481"
 	    }
-	    sip_cancel_connection $id path
+	    sip_cancel_connection $id $pktsrc
 	}
 	481 {
 	    #Loop detected
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 482"
 	    }
-	    sip_cancel_connection $id path
+	    sip_cancel_connection $id $pktsrc
 	}
 	600 {
 	    # Busy
@@ -1016,7 +1029,7 @@ proc sip_failure {msg} {
 		    sip_connection_fail $id \
 			    "Failed to contact $dstuser (reason $smode)"
 		} else {
-		    sip_cancel_connection $id $path
+		    sip_cancel_connection $id $pktsrc
 		}
 	    } else {
 		sip_connection_fail $id \
@@ -1027,7 +1040,7 @@ proc sip_failure {msg} {
     }
 }
 
-proc sip_moved {msg} {
+proc sip_moved {msg pktsrc} {
     global no_of_connections sip_request_aid sip_request_win
     set smode [lindex $msg 1]
     set reason [lindex $msg 2]
@@ -1036,13 +1049,13 @@ proc sip_moved {msg} {
     set srcuser ""
     set dstuser ""
     set ct ""
-    set ch ""
     set location ""
+    set id ""
     foreach line $lines {
         set line [string trim $line "\r"]
         if {$line==""} {break}
         set lparts [split $line ":"]
-        switch [lindex $lparts 0] {
+        switch [string toupper [lindex $lparts 0]] {
 	    CALL-ID {
 		set id [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
@@ -1067,6 +1080,11 @@ proc sip_moved {msg} {
 	    }
         }
     }
+    if {$id==""} {
+	#got a redirect with no call ID - this is bogus
+	puts "Got a bogus response - no call-ID:\n$msg"
+	return 0
+    }
     set aid $sip_request_aid($id) 
     if {[string compare [string range $location 0 5] "sip://"]==0} {
 	#it's a SIP URL
@@ -1085,7 +1103,7 @@ proc sip_moved {msg} {
 	if {$no_of_connections($id)==1} {
 	    sip_connection_fail $id "I got an alternative location I don't undertand: $location."
 	}
-	sip_cancel_connection $id $path
+	sip_cancel_connection $id $pktsrc
 	return
     }
 	
@@ -1096,13 +1114,14 @@ proc sip_moved {msg} {
 	301 {
 	    #moved permanently
 	    sip_session_status $id "progressing $location"
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	    send_sip $dstuser $dstuser $aid $id $sip_request_win($id) 0
 	}
 	302 {
 	    #moved temporarily
+	    puts "got a 302, $origuser->$dstuser"
 	    sip_session_status $id "progressing $location"
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
 	    send_sip $dstuser $origuser $aid $id $sip_request_win($id) 0
 	}
 	380 {
@@ -1111,7 +1130,7 @@ proc sip_moved {msg} {
             if {$no_of_connections($id)==1} {
                 sip_connection_fail $id "An alternative service was suggested by $dstuser but I don't support this yet."
             }
-	    sip_cancel_connection $id $path
+	    sip_cancel_connection $id $pktsrc
         }
 	    
     }
@@ -1150,6 +1169,24 @@ proc sip_connection_succeed {id msg} {
 }
 
 proc sip_cancel_connection {id hostaddr} {
+    global sip_request_addrs
+    puts "sip_cancel_connection $id $hostaddr"
+    if {$hostaddr=="all"} {
+	#need to cancel all requests made for this call-ID
+	set list [array names sip_request_addrs]
+	foreach item $list {
+	    set tmpid [lindex [split $item ","] 0]
+	    if {[string compare $tmpid $id]==0} {
+		set sip_request_addrs($id,$item) "failed"
+	    }
+	}
+    } else {
+	set list [array names sip_request_addrs]
+	foreach item $list {
+	    puts "addrs: $item $sip_request_addrs($item)"
+	}
+	set sip_request_addrs($id,$hostaddr) "failed"
+    }
 }
 
 proc escape_quotes {msg} {

@@ -332,7 +332,7 @@ int is_a_sip_reply(char *msg)
   return(strncmp(msg, "SIP/2.0 ", 8)==0);
 }
 
-int parse_sip_reply(char *msg)
+int parse_sip_reply(char *msg, char *addr)
 {
   char rtype;
   rtype=msg[8];
@@ -340,17 +340,17 @@ int parse_sip_reply(char *msg)
   printf("rtype: %c\n", rtype);
 #endif
   if(rtype=='1')
-    parse_sip_progress(msg);
+    parse_sip_progress(msg, addr);
   else if(rtype=='2')
-    parse_sip_success(msg);
+    parse_sip_success(msg, addr);
   else if(rtype=='3')
-    parse_sip_redirect(msg);
+    parse_sip_redirect(msg, addr);
   else if(rtype=='4')
-    parse_sip_fail(msg);
+    parse_sip_fail(msg, addr);
   else if(rtype=='5')
-    parse_sip_fail(msg);
-  else if(rtype=='6')
-    parse_sip_fail(msg);
+    parse_sip_fail(msg, addr);
+  else if(rtype=='6', addr)
+    parse_sip_fail(msg, addr);
   else
     fprintf(stderr, "Illegal SIP reply type\n");
   return 0;

@@ -49,6 +49,7 @@ int sip_recv()
 {
   int length;
   char *dstname;
+  char pktsrc[256];
   static char buf[MAXADSIZE];
   struct sockaddr_in from;
   int fromlen=sizeof(struct sockaddr);
@@ -57,6 +58,7 @@ int sip_recv()
       perror("sip recv error");
       return 0;
   }
+  strcpy(pktsrc, inet_ntoa(from.sin_addr));
   if (length==MAXADSIZE) {
       /*some sneaky bugger is trying to splat the stack?*/
       fprintf(stderr, "Warning: 2K announcement truncated\n");
@@ -91,7 +93,7 @@ int sip_recv()
 #ifdef DEBUG
       printf("It's a reply\n");
 #endif
-      parse_sip_reply(buf);
+      parse_sip_reply(buf, pktsrc);
     }
   else
     {
@@ -103,9 +105,9 @@ int sip_recv()
 }
 
 
-int parse_sip_success(char *msg)
+int parse_sip_success(char *msg, char *addr)
 {
-  if (Tcl_VarEval(interp, "sip_success \"", msg, "\"", NULL)!=TCL_OK)
+  if (Tcl_VarEval(interp, "sip_success \"", msg, "\" ", addr, NULL)!=TCL_OK)
     {
       Tcl_AddErrorInfo(interp, "\n");
       fprintf(stderr, "%s\n", interp->result);
@@ -114,9 +116,9 @@ int parse_sip_success(char *msg)
   return 0;
 }
 
-int parse_sip_fail(char *msg)
+int parse_sip_fail(char *msg, char *addr)
 {
-  if (Tcl_VarEval(interp, "sip_failure \"", msg, "\"", NULL)!=TCL_OK)
+  if (Tcl_VarEval(interp, "sip_failure \"", msg, "\" ", addr, NULL)!=TCL_OK)
     {
       Tcl_AddErrorInfo(interp, "\n");
       fprintf(stderr, "%s\n", interp->result);
@@ -125,9 +127,9 @@ int parse_sip_fail(char *msg)
   return 0;
 }
 
-int parse_sip_redirect(char *msg)
+int parse_sip_redirect(char *msg, char *addr)
 {
-  if (Tcl_VarEval(interp, "sip_moved \"", msg, "\"", NULL)!=TCL_OK)
+  if (Tcl_VarEval(interp, "sip_moved \"", msg, "\" ", addr, NULL)!=TCL_OK)
     {
       Tcl_AddErrorInfo(interp, "\n");
       fprintf(stderr, "%s\n", interp->result);
@@ -136,17 +138,17 @@ int parse_sip_redirect(char *msg)
   return 0;
 }
 
-int parse_sip_fa(char *msg)
+int parse_sip_fa(char *msg, char *addr)
 {
   return 0;
 }
 
-int parse_sip_progress(char *msg)
+int parse_sip_progress(char *msg, char *addr)
 {
 #ifdef DEBUG
   printf("parse_sip_ringing\n");
 #endif
-  if (Tcl_VarEval(interp, "sip_status \"", msg, "\"", NULL)!=TCL_OK)
+  if (Tcl_VarEval(interp, "sip_status \"", msg, "\" ", addr, NULL)!=TCL_OK)
     {
       Tcl_AddErrorInfo(interp, "\n");
       fprintf(stderr, "%s\n", interp->result);
