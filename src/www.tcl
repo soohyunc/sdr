@@ -147,6 +147,9 @@ proc webdisp2 {{reload {}}} {
     if {[string index $str 0]=="<"} {
 	set header "Content-type: text/html\n"
 	set data $str
+    } elseif {[string first "HTTP/1" $str] != 0} {
+	set header "Content-type: text/plain\n"
+	set data $str
     } else {
 	set hend [string first "\r\n\r\n" $str]
 #	puts $hend
@@ -168,7 +171,7 @@ proc webdisp2 {{reload {}}} {
     set ctype text
     set cstype html
     set hlist [split $header "\n"]
-    set redirect 0
+    set redirect {}
     foreach h $hlist {
 	set h [string trim $h "\r"]
 	set field [string tolower [lindex [split $h ":"] 0]]
@@ -182,7 +185,7 @@ proc webdisp2 {{reload {}}} {
 		[string trim [join [lrange [split $h ":"] 1 end] ":"] " "]
 	}
     }
-    if {$redirect != 0} {
+    if {[string length $redirect] != 0} {
 	set urilist [lreplace $urilist $uriix $uriix $redirect]
 	webdisp2
 	return

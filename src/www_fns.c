@@ -132,7 +132,8 @@ int ui_webto(dummy, interp, argc, argv)
 
       if (usingproxy)	/* Using proxy */
 	{
-	  uri = argv[2];
+	  uri = malloc(strlen(argv[2]) + 1);
+	  strcpy(uri, argv[2]);
 	  *end = ':';
 	  strncpy(file, argv[1], sizeof(file) - 1);
 	}
@@ -175,6 +176,8 @@ int ui_webto(dummy, interp, argc, argv)
 	{
 	  if ((addr=gethostbyname(uri)) == NULL)
 	    {
+	      if (usingproxy)
+		free(uri);
 	      sprintf(interp->result, "Content-Type: text/html\n\n<html><h1>Unknown Host</h1>%s does not exist</html>", uri);
 	      return TCL_OK;
 	    }
@@ -187,6 +190,8 @@ int ui_webto(dummy, interp, argc, argv)
 	  memcpy((char*)&sinhim.sin_addr, addr->h_addr, addr->h_length);
 #endif
 	}
+      if (usingproxy)
+	free(uri);
 
       Tcl_SetVar2(interp, "webstatus", NULL, "Connecting...", TCL_GLOBAL_ONLY);
       Tcl_Eval(interp, "webstatus");
