@@ -10,7 +10,10 @@ int aux_load_file(char *buf, char *name, char *flag);
 int parse_announcement(int enc, char *data, int length,
                    u_long src, u_long hfrom, char *rx_sock_addr,
                    int rx_sock_port, int sec);
-int build_packet(char *buf, char *adstr, int len, int encrypt);
+int build_packet(char *buf, char *adstr, int len, int encrypt,
+                 u_int auth_len, u_int hdr_len,
+                 struct auth_info *authinfo, struct priv_header *sapenc_p);
+
 int store_data_to_announce(struct advert_data *addata, char *adstr,
 			   char *keyname);
 
