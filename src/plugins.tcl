@@ -545,13 +545,16 @@ proc wcsearch {rules base} {
     return $wclist
 }
 
-proc start_media_tool {aid media proto fmt attrlist} {
+proc start_media_tool {aid mnum proto fmt attrlist} {
     global rules
     global mappings
     global attrflags
     global withattrs
     global tool_state
     global macrovalues
+    global ldata
+
+    set media $ldata($aid,$mnum,media)
 
     foreach macrovalue [array names macrovalues] {
 	unset macrovalues($macrovalue)
@@ -667,14 +670,14 @@ proc start_media_tool {aid media proto fmt attrlist} {
 #	    } else {
 #		set rule [lindex $newrules 0]
 #	    }
-            select_tool_for_media $aid $media $proto $fmt \
+            select_tool_for_media $aid $mnum $proto $fmt \
 			$rulelist $attrlist
             return 0
 	} else {
 	    set rule [lindex $rulelist 0]
 	}
     }
-    return [apply_startup_rule $aid $media $proto $fmt $rule $attrlist]
+    return [apply_startup_rule $aid $mnum $proto $fmt $rule $attrlist]
 }
 
 proc list_reverse {list} {
@@ -686,9 +689,8 @@ proc list_reverse {list} {
     return $newlist
 }
 
-proc apply_startup_rule {aid media proto fmt rule attrlist} {
-    global sd_sess tcl_platform
-    global sd_$media
+proc apply_startup_rule {aid mnum proto fmt rule attrlist} {
+    global tcl_platform
     global macros macrokeys
     global attrflags noattrflags noattrlist macrovalues
     global youremail
@@ -696,6 +698,7 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     global debug1
     global tooldata encryptionflag
 
+    set media $ldata($aid,$mnum,media)
 #    puts apply_startup_rule
 #    puts "media: $media"
 #    puts "proto: $proto"
@@ -762,13 +765,14 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
 	}
     }
 	
-    set ttl $sd_sess(ttl)
-    set sessname \"$sd_sess(name)\"
-    set address [set sd_[set media](address)]
-    set layers [set sd_[set media](layers)]
-    set port [set sd_[set media](port)]
-    set chan [get_channel $sd_sess(sess_id)]
-    set cryptkey \"[set sd_[set media](mediakey)]\"
+    set ttl $ldata($aid,ttl)
+    set sessname \"$ldata($aid,session)\"
+    set address $ldata($aid,$mnum,addr)
+    set layers $ldata($aid,$mnum,layers)
+    set port $ldata($aid,$mnum,port)
+    set chan [get_channel $aid]
+    set cryptkey \"\"
+    catch {set cryptkey \"$ldata($aid,$mnum,mediakey)\"}
 
     set rule "$tool $attrs $rule"
     if {$debug1} {
@@ -907,8 +911,10 @@ proc fix_up_plugin_rule {rule} {
     return $newrule
 }
 
-proc select_tool_for_media {aid media proto fmt rulelist attrlist} {
-    set win .st$media
+proc select_tool_for_media {aid mnum proto fmt rulelist attrlist} {
+    global ldata
+    set media $ldata($aid,$mnum,media)
+    set win .st$aid$mnum
     catch {destroy $win}
     toplevel $win
     wm title $win "Select a tool"
@@ -932,7 +938,7 @@ proc select_tool_for_media {aid media proto fmt rulelist attrlist} {
     frame $win.f.f2
     pack $win.f.f2 -side top -fill x -expand true
     button $win.f.f2.start -text "Start tool" \
-	-command "apply_startup_rule $aid $media $proto $fmt \[set startrule($media)\] \"$attrlist\";destroy $win" -highlightthickness 0
+	-command "apply_startup_rule $aid $mnum $proto $fmt \[set startrule($media)\] \"$attrlist\";destroy $win" -highlightthickness 0
     tixAddBalloon $win.f.f2.start Button [tt "Click here to start up the tool you've selected"]
     pack $win.f.f2.start -side left -fill x -expand true
     button $win.f.f2.cancel -text "Cancel" -command "destroy $win" \
