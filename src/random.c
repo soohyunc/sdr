@@ -107,7 +107,7 @@ asm("\
 long
 lblrandom(void)
 {
-	register unsigned int x = randseed;
+	register unsigned int x = lblrandseed;
 	register unsigned int hi, lo;
 	register long t;
 
@@ -116,7 +116,7 @@ lblrandom(void)
 	t = 16807 * lo - 2836 * hi;
 	if (t <= 0)
 		t += 0x7fffffff;
-	randseed = t;
+	lblrandseed = t;
 	return (t);
 }
 #endif
