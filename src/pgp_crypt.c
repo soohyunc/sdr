@@ -97,12 +97,12 @@ int generate_authentication_info(char *data,
     fulltxt  = (char *)malloc(MAXFILENAMELEN);
     fullsig  = (char *)malloc(MAXFILENAMELEN);
 
-    homedir  = (char *)getenv("HOME");
-
 #ifdef WIN32
+	homedir  = (char *)getenv("HOMEDIR");
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
 #else
+    homedir  = (char *)getenv("HOME");
     sprintf(fulltxt, "%s/.sdr/%d.%s",  homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
 #endif
@@ -294,12 +294,12 @@ char *check_authentication(struct auth_header *auth_p,
     fulltxt  = (char *)malloc(MAXFILENAMELEN);
     fullsig  = (char *)malloc(MAXFILENAMELEN);
 
-    homedir  = (char *)getenv("HOME");
-
 #ifdef WIN32
+    homedir  = (char *)getenv("HOMEDIR");
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
 #else
+    homedir  = (char *)getenv("HOME");
     sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
 #endif
@@ -511,12 +511,12 @@ int generate_encryption_info(char *data,
     encfulltxt  = (char *)malloc(MAXFILENAMELEN);
     encfullenc  = (char *)malloc(MAXFILENAMELEN);
 
-    homedir = (char *)getenv("HOME");
-
 #ifdef WIN32
+    homedir = (char *)getenv("HOMEDIR");
     sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
     sprintf(encfullenc, "%s\\sdr\\%d.%s", homedir, irand, sapenc_fname);
 #else
+    homedir = (char *)getenv("HOME");
     sprintf(encfulltxt, "%s/.sdr/%d.%s", homedir, irand, enctxt_fname);
     sprintf(encfullenc, "%s/.sdr/%d.%s", homedir, irand, sapenc_fname);
 #endif
@@ -695,12 +695,12 @@ int check_encryption(	struct priv_header *enc_p,
   encfullenc  = (char *)malloc(MAXFILENAMELEN);
   encfulltxt  = (char *)malloc(MAXFILENAMELEN);
 
-  homedir = (char *)getenv("HOME");
-
 #ifdef WIN32
+  homedir = (char *)getenv("HOMEDIR");
   sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
   sprintf(encfullenc, "%s\\sdr\\%d.%s", homedir, irand, sapenc_fname);
 #else
+  homedir = (char *)getenv("HOME");
   sprintf(encfulltxt, "%s/.sdr/%d.%s", homedir, irand, enctxt_fname);
   sprintf(encfullenc, "%s/.sdr/%d.%s", homedir, irand, sapenc_fname);
 #endif

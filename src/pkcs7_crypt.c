@@ -73,10 +73,11 @@ int generate_x509_authentication_info(char *data,int len, char *authstatus, int 
 
    writelog(printf("++ debug ++ > entered generate_authentication_x509_info\n");)
  
-    homedir=(char *)getenv("HOME");
 #ifdef WIN32
+    homedir=(char *)getenv("HOMEDIR");
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, x509txt_fname);
 #else
+    homedir=(char *)getenv("HOME");
     sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, x509txt_fname);
 #endif
 
@@ -152,12 +153,13 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   /* Extract the signature and key certificate from the packet and
      store in files. */
 
-  homedir=(char *)getenv("HOME");
 #ifdef WIN32
+  homedir=(char *)getenv("HOMEDIR");
   sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, x509txt_fname);
   sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand,x509sig_fname);
   sprintf(fullbdy, "%s\\sdr\\%d.%s", homedir, irand,x509bdy_fname);
 #else
+  homedir=(char *)getenv("HOME");
   sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, x509txt_fname);
   sprintf(fullsig, "%s/.sdr/%d.%s", homedir, irand,x509sig_fname);
   sprintf(fullbdy, "%s/.sdr/%d.%s", homedir, irand,x509bdy_fname);
@@ -255,10 +257,11 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
 
 /* Open all files and read data */
 
-  homedir=(char *)getenv("HOME");
 #ifdef WIN32
+  homedir=(char *)getenv("HOMEDIR");
   sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, x509sig_fname);
 #else
+  homedir=(char *)getenv("HOME");
   sprintf(fullsig, "%s/.sdr/%d.%s", homedir, irand, x509sig_fname);
 #endif
     sprintf(irandstr, "%d", irand);
@@ -336,11 +339,12 @@ int generate_x509_encryption_info(char *data, char *encstatus, int irand,
  
    writelog(printf("++ debug ++ > entered generate_authentication_info\n");)
  
-    homedir=(char *)getenv("HOME");
 #ifdef WIN32
+    homedir=(char *)getenv("HOMEDIR");
     sprintf(sx509fulltxt, "%s\\sdr\\%d.%s", homedir, irand, sx509txt_fname);
-sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
+    sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
 #else
+    homedir=(char *)getenv("HOME");
     sprintf(sx509fulltxt, "%s/.sdr/%d.%s", homedir, irand, sx509txt_fname);
     sprintf(sx509fullenc, "%s/.sdr/%d.%s", homedir, irand, sx509enc_fname);
 #endif
@@ -410,12 +414,12 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   char *homedir;
   char sx509fulltxt[MAXFILENAMELEN]="", sx509fullenc[MAXFILENAMELEN]="";
 
-  homedir=(char *)getenv("HOME");
 #ifdef WIN32
+  homedir=(char *)getenv("HOMEDIR");
   sprintf(sx509fulltxt, "%s\\sdr\\%d.%s", homedir, irand, sx509txt_fname);
   sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
- 
 #else
+  homedir=(char *)getenv("HOME");
   sprintf(sx509fulltxt, "%s/.sdr/%d.%s", homedir, irand, sx509txt_fname);
   sprintf(sx509fullenc, "%s/.sdr/%d.%s", homedir, irand, sx509enc_fname);
 #endif
@@ -502,12 +506,12 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type, 
  
 /* Open all files and read data */
  
-  homedir=(char *)getenv("HOME");
 #ifdef WIN32
+  homedir=(char *)getenv("HOMEDIR");
   sprintf(sx509fulltxt, "%s\\sdr\\%d.%s", homedir, irand, sx509txt_fname);
   sprintf(sx509fullenc, "%s\\sdr\\%d.%s", homedir, irand, sx509enc_fname);
- 
 #else
+  homedir=(char *)getenv("HOME");
   sprintf(sx509fulltxt, "%s/.sdr/%d.%s", homedir, irand, sx509txt_fname);
   sprintf(sx509fullenc, "%s/.sdr/%d.%s", homedir, irand, sx509enc_fname);
 #endif
