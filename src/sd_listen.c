@@ -1808,6 +1808,9 @@ void recv_packets(ClientData fd)
 
     writelog(printf("entered recv_packets\n");)
 
+    memset(asym_keyid,     0, ASYMKEYIDLEN);
+    memset(enc_asym_keyid, 0, ASYMKEYIDLEN);
+
     fromlen=sizeof(struct sockaddr);
 
 /* set up keyids */
