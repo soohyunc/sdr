@@ -29,7 +29,7 @@ int init_security()
   keylist=NULL;
   get_sdr_home(keyfilename);
 #ifdef WIN32
-  strcat(keyfilename, "\\sdr\\keys");
+  strcat(keyfilename, "\\keys");
 #else
   strcat(keyfilename, "/keys");
 #endif
