@@ -3,7 +3,7 @@ ENCOBJS            = crypt.o md5.o sap_crypt.o qfDES.o polluted.o
 ENCINCLUDES        = -I../src/qfdes
 
 polluted.o:     ../src/polluted.c
-	$(CC) $(CFLAGS) -DDEBUG -I. -c ../src/polluted.c
+	$(CC) $(CFLAGS) -I. -c ../src/polluted.c
 sap_crypt.o:	../src/sap_crypt.c ../src/sap_crypt.h
 	$(CC) $(CFLAGS) -c ../src/sap_crypt.c
 crypt.o: ../src/crypt.c ../src/crypt.h ../src/qfDES.h

@@ -49,7 +49,7 @@ proc write_cache {} {
 		set flag $ldata($tmpaid,session)
 	    }
 	    if {$flag==0} {
-		file rm $file
+		file delete $file
 	    }
 	}
     }
@@ -68,7 +68,7 @@ proc write_cache {} {
                 set flag $ldata($tmpaid,session)
             }
             if {$flag==0} {
-                file rm $file
+                file delete $file
             }
         }
     }
