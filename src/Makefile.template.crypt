@@ -1,11 +1,15 @@
-SDR_UI_FILES_CRYPT = tcl_sap_crypt.o
-ENCOBJS            = crypt.o md5.o sap_crypt.o qfDES.o polluted.o
+SDR_UI_FILES_CRYPT = tcl_sap_crypt.o tcl_pgp_crypt.o tcl_pkcs7_crypt.o
+ENCOBJS            = crypt.o md5.o sap_crypt.o qfDES.o polluted.o pgp_crypt.o  pkcs7_crypt.o
 ENCINCLUDES        = -I../src/qfdes
 
 polluted.o:     ../src/polluted.c
 	$(CC) $(CFLAGS) -I. -c ../src/polluted.c
 sap_crypt.o:	../src/sap_crypt.c ../src/sap_crypt.h
 	$(CC) $(CFLAGS) -c ../src/sap_crypt.c
+pgp_crypt.o:    ../src/pgp_crypt.c ../src/sap_crypt.h
+	$(CC) $(CFLAGS) -c ../src/pgp_crypt.c
+pkcs7_crypt.o:  ../src/pkcs7_crypt.c ../src/sap_crypt.h
+	$(CC) $(CFLAGS) -c ../src/pkcs7_crypt.c
 crypt.o: ../src/crypt.c ../src/crypt.h ../src/qfDES.h
 	$(CC) $(CFLAGS) -c ../src/crypt.c
 md5.o: ../src/md5.c ../src/md5.h
