@@ -546,7 +546,7 @@ int load_cache_entry(
         strcpy(authmessage, "none");
       } else {
         strcpy(authstatus, "unchecked");
-        strcpy(authmessage, "The signature from the cache file has not been checkedfile. It will be checked when it is received as an announcement.");
+        strcpy(authmessage, "The signature from the cache file has not been checked. It will be checked when it is received as an announcement.");
       }
 
       if (strcmp(enctype,"none")==0) {
