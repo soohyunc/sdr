@@ -1,5 +1,9 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+
+2.5a5 E.Whelan@cs.ucl.ac.uk 5th August 1998
+  - changed version number to 2.5a5 in preparation for the release
+
 2.5a4 G.MontasserKohsari@cs.ucl.ac.uk  31st July 1998
   - added lots of changes to implement PGP and X.509 authentication
     and encryption
