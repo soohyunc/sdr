@@ -76,7 +76,7 @@ int sip_recv_udp()
 	perror("sip recv error");
 	return 0;
     }
-	splat_tcl_special_chars(char *buf);
+	splat_tcl_special_chars(buf);
     strcpy(pktsrc, inet_ntoa(from.sin_addr));
     if (length==MAXADSIZE) {
 	/*some sneaky bastard is trying to splat the stack?*/

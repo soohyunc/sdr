@@ -1527,7 +1527,7 @@ void recv_packets(ClientData fd)
       free(buf);
       return;
     }
-	splat_tcl_special_chars(char *buf);
+	splat_tcl_special_chars(buf);
 
 /* some sneaky bugger is trying to splat the stack?  */
 
