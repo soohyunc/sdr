@@ -35,7 +35,7 @@
  */
 #ifndef lint
 static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.8 1998-07-29 13:49:30 ucacewh Exp $ (LBL)";
+    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.9 1999-03-22 13:49:30 ucackha Exp $ (LBL)";
 #endif
 
 #include <assert.h>
@@ -169,6 +169,7 @@ extern void TkWinXInit(HINSTANCE hInstance);
 extern int main(int argc, const char *argv[]);
 extern int __argc;
 extern char **__argv;
+extern BOOL APIENTRY DllMain(INSTANCE , DWORD, LPVOID);
 
 static char argv0[255];		/* Buffer used to hold argv0. */
 
@@ -197,6 +198,7 @@ WinMain(
     }
     TclHasSockets(NULL);
 
+    DllMain(hInstance, DLL_PROCESS_ATTACH, 0);
     TkWinXInit(hInstance);
 
     /*
