@@ -21,7 +21,7 @@ proc pkcs7_get_key_list { win } {
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
 		while {$i == 0 } {
         		if { $result == 1} {
-  			putlogfile "The pse and pinn check OK"
+  			#putlogfile "The pse and pinn check OK"
 			set i 1
         		} else {
 			catch {unset env(PSELOC)}
@@ -37,13 +37,13 @@ proc pkcs7_get_key_list { win } {
      }
         set ownerl [Get_ownerlist ]
         if {$result == 0} {
-        putlogfile "Cannot open pse-file \n"
+        #putlogfile "Cannot open pse-file \n"
         } else {
         set ownerl [split $ownerl "<"]
         set i 0
         foreach line $ownerl {
         #set result [regexp { Owner:  (.+)} $line {} userid ]
-        #putlogfile "result = $result"
+        ##putlogfile "result = $result"
            if [regexp {Owner:  (.+)} \
                $line {} userid ] {
                   set user_id(x509,$i) $userid
@@ -84,8 +84,8 @@ proc pkcs7_get_key_list { win } {
                                 set dotdot ""
                             }
  
-                            %s.auth.pwd.l configure -text "Enter passphrase\
- for [string range $user_id(x509,auth_cur_key_sel) 0 18]$dotdot" \
+                            %s.auth.pwd.l configure -text "No passphrase\
+ required for [string range $user_id(x509,auth_cur_key_sel) 0 18]$dotdot" \
                                 -font [resource infoFont]
                         } $win $win $i $win $i $i $win]
                   incr i
@@ -116,7 +116,7 @@ proc pkcs7_get_key_list { win } {
              set dotdot ""
         }
  
-        $win.auth.pwd.l configure -text "Enter passphrase for\
+        $win.auth.pwd.l configure -text "No passphrase required for\
 [string range $user_id(x509,auth_cur_key_sel) 0 18]$dotdot" -font [resource infoFont]
     }
   return
@@ -146,7 +146,7 @@ proc pkcs7_create_signature {irand} {
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
 		while {$i == 0 } {
         		if { $result == 1} {
-  			putlogfile "The pse and pinn check OK"
+  			#putlogfile "The pse and pinn check OK"
 			set i 1
         		} else {
 			catch {unset env(PSELOC)}
@@ -165,33 +165,33 @@ proc pkcs7_create_signature {irand} {
     set tclcmd [ list exec secude pkcs7enc SIGNED-DATA -p $newpse -C $cert -i $local_x509txt_file  -o $local_x509sigcmp_file -E $local_x509bdy_file ]
 
 
-    #putlogfile "$tclcmd \n"
+    ##putlogfile "$tclcmd \n"
     set result [catch $tclcmd output]
     set tclcmd [ list exec secude sec_zip $local_x509sigcmp_file  $local_x509sig_file ]
 
 
-    #putlogfile "$tclcmd \n"
+    ##putlogfile "$tclcmd \n"
     set result [catch $tclcmd output]
     if { $result == 1 } {
-    #putlogfile " $output\n"
-    #putlogfile "result = $result "
+    ##putlogfile " $output\n"
+    ##putlogfile "result = $result "
     }
  
     #set tclcmd [ list exec secude psemaint -p $newpse export Cert  $local_x509key_file   ]
-    #putlogfile "$tclcmd \n"
+    ##putlogfile "$tclcmd \n"
     set result [catch $tclcmd output]
     #if {$result == 0} {
-    #    putlogfile "Something wrong here...cannot extract key for $user_id(x509,\auth_cur_key_sel) \n"
+    #    #putlogfile "Something wrong here...cannot extract key for $user_id(x509,\auth_cur_key_sel) \n"
     #    return 0
     #} else {
-    #    putlogfile "$user_id(x509,auth_cur_key_sel) key extracted...\n"
+    #    #putlogfile "$user_id(x509,auth_cur_key_sel) key extracted...\n"
     #}
     set tclcmd [ list exec secude psemaint -p $newpse own]
     set result [ catch $tclcmd ownerlist ]
    set ownerlist [regexp -nocase {PSE Owner:  (.+)} $ownerlist {} ownerl] 
                 set mess "The Message were Successfully Signed Using"
     		set recv_authmessage [ concat $mess $ownerl] 
-    putlogfile "Adding authentication to session announcement \n"
+    #putlogfile "Adding authentication to session announcement \n"
     set recv_result "1"
     return 1
 }
@@ -239,7 +239,7 @@ proc pkcs7_check_authentication {irand} {
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
 		while {$i == 0 } {
         		if { $result == 1} {
-  			putlogfile "The pse and pinn check OK"
+  			#putlogfile "The pse and pinn check OK"
 			set i 1
         		} else {
 			catch {unset env(PSELOC)}
@@ -257,22 +257,22 @@ proc pkcs7_check_authentication {irand} {
     	}
      }
     set tclcmd [ list exec secude sec_zip -d $local_x509sig_file $local_x509desig_file ]
-    #putlogfile "$tclcmd"
+    ##putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
     if { $result == 1 } {
-    #putlogfile "OUTPUTZIP $output"
+    ##putlogfile "OUTPUTZIP $output"
     }
     set newpse [Get_PSE $local_x509desig_file $irand]
     set tclcmd [ list exec secude pkcs7dec -p $newpse -i $local_x509desig_file -E $local_x509txt_file ]
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
     if { $result == 1 } {
-    putlogfile "OUTPUT $output"
+    #putlogfile "OUTPUT $output"
     }
     pkcs7_InterpretOutput $output pkcs7result
    set pkcs7result(msg) [pkcs7_ShortenOutput $pkcs7result(msg) $pkcs7result(summary)] 
-   #putlogfile "MSGshort = $pkcs7result(msg) "
-    putlogfile "OKshort=$pkcs7result(ok) summary: $pkcs7result(summary)"
+   ##putlogfile "MSGshort = $pkcs7result(msg) "
+    #putlogfile "OKshort=$pkcs7result(ok) summary: $pkcs7result(summary)"
     set tclcmd [ list exec secude asn1show $local_x509desig_file]
     set result [ catch $tclcmd certinfo]
     set infofile [open $local_info_file w 0600]
@@ -326,7 +326,7 @@ set pkcs7result(ok) 1
       } else {
          set  pkcs7result(serialno) "none"
      }
-     #putlogfile "key-id = $pkcs7result(keyid)"
+     ##putlogfile "key-id = $pkcs7result(keyid)"
      if [regexp {.*failed.*} $in pkcs7result(msg)] {
        if [regexp {You are not on the recipients.*} $in pkcs7result(msg)] {
 	   set pkcs7result(summary) "SecMissing"
@@ -464,7 +464,7 @@ pack $w.but.cancel -side right -fill x -expand true
        grab release $w
        destroy $w
        if { $getpinl(ok) == 1} {
-          #putlogfile "$getpinl(result)"
+          ##putlogfile "$getpinl(result)"
 	return $getpinl(result)
        } else {
              return {}
@@ -480,20 +480,20 @@ global env
     	close $out
 	set env(USERPIN) $yourpin
 	set tclcmd [ list exec secude pkcs7enc SIGNED-DATA -p $yourpse -i $tmpfile -o $outfile]
-	#putlogfile "$tclcmd"
+	##putlogfile "$tclcmd"
 	set result [ catch $tclcmd output ]
         if { $result == 1 } {
-	putlogfile "$output"
+	#putlogfile "$output"
          }
         file delete $tmpfile
         file delete $outfile
 	pkcs7_InterpretOutput $output pkcs7result
 	if {$pkcs7result(ok) == 0} {
-	#putlogfile " checkresult = $pkcs7result(ok)"
-        #putlogfile "$pkcs7result(summary)"
+	##putlogfile " checkresult = $pkcs7result(ok)"
+        ##putlogfile "$pkcs7result(summary)"
 	return 0
 	} else {
-        #putlogfile "$pkcs7result(summary)"
+        ##putlogfile "$pkcs7result(summary)"
 	return 1
 	}
 }
@@ -507,20 +507,20 @@ global env
     	close $out
 	set env(USERPIN) $smartpin
 	set tclcmd [ list exec secude pkcs7enc SIGNED-DATA -p $smartpse -i $tmpfile -o $outfile]
-	#putlogfile "$tclcmd"
+	##putlogfile "$tclcmd"
 	set result [ catch $tclcmd output ]
         if { $result == 1 } {
-	putlogfile "$output"
+	#putlogfile "$output"
          }
         file delete $tmpfile
         file delete $outfile
 	pkcs7_InterpretOutput $output pkcs7result
 	if {$pkcs7result(ok) == 0} {
-	#putlogfile " checkresult = $pkcs7result(ok)"
-        #putlogfile "$pkcs7result(summary)"
+	##putlogfile " checkresult = $pkcs7result(ok)"
+        ##putlogfile "$pkcs7result(summary)"
 	return 0
 	} else {
-        #putlogfile "$pkcs7result(summary)"
+        ##putlogfile "$pkcs7result(summary)"
 	return 1
 	}
 }
@@ -536,11 +536,11 @@ proc enc_x509_get_key_list {win aid} {
     global sig_id
     global ldata
     global env
-    #putlogfile "enc_x509_get_key_list"
+    ##putlogfile "enc_x509_get_key_list"
     set alfile "[glob -nocomplain [resource sdrHome]]/pks-als.txt"
 
     if { [file exists $alfile]  } {
-    putlogfile "file exists"
+    #putlogfile "file exists"
     } else {
     set certfile "[glob -nocomplain [resource sdrHome]]/owncert"
         # Extract the owner of the pse and display it 
@@ -554,7 +554,7 @@ proc enc_x509_get_key_list {win aid} {
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
                 while {$i == 0 } {
                         if { $result == 1} {
-                        putlogfile "The pse and pinn check OK"
+                        #putlogfile "The pse and pinn check OK"
                         set yourpse $env(PSELOC)
                         set i 1
                         } else {
@@ -626,7 +626,7 @@ proc enc_x509_get_key_list {win aid} {
 		  set keyn [string range $line 0 26]$dotdot
 		  #$win.enc.keys.lb delete $i end
 		  $win.enc.keys.lb insert $i "$keyn"
-                  #putlogfile "i= $i keyn=$keyn"
+                  ##putlogfile "i= $i keyn=$keyn"
  
                   incr i
              }
@@ -689,7 +689,7 @@ set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.sym"
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
                 while {$i == 0 } {
                         if { $result == 1} {
-                        putlogfile "The pse and pinn check OK"
+                        #putlogfile "The pse and pinn check OK"
                         set i 1
                         } else {
                         catch {unset env(PSELOC)}
@@ -715,16 +715,16 @@ set tclcmd [concat $tclcmd  -p $yourpse]
 set tclcmd [concat $tclcmd  -r \"$key_id(x509,enc_cur_key_sel)\"]
 set tclcmd [concat $tclcmd  -r \"$ownerl\"]
 set tclcmd [concat $tclcmd  -i $local_enctxt_file -o $local_sapenc_file]
-putlogfile "$tclcmd"
+#putlogfile "$tclcmd"
 
 set result [catch $tclcmd output]
         if { $result == 1 } {
-	putlogfile "$output"
+	#putlogfile "$output"
          }
  set mess [concat "The message was encrypted for both yourself, using your PSE public key, and user " $key_id(x509,enc_cur_key_sel)]
     set  recv_encmessage $mess
 
- #putlogfile "Adding x509 encryption to session announcement \n"
+ ##putlogfile "Adding x509 encryption to session announcement \n"
                            set recv_result "1"
     return 1
 }
@@ -750,7 +750,7 @@ proc pkcs7_check_encryption {irand} {
         set result [Misc_CheckPse $env(PSEPIN) $env(PSELOC)]
                 while {$i == 0 } {
                         if { $result == 1} {
-                        putlogfile "The pse and pinn check OK"
+                        #putlogfile "The pse and pinn check OK"
                         set i 1
                         } else {
                         catch {unset env(PSELOC)}
@@ -772,16 +772,16 @@ proc pkcs7_check_encryption {irand} {
 set tclcmd [ list exec secude pkcs7dec ]
 set tclcmd [concat $tclcmd  -p $newpse]
 set tclcmd [concat $tclcmd  -i  $local_sapenc_file  -o $local_enctxt_file ]
-putlogfile "$tclcmd"
+#putlogfile "$tclcmd"
 set result [catch $tclcmd output]
         #puts "$output"
         if { $result == 1 } {
- 	putlogfile "$output"
+ 	#putlogfile "$output"
 	}
          pkcs7_InterpretOutput $output pkcs7result
-         putlogfile "OK=$pkcs7result(ok) summary: $pkcs7result(summary)"
+         #putlogfile "OK=$pkcs7result(ok) summary: $pkcs7result(summary)"
                 if {$pkcs7result(ok) == 1} {
-                #putlogfile "keyid:$pkcs7result(keyid)"
+                ##putlogfile "keyid:$pkcs7result(keyid)"
                 set recv_encstatus "success"
                 set recv_enc_asym_keyid $pkcs7result(keyid)
                 set tclcmd [ list exec secude psemaint -p $newpse own]
@@ -812,7 +812,7 @@ proc Addx509-cert-alias {file dn } {
 global env
     set alfile "[glob -nocomplain [resource sdrHome]]/pks-als.txt"
     if { [file exists $alfile]  } {
-    putlogfile "file exists"
+    #putlogfile "file exists"
     } else {
     set certfile "[glob -nocomplain [resource sdrHome]]/owncert"
     set test 100
@@ -856,20 +856,20 @@ global env
   }
               regsub {\<} $dn  {} test1
               regsub {\>} $test1 {} certs
-    putlogfile "envUSER  $env(USERPIN)"
+    #putlogfile "envUSER  $env(USERPIN)"
     set tclcmd [ list exec secude cifcerts -p $env(PSELOC) -U -u  $file ]
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
-    putlogfile "$output"
+    #putlogfile "$output"
    if {[regexp {.*Key added to PKList.*} $output testout] == 1} {
     if {[regexp {Found Certificate of (<[^<]*>).*} $output {} user] == 1 } {
-    putlogfile "$user"
+    #putlogfile "$user"
               regsub {\<} $user  {} test2
               regsub {\>} $test2 {} user1
-    putlogfile "$user1"
+    #putlogfile "$user1"
     set aliasn "$user1"
     set out [open $alfile a]
-    putlogfile "$user"
+    #putlogfile "$user"
     puts $out $aliasn
     close $out
       } 
@@ -916,11 +916,11 @@ global env
 }
 proc Addx509cert {yourpse file dn pin} {
 global env
-    #putlogfile "$pin"
+    ##putlogfile "$pin"
     set env(USERPIN) $pin
-    #putlogfile "envUSER  $env(USERPIN)"
+    ##putlogfile "envUSER  $env(USERPIN)"
     set tclcmd [ list exec secude cifcerts -U -u -p $yourpse  $file ]
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
     regsub {\<} $dn  {} test1
     regsub {\>} $test1 {} aliasdn 
@@ -935,19 +935,19 @@ global env
     set tclal [ concat $tclal alias\=\"$aliasn\"]
     #set tclal [ concat $tclal alias\=\"$aliasn\@cs\.ucl\.ac\.uk\"]
     puts $out "$tclal"
-    putlogfile "$tclal"
+    #putlogfile "$tclal"
     close $out
     set tclcmd [ list exec secude psemaint -p $yourpse -i $alfile ]
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
-    putlogfile "$result"
+    #putlogfile "$result"
     #delete file $out
         if { $result == 1 } {
-         putlogfile "$output"
+         #putlogfile "$output"
 	}
     return 0
 	} else {
-       putlogfile " File already exi"
+       #putlogfile " File already exi"
     return 1
 	}
 }
