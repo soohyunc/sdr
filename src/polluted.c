@@ -21,6 +21,8 @@ extern unsigned long hostaddr;
 extern int debug1;
 extern int doexit;
 
+/* #define DEBUG */
+
 int init_security()
 {
   struct stat sbuf;
@@ -76,7 +78,7 @@ int parse_announcement(int enc, char *data, int length,
 #ifdef DEBUG
     printf("received encrypted announcement...\n");
 #endif
-    if (decrypt_announcement(data, &length, recvkey)!=0) {
+    if (parse_privhdr(data, &length, recvkey)!=0) {
 #ifdef DEBUG
       printf("      ... cannot decrypt announcement!\n");
 #endif
@@ -109,6 +111,7 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
 {
   struct sap_header *bp;
   int len_add=0;
+  int privlen=0;
 
   bp=(struct sap_header *)buf;
   bp->compress=0;
@@ -116,13 +119,22 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
     memcpy(buf+sizeof(struct sap_header), adstr, len);
     bp->enc=0;
   } else {
-    memcpy(buf+sizeof(struct sap_header)+4, adstr, len);
+    bp->enc=1;
+
+/* first add the timeout field */
+    *(u_int*)(buf+sizeof(struct sap_header))=0;		/* timeout */
+
+/* now add the privacy header */
+
+    privlen = add_privacy_header(buf);
+
+/* add the data after the privacy header */
+
+    memcpy(buf+sizeof(struct sap_header)+4+privlen, adstr, len);
 #ifdef DEBUG
     printf("sending encrypted session\n");
 #endif
-    bp->enc=1;
-    *(u_int*)(buf+sizeof(struct sap_header))=0;		/* timeout */
-    len_add=4;
+    len_add=4+privlen;
   }
   bp->src=htonl(hostaddr);
   bp->msgid=0;
@@ -130,6 +142,40 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
   bp->type=0;
   bp->authlen=0;
   return len_add;
+}
+
+int add_privacy_header(char *buf)
+{
+  struct priv_header *priv_hdr;
+  int padlen, privlen=0;
+  priv_hdr = (struct priv_header *)malloc(sizeof(struct priv_header));
+
+/* only DES is used at the moment so the header is very simple */
+
+  priv_hdr->version=1;
+  priv_hdr->padding=1;
+  priv_hdr->enctype=DES;
+  priv_hdr->hdr_len=1;       /* No. of 32 bit words in privacy header       */
+  padlen = 2;                /* always 2 padding bytes at end of DES header */
+
+#ifdef DEBUG
+  printf("Privacy Header built: version = %d, padding = %d, enctype = %d, hdr_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, priv_hdr->hdr_len);
+#endif
+
+/* copy priv_hdr to buf */
+
+  memcpy(buf+sizeof(struct sap_header)+4, priv_hdr, (priv_hdr->hdr_len*4) );
+
+/* set the padding byte number at end of header */
+  
+  buf[sizeof(struct sap_header)+4+(priv_hdr->hdr_len*4)-1] = (char)padlen;
+
+/* finished with the privacy header so free it up and return length of header */
+  
+  privlen = priv_hdr->hdr_len*4;
+  free(priv_hdr);
+
+  return(privlen);
 }
 
 int store_data_to_announce(struct advert_data *addata, 
