@@ -3785,7 +3785,7 @@ struct advert_data *get_advert_info(char *advertid)
 /* never called - code to call it is in plugins.tcl                          */
 int run_program(char *args) {
   writelog(printf(" -- entered run_program on Windows --\n");)
-  writleog(printf("  **** You should not be here ! ****\n");)
+  writelog(printf("  **** You should not be here ! ****\n");)
   return 0;
 }
 #else
