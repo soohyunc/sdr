@@ -4,7 +4,7 @@ LIB_DIR     = /cs/research/mice/starship/common/linux/lib
 LIBS        = -L$(LIB_DIR) -ltk8.0 -ltcl8.0 -L/usr/X11R6/lib -lX11 -lc -lm -ldl
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
 LIBRARY_TK  = $(LIB_DIR)/tk8.0
-CFLAGS      = $(INCLUDES) -Wall -DNEEDSTRERROR -DNORANDPROTO
+CFLAGS      = $(INCLUDES) -Wall -DNEEDSTRERROR -DNORANDPROTO -DDIFF_BYTE_ORDER
 
 all::	sdr
 
