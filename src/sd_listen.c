@@ -655,7 +655,7 @@ int load_cache_entry(
 
 /* if debugging have a look to see it is sensible */
 
-          writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+          writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
 
 /* due to space restrictions the authlen in the header was divided by 4 */
 
@@ -833,7 +833,7 @@ int load_cache_entry(
 
 /* if debugging have a look to see it is sensible */
 
-        writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+        writelog(printf("lce: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
 
 /*	src = ntohl(bp->src);               */
 /*      hfrom = ntohl(from.sin_addr.s_addr); */
@@ -1657,6 +1657,7 @@ void recv_packets(ClientData fd)
           memcpy(enctype,"x509",4);
           strcpy(recvkey,"");
           Tcl_Eval(interp, "x509state");
+          irand = (lbl_random()&0xffff);
           if (strcmp(interp->result,"1") == 0) {
             encstatus_p=check_x509_encryption(enc_p,
                           ((char *)bp+sizeof (struct sap_header)+auth_len+4),
@@ -2115,8 +2116,11 @@ void recv_packets(ClientData fd)
 	   writelog(printf("RP: advert->authinfo set to addata->authinfo: %x\n",
 		  (unsigned int)addata->authinfo);)
 	   if (advert->sapenc_p!=NULL) {
-	     free(advert->sapenc_p->enc_data);
-	     free(advert->sapenc_p->txt_data);
+/* enc_data and txt_data are only used for PGP and X.509 not for DES */
+             if (enc_p->enc_type == PGP || enc_p->enc_type == PKCS7) {
+               free(advert->sapenc_p->enc_data);
+               free(advert->sapenc_p->txt_data);
+             }
 	     free(advert->sapenc_p);
 	   }
 	   advert->sapenc_p=addata->sapenc_p;
@@ -3263,7 +3267,7 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
       writelog(printf(" *** SENDING ***\n");)
 
       bp= (struct sap_header *)((char *)buf);
-      writelog(printf(" sap_hdr: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
+      writelog(printf(" sap_hdr: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%u\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
 
       if (auth_len != 0) {
         auth_hdr= (struct auth_header *)((char *)buf+sizeof(struct sap_header));
@@ -3609,7 +3613,9 @@ int run_program(char *args) {
 #else
 int run_program(char *args) {
   pid_t pid;
+#ifdef DEBUG
   int k;
+#endif
   int i;
   char *ptr1, *ptr2, *nargv[40];
   pid = fork();
