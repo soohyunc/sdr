@@ -2,6 +2,8 @@
 <B><pre>
 
 2.5.8
+  - Fix font sizes in the calendar (was hardcoded pixel sizes, now measures
+    the font to get the correct value).
   - Assorted fixes to authentication code
   - Many many changes to remove space leaks and memory corruption problems,
   - Add workaround for Irix bug where timezone sometimes contains an
