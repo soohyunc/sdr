@@ -27,11 +27,11 @@ proc debug {str} {
 proc putlogfile {text} {
     global logfile
 #    puts "In putlogfile - logfile = $logfile"
-#    set out [open $logfile a]
-#    puts $out "$text"
-#    close $out
+#   set out [open $logfile a]
+#   puts $out "$text"
+#   close $out
 # change to just the followign if on unix and want all output to screen
-     puts "$text"
+#   puts "$text"
 }
 
 #set langtab [open "/tmp/langtab" "w"]
@@ -1820,8 +1820,10 @@ proc popup {aid ifstyle msgsrc} {
   #log "displaying details of session called:\n   $ldata($aid,session) \n   at [getreadabletime]"
   #pack  $win.sn.l -side left -fill x -expand true
 #AUTH - added "-bg $bgcolour \" below
-  label $win.sn.l -text "Enc: $enc $enct  $ldata($aid,session)    \
-        Auth: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
+#  label $win.sn.l -text "Encryption: $enc $enct  $ldata($aid,session)    \
+#        Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
+  label $win.sn.l -text "Session: $ldata($aid,session) Encryption: $enc $enct  \
+        Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
   pack  $win.sn.l -side left -fill x -expand true
  
 #end AUTH
