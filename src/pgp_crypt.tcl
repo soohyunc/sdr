@@ -373,7 +373,7 @@ proc pgp_create_signature {irand} {
 # set up the cmd for signing: 
 # pgp -sb -z pwd +batchmode=on +verbose=0 -u keyid txt_file -o sig_file
 
-  set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on +verbose=0 -u ]
+  set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on -u ]
   set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
   set tclcmd [ concat $tclcmd [ list $local_authtxt_file -o $local_authsig_file ] ]
 
@@ -399,7 +399,7 @@ proc pgp_create_signature {irand} {
 # set up the cmd for extracting the key to a keyfile:
 # pgp -kx +batchmode=on +verbose=0 key_id keyfile
     
-  set tclcmd [ list exec pgp -kx +batchmode=on +verbose=0 ]
+  set tclcmd [ list exec pgp -kx +batchmode=on ]
   set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
   set tclcmd [ concat $tclcmd $local_authkey_file ]
 
