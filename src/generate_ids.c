@@ -218,8 +218,6 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
         /* in6_word(newaddr, 3) |= (i);*/
         newaddr->s6_words[7] |= (i);
         if (check_address(newaddr, IPv6)==TRUE) {
-            /* printf("generate_v6_addr: newaddr: %s\n", 
-               inet6_ntoa(newaddr)); */
             return(newaddr);
         }
     }

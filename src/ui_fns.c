@@ -234,8 +234,7 @@ int ui_generate_v6_address(dummy, interp, argc, argv)
       generate_v6_address(&in, atoi(argv[2]), &in2);
   }   
   
-  strcpy(interp->result,inet6_ntoa(&in2));
-  
+  inet_ntop(AF_INET6, &in2, interp->result, INET6_ADDRSTRLEN);
   /*printf("exiting ui_generate_v6_address: result%s\n", interp->result); /* */
 #endif /* HAVE_IPv6 */
 
@@ -376,7 +375,7 @@ int ui_get_v6_hostaddr(dummy, interp, argc, argv)
     char **argv; 
 {
 #ifdef HAVE_IPv6
-  strcpy(interp->result,(char *)inet6_ntoa(&hostaddr_v6));
+  inet_ntop(AF_INET6, &hostaddr_v6, interp->result, INET6_ADDRSTRLEN);
 #endif
   return TCL_OK;
 }

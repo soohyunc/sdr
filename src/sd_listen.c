@@ -1867,9 +1867,9 @@ void recv_packets(ClientData fd)
     if (addr_fam == IPv6) {
 #ifdef HAVE_IPv6
         src6 = (struct in6_addr *) bp6->src;
-        strcpy(source, inet6_ntoa(src6));
+        inet_ntop(AF_INET6, src6, source, INET6_ADDRSTRLEN);
         hfrom6 = (struct in6_addr *) &from6.sin6_addr;
-        strcpy(heardfrom, inet6_ntoa(&from6.sin6_addr));
+        inet_ntop(AF_INET6, &from6.sin6_addr, heardfrom, INET6_ADDRSTRLEN);
  #endif
     } else {
         src     = ntohl(bp4->src);

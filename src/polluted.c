@@ -373,7 +373,7 @@ int ui_createsession(dummy, interp, argc, argv)
  */
   if (strncmp("ff", argv[3], 2) == 0){
 #ifdef HAVE_IPv6
-      source = inet6_ntoa(&hostaddr_v6);
+      inet_ntop(AF_INET6, &hostaddr_v6, source, INET6_ADDRSTRLEN);
 #endif
       addr_fam = IPv6;
 
