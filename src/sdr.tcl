@@ -1987,7 +1987,7 @@ proc start_record {time file aid rname} {
 	  destroy .record
 	} else {
 	  timedmsgpopup [tt "Recording Prepared"] \
-	      "[tt "The recording will start at "$ldata($aid,tfrom)" 6000
+	      [tt "The recording will start at $ldata($aid,tfrom)"] 6000
 	  msgpopup [tt "Error"] [tt "feature is not yet implemented - sorry"]
 	  
 	  destroy .record
