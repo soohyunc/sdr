@@ -1,9 +1,10 @@
 <H1>Sdr changes log</H1>
 <B><pre>
-2.8 K.Hasler 8 Feb 1999
+2.8 K.Hasler 9 Sep 1999
   - fixdaysinmonth proc fixes daysinmonth variable for leap years.  Used 
     when creating a new session and in calendar.
   - Fix convert_vars to recognise other variable separators (ie not just /).
+  - Fixed set_fmt_menu in create_proc_menu which had attributes in wrong order.
   - Directory SDP Patches from: http://www.live.com/sdrpatch.html
 
 2.7e K.Hasler 15 July 1999
