@@ -681,7 +681,7 @@ proc new_mk_session_norm_scope {win aid} {
 }
 
 proc new_mk_session_tech_scope {win aid} {
-    global zone scope new_ttl ldata
+    global zone scope new_ttl ldata medialist send
     if {[winfo exists $win.f3]==0} {
 	if {[string compare $aid "new"]!=0} {
 	    set sap_addr $ldata($aid,sap_addr)
@@ -692,7 +692,11 @@ proc new_mk_session_tech_scope {win aid} {
 		if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
 		    set scope admin
 		    set zone(cur_zone) $i
+		    break
 		}
+	    }
+	    for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+		set send($ldata($aid,$mnum,media)) 1
 	    }
 	} else {
 	    set scope admin
@@ -712,11 +716,10 @@ proc new_mk_session_tech_scope {win aid} {
 		    -expand true
 		pack forget %s.f3.admin
 		if {$addr!=1} {
-#		    set_new_session_addr conference $addr
 		    foreach media $medialist {
-#			if {$send($media)==1} {
-#			    set_new_session_addr $media [generate_address]
-#			}
+			if {$send($media)==1} {
+			    store_new_session_addr $media [generate_address]
+			}
 		    }
 		}
 		set zone(cur_zone) $zone(ttl_scope)
@@ -750,13 +753,12 @@ proc new_mk_session_tech_scope {win aid} {
 			    -expand true
 		    pack forget %s.f3.rr
 		    if {$addr!=1} {
-			#set_new_session_addr conference $addr
 			foreach media $medialist {
 			    if {$send($media)==1} {
-				#set_new_session_addr $media \
-					#[generate_address \
-					#$zone(base_addr,$zone(cur_zone)) \
-					#$zone(netmask,$zone(cur_zone))]
+				store_new_session_addr $media \
+					[generate_address \
+					$zone(base_addr,$zone(cur_zone)) \
+					$zone(netmask,$zone(cur_zone))]
 			    }
 			}
 		    }
@@ -799,12 +801,11 @@ proc new_mk_session_tech_scope {win aid} {
 			    set ttl $zone(ttl,%s)
 			    if {$addr!=1} {
 				#and we can reallocated the addresses too.
-#			set_new_session_addr conference $addr
 				foreach media $medialist {
 				    if {$send($media)==1} {
-#				set_new_session_addr $media \
-#				    [generate_address $zone(base_addr,%s) \
-#				     $zone(netmask,%s)]
+					store_new_session_addr $media \
+						[generate_address $zone(base_addr,%s) \
+						$zone(netmask,%s)]
 				    }
 				}
 			    }
@@ -1046,6 +1047,11 @@ range of the session.  People outside this area will not be able to receive it."
 	    -highlightthickness 0
         scrollbar $win.f.sb -borderwidth 1 -command "$win.f.lb yview" \
 	    -highlightthickness 0
+	if {[string compare $aid "new"]!=0} {
+	    for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+		set send($ldata($aid,$mnum,media)) 1
+	    }
+	}
         for {set i 0} {$i < $zone(no_of_zones)} {incr i} {
 	    $win.f.lb insert [expr $i+1].0 "$zone(name,$i)"
 	    $win.f.lb tag add line$i [expr $i+1].0 end-1c
@@ -1065,12 +1071,11 @@ range of the session.  People outside this area will not be able to receive it."
 		%s.f.lb tag configure line%s -background\
 			[option get . activeBackground Sdr]
 		if {$addr!=1} {
-#		    set_new_session_addr conference $addr
 		    foreach media $medialist {
 			if {$send($media)==1} {
-#			    set_new_session_addr $media \
-#				    [generate_address $zone(base_addr,%s) \
-#				    $zone(netmask,%s)]
+			    store_new_session_addr $media \
+				    [generate_address $zone(base_addr,%s) \
+				    $zone(netmask,%s)]
 			}
 		    }
 		}
@@ -1096,32 +1101,27 @@ range of the session.  People outside this area will not be able to receive it."
     pack $win.f.sb -side right -fill y -expand true
 }
 
+
+proc store_new_session_addr {media str} {
+    global tmpdata
+    #we need to set this before we retrieve it in new_mk_session_media
+    set tmpdata($media) $str
+}
+
+proc retrieve_new_session_addr {media} {
+    global tmpdata
+    set res $tmpdata($media)
+    unset tmpdata($media)
+    return $res
+}
+
 proc new_mk_session_media {win aid scope show_details} {
-    global ldata zone medialist sd_menu send 
+    global ldata tmpdata zone medialist sd_menu send 
     global media_fmt media_proto media_attr media_layers
     global mediaenc sessionkey
     #multicast address and ttl
     if {[winfo exists $win]==0} {
 	frame $win -relief groove -borderwidth 2
-	frame $win.f0
-	label $win.f0.l -text [tt "Address:"]
-	entry $win.f0.entry -width 20 -relief sunken\
-		-bg [option get . entryBackground Sdr] \
-		-highlightthickness 0
-	tixAddBalloon $win.f0.entry Entry [tt "A multicast address has been assigned you.  If you need to modify this, change this entry.
-
-Multicast addresses must be class D IP addresses.  These are of the form
-      a.b.c.d 
-where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
-        if {[string compare $aid "new"]!=0} {
-	    $win.f0.entry insert 0 $ldata($aid,multicast)	    
-	} else {
-	    if {$scope=="admin"} {
-		$win.f0.entry insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
-	    } else {
-		$win.f0.entry insert 0 [generate_address]
-	    }
-	}
 
 	#Media
 	frame $win.l
@@ -1278,20 +1278,13 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 
 	proc get_new_session_addr {media} [format {
 	    if {$media=="conference"} {
-		%s.f0.entry get
+		#XXX delete this when create no longer asks for it
+		return 224.0.0.0
 	    } else {
 		%s.$media.addr get
 	    }
 	} $win $win]
-        proc set_new_session_addr {media str} [format {
-	    if {$media=="conference"} {
-		%s.f0.entry delete 0 end
-		%s.f0.entry insert 0 $str
-	    } else {
-		%s.$media.addr delete 0 end
-		%s.$media.addr insert 0 $str
-	    }
-	} $win $win $win $win]
+
 
 
 	proc get_new_session_port {media} [format {
@@ -1302,10 +1295,14 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	proc get_new_session_format {media} {
 	}
     }
-    pack $win.f0.l -side left
-    pack $win.f0.entry -side left -fill x -expand true
-    pack $win.l -side top -anchor w
+
     foreach media $medialist {
+
+	if {[info exists tmpdata($media)]} {
+	    $win.$media.addr delete 0 end
+	    $win.$media.addr insert 0 [retrieve_new_session_addr $media]
+	}
+
 	pack $win.$media -side top -anchor w  -padx 10 -pady 2
 	pack $win.$media.cb -side left
 	pack $win.$media.mb -side left -fill y
@@ -2319,7 +2316,7 @@ proc fix_up_attr_list {origattrlist} {
 }
 
 proc setmediaflags {media win aid} {
-    global ldata media_fmt media_proto media_layers
+    global ldata tmpdata media_fmt media_proto media_layers
     set base $win.$media
     for {set mnum 0} {$mnum<$ldata($aid,medianum)} {incr mnum} {
 	if {$ldata($aid,$mnum,media)==$media} {
@@ -2332,7 +2329,11 @@ proc setmediaflags {media win aid} {
 	    $base.port delete 0 end
 	    $base.port insert 0 $ldata($aid,$mnum,port)
 	    $base.addr delete 0 end
-	    $base.addr insert 0 $ldata($aid,$mnum,addr)
+	    if {[info exists tmpdata($media)]} {
+		$base.addr insert 0 [retrieve_new_session_addr $media]
+	    } else {
+		$base.addr insert 0 $ldata($aid,$mnum,addr)
+	    }
 	    return 0
 	}
     }
