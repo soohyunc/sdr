@@ -244,7 +244,7 @@ struct in_addr look_up_address(char *hostname)
 
 	{
 	  char buf[200];
-	  char ans[1000];
+	  char ans[2000];
 	  int ctr;
 	  char *tstr, *resstr;
 	  struct dnshdr *dnsa;

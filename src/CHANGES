@@ -1,5 +1,11 @@
 <H1>Sdr changes log</H1>
 <pre>
+3.1 K.Hasler
+  - when trying to find out where the tool is installed (app_name), make sure
+    we end up with the full pathname when following absolute links.
+  - fix wrong allocated buffer size for 'ans' in look_up_address.
+    Patch from Anil Madhavapeddy <anil@recoil.org>
+
 3.0 K.Hasler/E.Whelan 22 Aug 2000
   - new 'application' media type for session directories
   - fixed byte ordering of headers on intel machines
