@@ -24,6 +24,14 @@ proc debug {str} {
     }
 }
 
+proc putlogfile {text} {
+    global logfile
+#    puts "In putlogfile - logfile = $logfile"
+    set out [open $logfile a]
+    puts $out "$text"
+    close $out
+}
+
 #set langtab [open "/tmp/langtab" "w"]
 proc tt {english} {
     global langtab trdone
@@ -190,17 +198,22 @@ proc scroll_to_session {key list} {
 }
 
 proc build_interface {first} {
-    global tcl_platform ifstyle gui sessbox
-#AUTH
-     global logext
+    global tcl_platform ifstyle gui sessbox 
+    global logfile
     if {$gui=="NO_GUI"} { return }
     log "Sdr started by [getusername] at [getreadabletime]"
-     set logext 0
     set lb $ifstyle(labels)
     global titlestr
     wm title . "sdr:[getemailaddress]"
     wm iconbitmap . sdr
     if {$first=="first"} {
+
+        set tmpfile [clock format [clock seconds]  -format {%H%M%S}]
+        set logfile "[glob -nocomplain [resource sdrHome]]/log$tmpfile"
+        puts "debug - logfile will be $logfile"
+        set startlogtime "[clock format [clock seconds]]"
+        putlogfile "logfile started at $startlogtime"
+
 	frame .f1  -relief groove -borderwidth 2
 #	label .f1.l2 -bitmap ucl
 #	pack .f1.l2 -side left -fill x
@@ -392,8 +405,7 @@ all this lot is obsolete...
 proc quit {} {
 #AUTH
   global log env
-  global logext
- set logfile "[glob -nocomplain [resource sdrHome]]/lg$logext.txt"
+  global logfile
   give_status_msg "Writing cache files..."
   update idletasks
   write_cache
@@ -462,7 +474,7 @@ proc quit {} {
   }
 } 
   if { [file exists $logfile] } {
-  file delete $logfile
+#  file delete $logfile
   }
   ui_quit
   destroy .
@@ -611,7 +623,6 @@ proc add_to_list {} {
     global starttime endtime showwhich phone email uri rctr repeat 
     global createtime modtime createaddr sessvars trust recvkey
     global debug1
-    global logext
 #AUTH
   global asym_cur_keyid
   global sess_auth_status
@@ -623,7 +634,6 @@ proc add_to_list {} {
   global sess_enc_message
   global asympse
 #end
-    set logext 0
     if {$debug1 == 1} {
 	putlogfile "add_to_list $advertid"
     }
@@ -892,7 +902,7 @@ proc add_to_display_list {aid list} {
 }
 #AUTH
 proc list_session {aid lastix list} {
-    global sessbox ldata ifstyle logext
+    global sessbox ldata ifstyle 
          #puts "$ldata($aid,session)"
         set newname $ldata($aid,session)
         if  {$ldata($aid,trust)!="sip"} {
@@ -966,7 +976,7 @@ proc list_session {aid lastix list} {
 }
 
 proc relist_session {aid lastix list} {
-    global sessbox ldata showwhich logext
+    global sessbox ldata showwhich 
     putlogfile "relist_session"
     if {[listing_criteria $aid $showwhich]!=1} {
 	#this session just became unshown - better redisplay everything.
@@ -2576,7 +2586,7 @@ proc start_recorder {aid fname rname} {
 }
 
 proc get_uri {uri} {
-    global webtype webclient logext
+    global webtype webclient 
     case $webtype {
 	sendmosaic {
 	    putlogfile "Sending to Browser"

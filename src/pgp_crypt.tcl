@@ -1368,17 +1368,6 @@ proc certExec_Interactive { arglist outvar irand } {
     return $result
 }
 
-proc putlogfile {test} {
-global logext
-        if { $logext == 0} {
-        set logext [clock format [clock seconds]  -format {%H%M%S}]
-        }
-	set tmpfile "[glob -nocomplain [resource sdrHome]]/lg$logext.txt"
-	set out [open $tmpfile a 0600]
-        #msgpopup "out $out" "test $test"
-	puts $out "$test"
-	close $out
-}
 
 proc pgpExec_CheckPassword { passw key } {
  
