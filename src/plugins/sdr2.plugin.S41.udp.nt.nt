@@ -1,9 +1,9 @@
 media:text
 proto:udp
-tool:nt
+tool:nte
 fmt:nt
 {
-  fmtname:UCL NT
+  fmtname:UCL NTE
 }
 flags:-t $(TTL)
 flags:-C $(SESSNAME)
