@@ -1,0 +1,37 @@
+media:whiteboard
+proto:udp
+tool:wbd
+fmt:wb
+{
+  attr:orient
+  {
+    attrname:Orientation
+    attrvalue:portrait
+    {
+      attrvaluename:Portrait
+      flags:-p
+    }
+    attrvalue:landscape
+    {
+      attrvaluename:Landscape
+      flags:-l
+    }
+    attrvalue:seascape
+    {
+      attrvaluename:Upside-down Landscape
+      flags:+l
+    }
+  }
+  attr:sendrecv
+  {
+    attrname:Send/Receive Mode
+    flags:+r
+  }
+  noattr:recvonly
+  {
+    flags:+r
+  }
+}
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)
