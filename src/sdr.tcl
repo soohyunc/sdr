@@ -4456,10 +4456,14 @@ proc user_hook {} {
 # Parse plugins
 
 # find where we are installed
-set app_name $argv0
+set app_name [info nameofexecutable] 
 while {[file type $app_name] == "link"} {
+    set dir_name [file dirname $app_name]
     # don't worry about recursion since we know app must exist.
     set app_name [file readlink $app_name]
+    if {[file dirname $app_name] == "."} {
+        set app_name [concat $dir_name/$app_name]
+    }
 }
 set app_home [file dirname $app_name]
 
@@ -4535,9 +4539,8 @@ if {$tcl_platform(platform) == "windows"} {
 initialise_resources
 
 # Parse plugins
-
 # find where we are installed
-set app_name $argv0
+set app_name [info nameofexecutable]
 while {[file type $app_name] == "link"} {
     set dir_name [file dirname $app_name]
     # don't worry about recursion since we know app must exist.
@@ -4548,9 +4551,9 @@ while {[file type $app_name] == "link"} {
 }
 set app_home [file dirname $app_name]
 
-# Specify plugin dirs.  First of these are possible places 
+# Specify plugin dirs.  First of these are possible places
 # about where sdr is installed.
-#
+
 set plugin_dirs [list \
 	$app_home/sdr/plugins \
 	$app_home/plugins \

@@ -99,6 +99,7 @@ ui_init(int *argc, char **argv)
     char buf[MAXCLINE];
     int i;
 
+    Tcl_FindExecutable(argv[0]);  
     interp = Tcl_CreateInterp();
 #ifdef TCL_MEM_DEBUG
     Tcl_InitMemory(interp);
