@@ -307,25 +307,41 @@ proc enter_long_passphrase {mode} {
     frame .pass.f -relief groove -borderwidth 2
     pack .pass.f -side top
     
-    message .pass.f.m -text "You must enter a passphrase to be able to load and save the keys for encrypted sessions." -aspect 300
+    message .pass.f.m -text "You must enter a passphrase to be able to load and save the keys for encrypted sessions." -aspect 600
     pack .pass.f.m -side top
 
-    password .pass.f.e -width 40 \
-	-background [option get . entryBackground Sdr] -variable tmppass
-
-    pack .pass.f.e -side top
-    bind .pass.f.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
+    frame .pass.f.f
+    pack  .pass.f.f -side top
+ 
+    frame .pass.f.f.f0
+    pack  .pass.f.f.f0 -side top -fill x -expand true
+    label .pass.f.f.f0.l -text "Password:"
+    pack .pass.f.f.f0.l -side left -anchor e -fill x -expand true
+    password .pass.f.f.f0.e -width 40 -variable tmppass \
+         -background [option get . entryBackground Sdr]
+    pack .pass.f.f.f0.e -side left
+ 
+    frame .pass.f.f.f1
+    pack  .pass.f.f.f1 -side top -fill x -expand true
+    label .pass.f.f.f1.l -text "Retype Password:"
+    pack .pass.f.f.f1.l -side left -anchor e -fill x -expand true
+    password .pass.f.f.f1.e -width 40 -variable tmppass1 \
+         -background [option get . entryBackground Sdr]
+    pack .pass.f.f.f1.e -side left
+ 
+    bind .pass.f.f.f0.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
+    bind .pass.f.f.f1.e <Key-Return> "submit_pass .pass $mode .pass.f.msg \"\""
 
     label .pass.f.msg -borderwidth 1 -relief raised
     pack .pass.f.msg -side top -fill x -expand true
 
     frame .pass.f.f2
-    pack .pass.f.f2 -side top -fill x
+    pack .pass.f.f2 -side top -fill x -expand true
     button .pass.f.f2.ok -text "OK" \
 	-command "submit_pass .pass $mode .pass.f.msg \"\""
-    pack .pass.f.f2.ok -side left
+    pack .pass.f.f2.ok -side left -fill x -expand true
     button .pass.f.f2.cancel -text "Cancel" -command {destroy .pass}
-    pack .pass.f.f2.cancel -side left
+    pack .pass.f.f2.cancel -side left -fill x -expand true
 }
 
 proc enter_short_passphrase {win after} {
@@ -351,7 +367,7 @@ proc enter_short_passphrase {win after} {
 }
 
 proc submit_pass {win mode msgwin str} {
-    global tmppass
+    global tmppass tmppass1
 #    if {[string length [$win.f.e get]]<8} \{
     if {([string length $tmppass]<8)&&($mode == "save")} {
 	bell
@@ -359,6 +375,16 @@ proc submit_pass {win mode msgwin str} {
 	after 5000 catch {$win.f.msg configure -text $str}
 	return
     }
+
+    if { $mode == "save" } {
+      if { [string compare $tmppass $tmppass1]!=0 } {
+        bell
+        $msgwin configure -text "You have not entered the same password twice"
+        after 3000 "catch {.$win.f.msg configure -text \"\"}"
+        return
+       }
+     }
+
 #    set_passphrase [$win.f.e get]
     set_passphrase $tmppass
     if {$mode == "save"} {
