@@ -3568,7 +3568,13 @@ proc display_bookings {dow day mon yr bookings} {
 }
 
 proc sdr2.2_fix_cache {} {
-    set dirname "[glob ~]/.sdr"
+    set shortname [glob -nocomplain ~]
+    if { $shortname != "" } {
+      set dirname "$shortname/.sdr"
+    } else {
+      set dirname "/.sdr"
+    }
+#    set dirname "[glob -nocomplain ~]/.sdr"
     if {$dirname=="//.sdr"} {
         set dirname "/.sdr"
     }
@@ -3822,9 +3828,9 @@ sdr2.2_fix_cache
 set prefprocs "show ifstyle tools web pers people"
 
 #Check for old ~/.sdr.tcl
-if {([file isfile [glob ~]/.sdr.tcl]) && !([file isfile [resource sdrHome]/sdr.tcl])} {
+if {([file isfile [glob -nocomplain ~]/.sdr.tcl]) && !([file isfile [resource sdrHome]/sdr.tcl])} {
     set movedmsg "Note: moved .sdr.tcl"
-    exec mv [glob ~]/.sdr.tcl [glob [resource sdrHome]]/sdr.tcl
+    exec mv [glob -nocomplain ~]/.sdr.tcl [glob -nocomplain [resource sdrHome]]/sdr.tcl
 }
 
 set flag 1
@@ -3850,13 +3856,13 @@ allprefprocs copyout
 set save_interval 3600000
 
 #Check for old ~/.sdr_prefs
-if {([file isfile [glob ~]/.sdr_prefs]) && !([file isfile [resource sdrHome]/prefs])} {
+if {([file isfile [glob -nocomplain ~]/.sdr_prefs]) && !([file isfile [resource sdrHome]/prefs])} {
     if ![info exists movedmsg] {
 	set movedmsg "Note: moved .sdr_prefs"
     } else {
 	set movedmsg "$movedmsg and .sdr_prefs"
     }
-    exec mv [glob ~]/.sdr_prefs [glob [resource sdrHome]]/prefs
+    exec mv [glob -nocomplain ~]/.sdr_prefs [glob -nocomplain [resource sdrHome]]/prefs
 }
 
 if [info exists movedmsg] {
