@@ -1,11 +1,12 @@
-CC=gcc
-INCLUDES=-I/usr/local/include -I/usr/X11R6/include
-LIB_DIR=/usr/local/lib
-LIBS= $(LIB_DIR)/libtk80.a $(LIB_DIR)/libtcl80.a -lm -L/usr/X11R6/lib -lX11
-CFLAGS=-ggdb $(INCLUDES) -DDIFF_BYTE_ORDER -DFREEBSD -Wall -DNORANDPROTO -DDEFINED_ERRLIST
+CC          = gcc -g -O
+INCLUDES    = -I/usr/local/include -I/usr/X11R6/include
+LIB_DIR     = /usr/local/lib
+LIBS        = $(LIB_DIR)/libtk80.a $(LIB_DIR)/libtcl80.a -lm -L/usr/X11R6/lib -lX11
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
-LIBRARY_TK = $(LIB_DIR)/tk8.0
-all::	sdr
+LIBRARY_TK  = $(LIB_DIR)/tk8.0
+CFLAGS      = $(INCLUDES) -DDIFF_BYTE_ORDER -DFREEBSD -DNORANDPROTO -DDEFINED_ERRLIST -Wall
+
+all::	sdr sip_server
 install:
 	cp ./sdr /cs/research/mice/speedy/common/freebsd/bin/sdr
 	chmod 755 /cs/research/mice/speedy/common/freebsd/bin/sdr
