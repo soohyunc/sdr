@@ -4144,6 +4144,13 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
 #endif 
 
+#ifdef WIN32
+/* Quick fix as the routine below won't compile on windows even though it is */
+/* never called - code to call it is in plugins.tcl                          */
+int run_program(char *args) {
+  return 0;
+}
+#else
 int run_program(char *args) {
   pid_t pid;
   int i,k;
@@ -4203,4 +4210,5 @@ int run_program(char *args) {
   perror(nargv[0]);
   exit(0);
 }
+#endif
 
