@@ -1,0 +1,7 @@
+Download and compile the following src before compiling sdr:
+http://www-mice.cs.ucl.ac.uk/multimedia/software/tk/tk-8.0.3ucl6.tar.gz
+http://www-mice.cs.ucl.ac.uk/multimedia/software/tcl/tcl-8.0.3ucl6.tar.gz
+http://www-mice.cs.ucl.ac.uk/multimedia/software/common/common-1.0.6.tar.gz
+
+Further information can be found at:
+http://www-mice.cs.ucl.ac.uk/multimedia/software/sdr/
