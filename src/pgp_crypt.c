@@ -342,7 +342,7 @@ int store_authentication_in_memory(struct advert_data *addata, char *auth_type ,
   fclose(sig_fd);
 
    free(encsig);
-  if( strncmp(auth_type,"cpgp",4) == 0 || strncmp(auth_type,"cx509",5) == 0)
+  if( strncmp(auth_type,"cpgp",4) == 0 || strncmp(auth_type,"cx50",4) == 0)
   { 
   key_fd=fopen(fullkey, "r");
   if (key_fd == NULL)
@@ -381,7 +381,7 @@ else
 /* Toadd the authetication used pgp or X509 Plus the certificate*/
   if (memcmp(auth_type,"cpgp",4) == 0)
     sapauth_p->auth_type = 3;
-  else  if (memcmp(auth_type,"cx509",5) == 0)
+  else  if (memcmp(auth_type,"cx50",4) == 0)
     sapauth_p->auth_type = 4;
    else  if (memcmp(auth_type,"pgp",3) == 0)
    sapauth_p->auth_type = 1;
