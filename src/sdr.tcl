@@ -31,7 +31,7 @@ proc putlogfile {text} {
 ##   puts $out "$text"
 ##   close $out
 # change to just the following if on unix and want all output to screen
-  puts "$text"
+#  puts "$text"
 }
 
 #set langtab [open "/tmp/langtab" "w"]
