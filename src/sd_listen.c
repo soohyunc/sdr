@@ -60,6 +60,10 @@
 #include <setjmp.h>
 #include <locale.h>
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
+
 #include "sdr.h"
 #include "sip.h"
 #include "prototypes.h"
@@ -1469,10 +1473,10 @@ void recv_packets(ClientData fd)
     struct priv_header *enc_p=NULL;
     struct auth_header *auth_hdr=NULL;
 
-    char aid[AIDLEN];
-    char *data=NULL;
-    char *debugbuf=NULL;
-    char *buf=NULL;
+    unsigned char aid[AIDLEN];
+    unsigned char *data=NULL;
+    unsigned char *debugbuf=NULL;
+    unsigned char *buf=NULL;
 
     char enc_asym_keyid[ASYMKEYIDLEN], *encstatus_p=NULL, *enctype=NULL;
     char encstatus[ENCSTATUSLEN];
@@ -1482,7 +1486,7 @@ void recv_packets(ClientData fd)
     char keyname[MAXKEYLEN];
     char recvkey[MAXKEYLEN];
     char *tmpauthptr=NULL;
-    char new_data[MAXADSIZE];
+    unsigned char new_data[MAXADSIZE];
 
     int fromlen;
     int length=0, orglength=0;
@@ -1828,18 +1832,179 @@ void recv_packets(ClientData fd)
 
 /* should now have finished decryption and authentication so back to normal */
 
-/* This version of sdr can't deal with compressed payloads                  */
-/* But if you goof up the bit packing a normal advert can look compressed.  */
+/* If you goof up the bit packing a normal advert can look compressed.      */
 /* If version = 0, ignore the compressed flag because it was not defined in */
 /* version 0, and assume that it's a badly packed "version = 1".            */
 
       if (bp->compress==1) {
-	if (bp->version != 0) {
+	if (bp->version == 0) {
+	    writelog(printf("recv_pkts: compress=1 & vers == 0, process anyway\n"));
+	    bp->compress = 0;
+	} else {
+#ifdef HAVE_ZLIB
+	    z_stream zs;
+	    char *newdata;
+	    int mallsize = MAXADSIZE;
+	    int res;
+	    int gzip = 0;
+
+	    writelog(printf("uncompressing announcement\n"));
+	    /*
+	     * zlib has hooks for reading and writing gzip-format files,
+	     * but does not have hooks for gzip format in memory-to-memory.
+	     * Therefore, we duplicate most of the functionality of
+	     * zlib's gzio.c here.
+	     *
+	     * If the magic number doesn't match the gzip format (RFC 1952),
+	     * see if the header checksum matches for zlib format (RFC 1950).
+	     */
+	    if (*data == 0x1f && *(data + 1) == 0x8b) {
+		int flags;
+
+		gzip = 1;
+		if (*(data + 2) != 0x08) {
+		    writelog(printf("got gzip but unsupported compression type\n"));
+		    goto bad;
+		}
+		flags = *(data + 3);
+		if ((flags & 0xe0) != 0) {
+		    writelog(printf("got gzip but reserved flags set\n"));
+		    goto bad;
+		}
+		/* Skip fixed header: magic thru OS */
+		data += 10;
+		length -= 10;
+		if ((flags & 0x04) != 0) {
+		    int xlen;
+
+		    xlen = *data + (*(data + 1) << 8);
+		    data += xlen;
+		    length -= xlen;
+		    if (length <= 0) {
+			writelog(printf("gzip: EXTRA too long\n"));
+			goto bad;
+		    }
+		}
+		if ((flags & 0x08) != 0) {
+		    while (*data && length > 0) {
+			data++;
+			length--;
+		    }
+		    data++;
+		    length--;
+		    if (length <= 0) {
+			writelog(printf("gzip: NAME too long\n"));
+			goto bad;
+		    }
+		}
+		if ((flags & 0x10) != 0) {
+		    while (*data && length > 0) {
+			data++;
+			length--;
+		    }
+		    data++;
+		    length--;
+		    if (length <= 0) {
+			writelog(printf("gzip: COMMENT too long\n"));
+			goto bad;
+		    }
+		}
+		if ((flags & 0x02) != 0) {
+		    /* check header CRC? */
+		    data += 2;
+		    length -= 2;
+		    if (length <= 0) {
+			writelog(printf("gzip: not enough data for HCRC\n"));
+			goto bad;
+		    }
+		}
+		length -= 8;	/* Skip CRC32 and orig. length at end */
+	    } else if ((((*data << 8) + *(data + 1)) % 31) != 0) {
+		/* Fails zlib header check; must be garbage. */
+		writelog(printf("unknown compression type\n"));
+	    }
+	    writelog(printf("working on %s-compressed announcement\n",
+				gzip ? "gzip (RFC1952)" : "zlib (RFC1950)"));
+
+	    zs.next_in = data;
+	    zs.avail_in = length;
+	    zs.total_in = 0;
+
+	    newdata = (char *)malloc(mallsize);
+
+	    zs.next_out = newdata;
+	    zs.avail_out = mallsize;
+	    zs.total_out = 0;
+
+	    zs.zalloc = Z_NULL;
+	    zs.zfree = Z_NULL;
+	    zs.opaque = Z_NULL;
+
+	    if (inflateInit2(&zs, gzip ? -MAX_WBITS : MAX_WBITS) != Z_OK) {
+		writelog(printf("inflateInit: %s\n", zs.msg ? zs.msg : "no zlib error reported"));
+		free(newdata);
+		goto bad;
+	    }
+
+	    /*
+	     * If we didn't supply enough ouptut buffer, inflate()
+	     * will return Z_OK with zero zs.avail_out .  Then we
+	     * realloc the buffer and keep trying.
+	     */
+	    /*XXX Z_SYNC_FLUSH?  Z_FINISH? */
+	    while ((res = inflate(&zs, Z_NO_FLUSH)) != Z_STREAM_END) {
+		if (res == Z_OK && zs.avail_out == 0) {
+		    mallsize *= 2;
+		    if (mallsize > 10*MAXADSIZE) {	/*XXX*/
+			writelog(printf("compressed ad inflates too big\n"));
+			free(newdata);
+			goto bad;
+		    }
+		    newdata = realloc(newdata, mallsize);
+		    zs.avail_out = mallsize - zs.total_out;
+		    zs.next_out = newdata + zs.total_out;
+		} else {
+		    writelog(printf("inflate returns %d %s\n", res, zs.msg ? zs.msg : "no zlib error reported"));
+		    inflateEnd(&zs);
+		    free(newdata);
+		    goto bad;
+		}
+	    }
+	    if (gzip) {
+		unsigned long origcrc;
+		unsigned long origlen;
+
+		/*
+		 * We subtracted 8 from the length above, so now we're
+		 * sure there are 8 bytes available.
+		 */
+		data += length;
+		origcrc = (*data + (*(data + 1) << 8) + (*(data + 2) << 16) +
+				(*(data + 3) << 24));
+		if (origcrc != crc32(0, newdata, zs.total_out)) {
+		    writelog(printf("gzip CRC32 mismatch - orig=%x, calc=%x\n",
+			origcrc, crc32(0, newdata, zs.avail_out)));
+		    free(newdata);
+		    goto bad;
+		}
+		data += 4;
+		origlen = (*data + (*(data + 1) << 8) + (*(data + 2) << 16) +
+				(*(data + 3) << 24));
+		if (origlen != zs.total_out) {
+		    writelog(printf("gzip orig. length mismatch\n"));
+		    free(newdata);
+		    goto bad;
+		}
+	    }
+	    free(buf);	/*XXX*/
+	    buf = data = newdata;	/*XXX*/
+	    length = zs.total_out;
+	    inflateEnd(&zs);
+#else
 	    writelog(printf("compressed announcement & vers != 0!\n"));
 	    goto bad;
+#endif
 	}
-	writelog(printf("recv+pkts: compress=1 & vers == 0, process anyway\n"));
-	bp->compress = 0;
       }
 
 /* debugging info - leave in for the moment */
