@@ -400,8 +400,6 @@ proc quit {} {
   log "Sdr exiting (Quit button pressed) at [getreadabletime]"
   savelog
   if [info exists env(X509STATE)] {
-  putlogfile "X509 Not set"
-  } else {
     set pgpdir "[glob -nocomplain ~]/.pgp"
     if [info exists env(PGPPATH)] {
       set env(PGPPATH) $env(PGPPATH)
@@ -462,7 +460,7 @@ proc quit {} {
      }
     } 
   }
-}
+} 
   if { [file exists $logfile] } {
   file delete $logfile
   }
