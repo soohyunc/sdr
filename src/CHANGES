@@ -1,6 +1,12 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.6.2 E.Whelan 21 June 1999
+
+  - Added pgpdisable and x509disable variables so can build sdr so it 
+    disables all PGP and X509 code for a stable release and can enable
+    the code for an experimental release
+
 2.6.2 ?? 1999
   - Remove qfDES code. We now link with the UCL common multimedia library
     instead, which had a debugged version of this. You MUST have the package
