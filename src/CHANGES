@@ -1,5 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.8 K.Hasler 8 Feb 1999
+  - fixdaysinmonth proc fixes daysinmonth variable for leap years.  Used 
+    when creating a new session and in calendar.
+  - Fix convert_vars to recognise other variable separators (ie not just /).
+  - Directory SDP Patches from: http://www.live.com/sdrpatch.html
+
 2.7e K.Hasler 15 July 1999
   - enabled pgp
 
