@@ -222,7 +222,7 @@ char *check_x509_authentication(struct auth_header *auth_p, char *authinfo,
   key_id = Tcl_GetVar(interp, "recv_asym_keyid", TCL_GLOBAL_ONLY);
     AUTHDEB(printf("writing SDP data to file\n\r");)
   if (key_id !=NULL)
-  memcpy(asym_keyid, key_id,8);
+  memcpy(asym_keyid, key_id,strlen(key_id));
   auth_status = Tcl_GetVar(interp, "recv_authstatus", TCL_GLOBAL_ONLY);
 auth_message = Tcl_GetVar(interp, "recv_authmessage", TCL_GLOBAL_ONLY);
   if(auth_message !=NULL)
@@ -301,7 +301,7 @@ int store_x509_authentication_in_memory(struct advert_data *addata, char *auth_t
        sapauth_p->keycertificate=NULL;
 
 /* Toadd the authetication used pgp or X509 Plus the certificate*/
-  if (memcmp(auth_type,"cx509",4) == 0)
+  if (memcmp(auth_type,"cx50",4) == 0)
     sapauth_p->auth_type = 4;
    else  if (memcmp(auth_type,"x509",4) == 0)
    sapauth_p->auth_type = 2;
@@ -478,7 +478,7 @@ char *check_x509_encryption(struct priv_header *enc_p, char *encinfo,
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
     AUTHDEB(printf("writing SDP data to file\n\r");)
   if(key_id != NULL)
-  memcpy(enc_asym_keyid, key_id,8);
+  memcpy(enc_asym_keyid, key_id,strlen(key_id));
    enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if(enc_message != NULL)
   memcpy(encmessage,enc_message,strlen(enc_message));

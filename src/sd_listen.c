@@ -593,7 +593,7 @@ if (strcmp(argv[2], "crypt")==0) {
                                 else if  ( sapauth_t->auth_type == 3)
                                 memcpy(authtype, "cpgp",4);
                                 else if  ( sapauth_t->auth_type == 4)
-                                memcpy(authtype,"cx509",5);
+                                memcpy(authtype,"cx50",4);
 				else
 				printf("authtype is wrong in cache sap_header");
 			*/	
@@ -799,7 +799,7 @@ if (strcmp(argv[2], "crypt")==0) {
 		else if  ( auth_p->auth_type == 3)
 			strcpy(authtype, "cpgp");
 		else if  ( auth_p->auth_type == 4)
-			strcpy(authtype,"cx509");
+			strcpy(authtype,"cx50");
 		else
 		printf("authtype is wrong in sap_header");
 		if ( auth_p->auth_type == 1 || auth_p->auth_type == 3 )
@@ -1552,7 +1552,7 @@ void recv_packets(ClientData fd)
 				else if  ( auth_p->auth_type == 3)
 				memcpy(authtype, "cpgp",4);
 				else if  ( auth_p->auth_type == 4)
-				 memcpy(authtype,"cx509",5);
+				 memcpy(authtype,"cx50",4);
 				else
 				printf("authtype is wrong in sap_header");
 
@@ -3366,7 +3366,7 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
      } else if ( ( strcmp(auth_type,"pgp")==0 )  && (strcmp(auth_status, "failed")!=0) ) {
 		auth_len = sapauth_p->sig_len+2+sapauth_p->pad_len;
 	}
-      else if ( ( strcmp(auth_type,"cx509")==0 )  && (strcmp(auth_status, "failed")!=0) ) {
+      else if ( ( strcmp(auth_type,"cx50")==0 )  && (strcmp(auth_status, "failed")!=0) ) {
 		auth_len = sapauth_p->sig_len+2+sapauth_p->pad_len;
          }
        else if ( ( strcmp(auth_type,"x509")==0 )  && (strcmp(auth_status, "failed")!=0) ) {
