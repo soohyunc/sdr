@@ -193,3 +193,10 @@ tcl_cache.c:	../src/cache.tcl
 
 tcl2c:	../src/tcl2c.c
 	$(CC) -o tcl2c ../src/tcl2c.c
+
+clean:
+	- rm -f Makefile
+	- rm -f *.o
+	- rm -f *.ehtml
+	- rm -f libs.tcl parsed_plugins.tcl sdr tcl2c tcl_cache.c
+
