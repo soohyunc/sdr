@@ -1,20 +1,15 @@
-CC=gcc -g
-INCLUDES=-I/usr/openwin/include -I/cs/research/mice/speedy/common/sgi/include
-LIB_DIR=/cs/research/mice/speedy/common/sgi/lib
-LIBS=	$(LIB_DIR)/libtk4.1.a $(LIB_DIR)/libtcl7.5.a \
-	-lX11 \
-	-lm
+CC          = cc
+INCLUDES    = -I/usr/openwin/include -I/cs/research/mice/starship/common/irix/include
+LIB_DIR     = /cs/research/mice/starship/common/irix/lib
+LIBS        = $(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a -lX11 -lm
+LIBRARY_TCL = $(LIB_DIR)/tcl8.0
+LIBRARY_TK  = $(LIB_DIR)/tk8.0
+CFLAGS      = $(INCLUDES) -g -O -fullwarn -DSYSV -DSGI -DCANT_MCAST_BIND -DNORANDPROTO
 
-LIBRARY_TCL = $(LIB_DIR)/tcl7.5
-LIBRARY_TK = $(LIB_DIR)/tk4.1
-CFLAGS=$(INCLUDES) -DSYSV -DSGI -DCANT_MCAST_BIND -Wall
-all::sdr
+all:sdr
+
 install:
-	rm -f /cs/research/mice/speedy/common/sgi/bin/sdr
-	cp ./sdr /cs/research/mice/speedy/common/sgi/bin/sdr
-	chmod 755 /cs/research/mice/speedy/common/sgi/bin/sdr
-test:
-	rm -f /cs/research/mice/speedy/common/sgi/bin/sdrtest
-	cp ./sdr /cs/research/mice/speedy/common/sgi/bin/sdrtest
-	chmod 755 /cs/research/mice/speedy/common/sgi/bin/sdrtest
+	rm -f /cs/research/mice/starship/common/irix/bin/sdr
+	cp ./sdr /cs/research/mice/starship/common/irix/bin/sdr
+	chmod 755 /cs/research/mice/starship/common/irix/bin/sdr
 
