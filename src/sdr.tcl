@@ -8,6 +8,11 @@
 set pgpdisable  1
 set x509disable 1
 
+# address families
+global ipv4 ipv6
+set ipv4 4
+set ipv6 6
+
 set initWait 400
 set last_widget foo
 set showwhich all
@@ -3590,13 +3595,14 @@ proc add_ttl_scope {sap_addr sap_port base_addr netmask} {
     #this must not be called more than once!
     #
     global windowForGroupPort zone
+    global ipv4
     set windowForGroupPort($sap_addr,$sap_port) [cw]
     set no_of_zones $zone(no_of_zones)
     set zone(sap_addr,$no_of_zones) $sap_addr
     set zone(sap_port,$no_of_zones) $sap_port
     set zone(base_addr,$no_of_zones) $base_addr
     set zone(netmask,$no_of_zones) $netmask
-    sd_listen $sap_addr $sap_port
+    sd_listen $sap_addr $sap_port $ipv4
     set zone(ttl_scope) $no_of_zones
 }
 
@@ -3607,6 +3613,14 @@ proc add_admin {name sap_addr sap_port base_addr netmask ttl} {
     #to remove one, specify its name and set sap_addr to ""
     #
     global windowForGroupPort zone
+    global ipv4 ipv6
+
+    if {[string first "IPv6" $name] >= 0} {
+        set addr_family $ipv6
+    } else {
+        set addr_family $ipv4
+    }
+
     set windowForGroupPort($sap_addr,$sap_port) [cw]
     set no_of_zones $zone(no_of_zones)
     for {set i 0} {$i < $no_of_zones} {incr i} {
@@ -3615,6 +3629,7 @@ proc add_admin {name sap_addr sap_port base_addr netmask ttl} {
 		for {set j $i} {$j<[expr $no_of_zones-1]} {incr j} {
 		    set zone(name,$j) $zone(name,[expr $j+1])
 		    set zone(sap_addr,$j) $zone(sap_addr,[expr $j+1])
+            set zone(addr_fam,$j) $zone(addr_fam,[expr $j+1])
 		    set zone(sap_port,$j) $zone(sap_port,[expr $j+1])
 		    set zone(base_addr,$j) $zone(base_addr,[expr $j+1])
 		    set zone(netmask,$j) $zone(netmask,[expr $j+1])
@@ -3630,13 +3645,15 @@ proc add_admin {name sap_addr sap_port base_addr netmask ttl} {
     }
     set zone(name,$no_of_zones) $name
     set zone(sap_addr,$no_of_zones) $sap_addr
+    set zone(addr_fam,$no_of_zones) $addr_family
     set zone(sap_port,$no_of_zones) $sap_port
-    sd_listen $sap_addr $sap_port
+    sd_listen $sap_addr $sap_port $addr_family
     set zone(base_addr,$no_of_zones) $base_addr
     set zone(netmask,$no_of_zones) $netmask
     set zone(ttl,$no_of_zones) $ttl
     incr zone(no_of_zones)
 }
+
 
 proc sdr_new_session_hook {advert} {
 }
@@ -3646,6 +3663,7 @@ proc sdr_delete_session_hook {advert} {
 
 proc launch_directory {addr port ttl dirName} {
     global windowForGroupPort
+    global ipv4
 
     # If we don't yet have a window open for the directory's (group,port),
     # then open one now:
@@ -3694,7 +3712,7 @@ proc launch_directory {addr port ttl dirName} {
 	set zoneDataForWindow($newWindow) [array get newZoneData]
 	
 	# Finally, start listening to the directory:
-	sd_listen $addr $port
+	sd_listen $addr $port $ipv4
     }
     return 1
 }
@@ -4516,8 +4534,16 @@ set send([lindex $medialist 0]) 1
 add_admin "IPv4 Local Scope"     239.255.255.255   9875    239.255.0.0   16    15
 add_admin "IPv4 Region (ttl 63)" 224.2.127.254     9875    224.2.128.0   17    63
 add_admin "IPv4 World (ttl 127)" 224.2.127.254     9875    224.2.128.0   17    127
+
+if {[verify_ipv6_stack] == 1} {
+    add_admin "IPv6 Link Local" ff02::ff:ffff 9875 ff02::ff:0 113 15
+    add_admin "IPv6 Site" ff05:0:0:0:0:0:2:7ffe 9875 ff05:0:0:0:0:0:2:8000 113 63
+    add_admin "IPv6 Global" ff0e:0:0:0:0:0:2:7ffe 9875 ff0e:0:0:0:0:0:2:8000 113 127
+}
+
 # add_admin                    sap_addr     sap_port   base_addr  netmask ttl
 add_ttl_scope               224.2.127.254     9875    224.2.128.0   17
+
 set zoneDataForWindow([cw]) [array get zone]
 
 #create the interface

@@ -172,85 +172,136 @@ int buflen;
 }
 
 
-int sd_listen(char *address, int port, int rx_sock[], int *no_of_socks, int fatal) 
+int sd_listen(char *address, int port, int addr_fam,
+              int rx_sock[], int *no_of_socks, int fatal) 
 {    
     struct sockaddr_in name;
     struct ip_mreq imr;
     unsigned int group;
-    int s, i, one=1, zero=0;
+#ifdef HAVE_IPv6
+    struct sockaddr_in6 name6;
+    struct ipv6_mreq imr6;
+    struct in6_addr group6;
+#endif
+    int s, i, one=1, zero=0, af = AF_INET;
 
-    if (no_of_socks!=NULL)
-      {
-	for(i=0;i<*no_of_socks;i++)
-	  if (strcmp(address, rx_sock_addr[i])==0) {return(*no_of_socks);}
-      }
-    else
-      {
-	no_of_socks=&zero;
-      }
+    if (no_of_socks!=NULL) {
+        for(i=0;i<*no_of_socks;i++) {
+            if (strcmp(address, rx_sock_addr[i])==0) {
+                /* Found an existing socket for this address. */
+                return(*no_of_socks);
+            }
+        }
+    } else {
+        no_of_socks=&zero;
+    }
+    
+    if (*no_of_socks == MAX_SOCKS) {
+        return (*no_of_socks);	/*XXX Is there an appropriate error return?*/
+    }
 
-    if (*no_of_socks == MAX_SOCKS)
-      return (*no_of_socks);	/*XXX Is there an appropriate error return?*/
-
-    group = inet_addr(address);
-    if((s=socket( AF_INET, SOCK_DGRAM, 0 )) < 0) {
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6        
+      af = AF_INET6;
+#endif
+    }
+    if ((s = socket(af, SOCK_DGRAM, 0)) < 0) {
         perror("socket");
         exit(1);
     }
+
+
     if (s >= sizeof(rfd2sock)) {
-	fprintf(stderr, "socket fd too large (%d)\n", s);
-	abort();
+        fprintf(stderr, "socket fd too large (%d)\n", s);
+        abort();
     }
     rx_sock[*no_of_socks] = s;
     rfd2sock[s] = *no_of_socks;
-    if (debug1==TRUE)
-      {
-	fprintf(stderr,"Binding socket %d to address/port %s/%d\n", s, address, port);
-      }
+
+    if (debug1==TRUE) {
+        fprintf(stderr,"Binding socket %d to address/port %s/%d\n", 
+                s, address, port);
+    }
+
 #ifndef WIN32
     fcntl(s, F_SETFD, 1);
 #endif
 
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
+
 #ifdef SO_REUSEPORT
     setsockopt(s, SOL_SOCKET, SO_REUSEPORT, (char *)&one, sizeof(one));
 #endif
 
-    name.sin_family = AF_INET;
-#ifndef CANT_MCAST_BIND
-    name.sin_addr.s_addr = group;
-#else
-    name.sin_addr.s_addr = INADDR_ANY;
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+        inet6_addr(address, &group6);
+        memset((char *)&name6, 0, sizeof (name6));
+        name6.sin6_family = AF_INET6;
+        name6.sin6_addr = in6addr_any;
+        name6.sin6_port = htons((short)port);
+        i = bind(s, (struct sockaddr *)&name6, sizeof(name6));
 #endif
-    name.sin_port = htons(port);
-    if (bind(s, (struct sockaddr *)&name, sizeof(name))) {
-	if (fatal) {
-	    perror("bind");
-	    fprintf(stderr, "Address: %x, Port: %d\n",
-		    group, port);
-	    exit(1);
-	} else {
-	    close(s);
-	    return (*no_of_socks);
-	}
+    } else {
+        group = inet_addr(address);
+        name.sin_family = AF_INET;
+#ifndef CANT_MCAST_BIND
+        name.sin_addr.s_addr = group;
+#else
+        name.sin_addr.s_addr = INADDR_ANY;
+#endif
+        name.sin_port = htons(port);
+        i = bind(s, (struct sockaddr *)&name, sizeof(name));
     }
 
-    imr.imr_multiaddr.s_addr = group;
-    imr.imr_interface.s_addr = INADDR_ANY;
-    if (setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-		   (char *)&imr, sizeof(struct ip_mreq)) < 0 ) {
-        perror("setsockopt - IP_ADD_MEMBERSHIP");
-        exit(1);
+    /* Check on results of bind call above. */
+    if (i) {
+        if (fatal) {
+            perror("bind");
+            fprintf(stderr, "Address: %x, Port: %d\n", group, port);
+            exit(1);
+        } else {
+            close(s);
+            return (*no_of_socks);
+        }
+    }
+
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
+        imr6.ipv6mr_multiaddr = group6;
+        imr6.ipv6mr_interface = 0;
+        
+        if (setsockopt(s, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+                       (char *)&imr6, sizeof(imr6))) {
+            perror("sd_listen: setsockopt IPv6_ADD_MEMBERSHIP");
+            fprintf(stderr, 
+                    "sd_listen: setsockopt IPV6_ADD_MEMBRSHIP err, addr: %s\n",
+                    address);
+            exit(1);
+        }
+#endif
+    } else {    
+        imr.imr_multiaddr.s_addr = group;
+        imr.imr_interface.s_addr = INADDR_ANY;
+        if (setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                       (char *)&imr, sizeof(struct ip_mreq)) < 0 ) {
+            perror("setsockopt - IP_ADD_MEMBERSHIP");
+            exit(1);
+        }
     }
     rx_sock_addr[*no_of_socks]=malloc(strlen(address)+1);
     strcpy(rx_sock_addr[*no_of_socks], address);
     rx_sock_port[*no_of_socks]=port;
-
+    
     if (initializationHasFinished) {
-      /* This socket was created after initialization, so start listening now */
-      linksocket(rxsock[*no_of_socks], TK_READABLE, (Tcl_FileProc*)recv_packets);
+        /* 
+         * This socket was created after initialization, so start 
+         * listening now.
+         */
+        linksocket(rxsock[*no_of_socks], TK_READABLE, 
+                   (Tcl_FileProc*)recv_packets);
     }
-
+    
     (*no_of_socks)++;
     return(*no_of_socks);
 }
@@ -1325,7 +1376,7 @@ char *argv[];
     bus_send_new_app();
 #endif
 /*Set up Initial Rx Socket*/
-    sd_listen(SAP_GROUP, SAP_PORT, rxsock, &no_of_rx_socks, 1);
+    sd_listen(SAP_GROUP, SAP_PORT, AF_INET, rxsock, &no_of_rx_socks, 1);
 
 /*Set up Tx Socket*/
     sd_tx(SAP_GROUP, SAP_PORT, txsock, &no_of_tx_socks);
@@ -1415,6 +1466,12 @@ char *argv[];
     Tcl_Eval(interp, "write_cache");
     clean_up_and_die();
     return(0);
+}
+
+
+int verify_ipv6_stack() 
+{
+    return 1;
 }
 
 int xremove_interface(Display *pdisp)

@@ -155,6 +155,7 @@ WinMain(
     HINSTANCE hPrevInstance,
     LPSTR lpszCmdLine,
     int nCmdShow)
+
 {
     char *p;
     WSADATA WSAdata;

@@ -51,7 +51,8 @@ int ui_sd_listen(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;                        /* Argument strings. */
 {
-  sd_listen(argv[1], atoi(argv[2]), rxsock, &no_of_rx_socks, 1);
+  sd_listen(argv[1], atoi(argv[2]), atoi(argv[3]), rxsock, &no_of_rx_socks, 1);
+  sprintf(interp->result, "%d", 4);
   return TCL_OK;
 }
 
@@ -83,6 +84,21 @@ int ui_lookup_host(dummy, interp, argc, argv)
   in=look_up_address(argv[1]);
   sprintf(interp->result, "%s", inet_ntoa(in));
   return TCL_OK;
+}
+
+int ui_verify_ipv6_stack(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;                        /* Argument strings. */
+{
+
+#if defined(HAVE_IPv6)
+        sprintf(interp->result, "%d", 1);
+#else 
+        sprintf(interp->result, "%d", 0);
+#endif
+    return TCL_OK;
 }
 
 int ui_sip_send_udp(dummy, interp, argc, argv)
@@ -265,6 +281,7 @@ int ui_getdayname(dummy, interp, argc, argv)
     interp->result=longdaynames[mnum];
   return TCL_OK;
 }
+
 
 int ui_getmonname(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */

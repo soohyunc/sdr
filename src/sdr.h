@@ -117,10 +117,20 @@ time_t time(time_t *);
 char *strerror(int i);
 #endif
 
+#define IPv4 4
+#define IPv6 6
+
 #define SAP_GROUP        "224.2.127.254"
 #define SAP_PORT         9875
+
+#define SAPv6_DEFAULT_MASK 13
+#define SAPv6_GROUP        "ff0e:0:0:0:0:0:2:7ffe"
+#define SAPv6_DEFAULT      "ff0e::2:8000"
+
 #define SIP_GROUP        "224.0.1.75"
-#define SIP_PORT        5060
+#define SIP_PORT         5060
+#define SIPv6_GROUP      "ff0e:0:0:0:0:0:0:014b"
+
 
 
 #ifdef TRUE

@@ -857,6 +857,18 @@ Specify the smallest scope that will reach the people you want to communicate wi
 	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv4 World"] -variable ttl\
 		-highlightthickness 0 \
 		-value 127 -command {disable_scope_entry 127}
+
+	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Link Local"] -variable ttl\
+		-highlightthickness 0 \
+		-value 15 -command {disable_scope_entry 15}
+
+	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Site"] -variable ttl\
+		-highlightthickness 0 \
+		-value 63 -command {disable_scope_entry 63}
+
+	radiobutton $win.f3.rr.r3 -relief flat -text [tt "IPv6 Global"] -variable ttl\
+		-highlightthickness 0 \
+		-value 127 -command {disable_scope_entry 127}
 	hlfocus $win.f3.rr.r1
 	hlfocus $win.f3.rr.r2
 	hlfocus $win.f3.rr.r3

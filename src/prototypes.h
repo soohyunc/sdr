@@ -92,6 +92,7 @@ int ui_sip_send_tcp_reply(ClientData dummy, Tcl_Interp *interp, int argc, char *
 int ui_set_sipalias(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_lookup_host(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_sd_listen(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
+int ui_verify_ipv6_stack(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_generate_port();
 int ui_generate_address();
 int ui_generate_id();
@@ -144,7 +145,9 @@ int announce_error(int code, char *command);
 void rebuild_interface();
 void remove_interface();
 int xremove_interface(Display *d);
-int sd_listen(char *address, int port, int *rxsock, int *no_of_socks, int fatal);
+int sd_listen(char *address, int port, int addr_fam, int *rxsock, 
+              int *no_of_socks, int fatal);
+int verify_ipv6_stack();
 void recv_packets();
 int timed_send_advert(ClientData cd);
 #ifdef AUTH
