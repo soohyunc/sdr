@@ -2,9 +2,36 @@
 <TITLE> Secure Announcements</TITLE>
 </HEAD>
 <BODY>
-<H1><A NAME=SECTION00060000000000000000> Secure Announcements</A></H1>
+<H1><A NAME=SECTION00060000000000000000> Secure Announcements </A></H1>
 <P>
 Although the purpose of sdr is to advertise sessions, not all sessions should be advertised publicly.  However, it is important that even secret sessions use the same announcement mechanism, so that their bandwidth usage can be taken into account, and so that their multicast addresses are not inadvertently re-used.  Thus Sdr permits secure sessions to be advertised, by announcing them twice - once unencrypted with just the bandwidth, contact info and multicast addresses, and once encrypted with all of the information including encryption keys for the media tools.  Secure sessions do not appear in Sdr's listing of sessions unless the correct encryption key has been inserted.
 <P>
-Sdr allows a session to be created as ``public'' or ``private''.  To create a private session, sdr must have been pre-configured with a set of private group names and their encryption keys.  Normally this keys will have been exchanged using privacy enhanced electronic mail.  When the user selects ``private'', the list of the groups the user has keys for is displayed, and the user can select a group.  The encryption keys for these groups are not displayed on the interface at any time, and they are themselves stored encrypted in a file.  Thus if a user wants sdr to receive or send encrypted sessions, they must enter a password to sdr to allow it to decrypt this key file.
+<H3>Overview of Security in SDR</H3>
+<P>
+Sdr allows a session to be created as ``public'' or ``private''.  To create a private session, sdr must have been pre-configured with a set of private keys. Normally these will have been exchanged via secure email. From SDR v2.5a5 there is a choice of either symmetric encryption (currently DES) or asymmetric encryption when announcing a conference. In the asymmetric case either PGP (Pretty Good Privacy) (tm) or SECUDE (tm), which uses X.509v3 Certificates and PKCS#7 style formats, can be used. The tools can be started either encrypted using DES or unencrypted. It is explicitly allowed for the media encryption keys to be sent in an unsecured announcement but, as this clearly weakens security, it is recommended that a secure announcement be used when the tools are to be encrypted.
+<P>
+<H3>Using X.509 Authentication and Encryption</H3>
+<P>
+If one wishes to use X.509 encryption and authentication one must set the environment variable X509STATE in your environment. If this is not set then the default is to only use PGP for the asymmetric encryption/authentication.
+<P>
+<H3>Encrypting the Media Streams</H3>
+<P>
+If one wishes to encrypt the media streams then, when creating a session, simply click the encryption button for the relevant media stream. A random key is generated but this can be set to a key of your choice by overtyping in the field. Overtyping is only possible if you have chosen "Technical Interface" in the Preferences menu.
+<P>
+<H3>Sending Authenticated Announcements</H3>
+<P>
+If one wishes to send an authenticated announcement then select either PGP or X.509 from the Authentication pull-down menu. A list of the private keys in the relevant keyring will then appear and you should select the one you wish to use to sign the announcement. You may be prompted for a password to access the key. You may also select "PGP+CERT" or "X.509+CERT" and the behaviour is the same as in the PGP and X.509 case before except that the full certificate is now also sent in the announcement.
+<P>
+<H3>Sending Encrypted Announcements</H3>
+<P>
+If one wishes to encrypt the announcement one should select DES, PGP or X.509 from the pull down encryption menu. A list of available keys will appear and you should select the one which you wish to encrypt the announcement with. Only other users who have either the same key for DES or the corresponding half of the key pair for PGP and X.509 will be able to decrypt and so see the announcement.
+<P>
+<H3>Receiving Encrypted and/or Authenticated Announcements</H3>
+<P>
+When one receives an encrypted or autheticated session this is indicated by the icon being reverse video. In addition there is an indication after the session name in the main Sdr window which indicates what kind of authentication and encryption has been used. When one opens up the details of the session clicking on the "Encryption Info" box will display details of the encryption used and similarly clicking on the "Authentication Info" box will bring up details of the authentciation used. In order to be able to decrypt the announcement you may be prompted for a passphrase to unlock the relevant secret key.
+<P>
+<H3>Adding Keys To Your Keyrings</H3>
+<P>
+Adding keys to your PGP and X.509 keyrings must be done from outside Sdr. One should, however, add keys to your symmetric keyring from within the Preferences/Security menu inside Sdr. 
+
 </BODY>
