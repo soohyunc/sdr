@@ -190,9 +190,10 @@ int announce_error(int code, char *command)
 #else
                 fprintf(stderr, "sdr:%s %s\n", command, interp->result);
 #endif
-                buf[sizeof(buf) - 1] = 0; /* Let's not overflow */
+                Tcl_VarEval(interp, "puts $errorInfo", NULL);
                 strncpy(buf, interp->result, sizeof(buf) - 1);
-                 Tcl_VarEval(interp, "puts $errorInfo", NULL);
+                buf[sizeof(buf) - 1] = 0; /* Let's not overrun */
+        	Tcl_VarEval(interp, "tkerror {", buf, "}", NULL);	        
 	}
 	return (code);
 }
