@@ -143,7 +143,18 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 int get_sdr_home(char str[])
 {
 #ifdef WIN32
-  strcpy(str, getenv("HOME"));
+/* need to take care of the ~ on Windows */
+  char *filename, *tmpstr;
+  Tcl_DString buffer;
+  filename = malloc(MAXFILENAMELEN);
+ 
+  announce_error(Tcl_GlobalEval(interp, "resource sdrHome"),
+             "resource sdrHome");
+  strcpy(filename, interp->result);
+  tmpstr = Tcl_TildeSubst(interp, filename, &buffer);
+  str = strcpy(str, tmpstr);
+  Tcl_DStringFree(&buffer);
+  free(filename);
 #else
   announce_error(Tcl_GlobalEval(interp, "resource sdrHome"),
 		 "resource sdrHome");
@@ -296,7 +307,7 @@ int save_keys(void)
 
   get_sdr_home(keyfilename);
 #ifdef WIN32
-  strcat(keyfilename, "\\sdr\\keys");
+  strcat(keyfilename, "\\keys");
 #else
   strcat(keyfilename, "/keys");
 #endif
@@ -322,7 +333,7 @@ int load_keys(void)
 
   get_sdr_home(keyfilename);
 #ifdef WIN32
-  strcat(keyfilename, "\\sdr\\keys");
+  strcat(keyfilename, "\\keys");
 #else
   strcat(keyfilename, "/keys");
 #endif
@@ -383,6 +394,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
   u_char hash[16];
   char *filename;
 #ifdef WIN32  /* need to sort out the ~ on windows */
+  struct stat sbuf;
   Tcl_DString buffer;
   filename = Tcl_TildeSubst(interp, afilename, &buffer);
 #else
@@ -460,7 +472,10 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
     what recovery I can take if it actually fails!*/
 
 #ifdef WIN32   /* need to remove file first on windows or rename fails */
-  remove(filename);
+  if (stat(filename, &sbuf) != -1)
+  {
+    remove(filename);
+  }
   rename(tmpfilename, filename);
   Tcl_DStringFree(&buffer);
 #else
