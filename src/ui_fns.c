@@ -452,14 +452,8 @@ int ui_run_program(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;
 {
-#ifdef WIN32
-	/* This function is not used on Windows... */
-	return TCL_ERROR;
-#else
-	int i;
 	int pid;
 	pid=run_program(argv[1]);
 	sprintf(interp->result, "%d", pid);
 	return TCL_OK;
-#endif
 }

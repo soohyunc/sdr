@@ -794,16 +794,7 @@ proc apply_startup_rule {aid mnum proto fmt rule attrlist} {
 	puts "fixing rule: $rule"
     }
     set rule [fix_up_plugin_rule $rule]
-    eval "set rule \"$rule\""
-    if {$debug1} {
-	catch {puts \"$rule\"}
-	catch {eval puts \"$rule\"}
-    }
-    if {$tcl_platform(platform) == "windows"} {
-	set pid [eval exec $rule &]
-    } else {
 	set pid [run_program $rule]
-    }
     if {$pid == -1} {
 	# fork failed...
 	return 0

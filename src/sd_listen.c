@@ -3615,15 +3615,34 @@ struct advert_data *get_advert_info(char *advertid)
   return NULL;
 }
 
-#ifdef WIN32
-/* Quick fix as the routine below won't compile on windows even though it is */
-/* never called - code to call it is in plugins.tcl                          */
-int run_program(char *args) {
-  writelog(printf(" -- entered run_program on Windows --\n");)
-  writelog(printf("  **** You should not be here ! ****\n");)
-  return 0;
+#define MAX_PARAM_SIZE 255
+/* parse tcl variables in command line */
+void convert_vars(char *ptr1, char *dest) {
+	char *ptr2;
+	char cpy[MAX_PARAM_SIZE];
+	int pos, len=0;
+
+    if (*ptr1=='$') {
+		while (*ptr1=='$') {
+			pos=strcspn(ptr1," /");
+			strcpy (cpy,ptr1);
+			ptr2=cpy;
+			ptr2+=pos;
+			if (ptr2!=NULL) *ptr2='\0';
+			strcpy(dest+len,Tcl_GetVar(interp, cpy+1, 0));
+			len= strlen(dest);
+			ptr1+=pos;
+			/* append extra text/variables */
+			while(*ptr1 !='\0' && *ptr1!='$') {
+				strncpy (dest+len, ptr1, 1);
+				len++;
+				ptr1++;
+			}
+		}
+    } else strcpy (dest, ptr1);
 }
-#else
+
+#ifndef WIN32
 int run_program(char *args) {
   pid_t pid;
 #ifdef DEBUG
@@ -3631,6 +3650,7 @@ int run_program(char *args) {
 #endif
   int i;
   char *ptr1, *ptr2, *nargv[40];
+
   pid = fork();
   if (pid>0)
     return pid;
@@ -3649,6 +3669,7 @@ int run_program(char *args) {
     close(rxsock[i]);
   for(i=0;i<no_of_tx_socks;i++)
     close(txsock[i]);
+
   /*OK, now we're ready to exec the child process*/
   i=0;
   ptr1=args;
@@ -3658,15 +3679,18 @@ int run_program(char *args) {
     if (*ptr1=='\0') break;
     ptr2=strchr(ptr1, ' ');
     /* cope with quoted strings - strip off quotes as execvp() later */
-    /* stops tools removing them                                     */
-    if (*ptr1=='"') {
-      nargv[i++]=ptr1+1;
-      ptr2=strchr(ptr1+1,'"');
+    /* stops tools removing them */
+    if (ptr2!=NULL) *ptr2++='\0';
+    nargv[i]=malloc(MAX_PARAM_SIZE);
+    convert_vars(ptr1, nargv[i]);
+    if (*nargv[i]=='"') {
+      nargv[i]+=1;
+      ptr2=strchr(nargv[i++],'"');
       if (ptr2!=NULL) {
         *ptr2++='\0';
       }
     } else {
-      nargv[i++]=ptr1;
+      i++;
     }
     ptr1=ptr2;
     if (i==38) {
@@ -3680,8 +3704,8 @@ int run_program(char *args) {
   for(k=0;k<i;k++)
     printf(">%s<\n",nargv[k]);
 #endif
-  execvp(nargv[0], nargv);
 
+  execvp(nargv[0], nargv);
   /*what, still here?*/
   /*something went wrong with the exec...*/
   fprintf(stderr, "Failed to execute ");
@@ -3691,5 +3715,43 @@ int run_program(char *args) {
   perror(nargv[0]);
   exit(0);
 }
-#endif
 
+#else
+
+int run_program(char *args) {
+  pid_t pid;
+  int i;
+  char *ptr1, *ptr2, *nargv[40];
+
+  /*OK, now we're ready to exec the child process*/
+  i=0;
+  ptr1=args;
+  while(ptr1!=NULL) {
+    while(*ptr1==' ') *ptr1++='\0';
+    if (*ptr1=='\0') break;
+    ptr2=strchr(ptr1, ' ');
+	if (ptr2!=NULL) *ptr2++='\0';
+	nargv[i]=malloc(MAX_PARAM_SIZE);
+	convert_vars(ptr1, nargv[i++]);
+	ptr1=ptr2;
+    if (i==38) {
+      /*XXX*/
+      fprintf(stderr, "too many args to command to be run!\n");
+      break;
+    }
+  }
+  nargv[i]=NULL;
+
+  pid=spawnvp(_P_NOWAIT,nargv[0], nargv);
+  if (pid==-1) {
+    /*something went wrong with the spawn...*/
+    fprintf(stderr, "Failed to execute ");
+    for(i=0;nargv[i]!=NULL;i++)
+      fprintf(stderr, "%s ", nargv[i]);
+    fprintf(stderr, "\n");
+    perror(nargv[0]);
+  }
+  while (i>-1) free(nargv[i--]);
+  return pid;
+}
+#endif
