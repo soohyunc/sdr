@@ -60,7 +60,11 @@ proc select_security_info {win width height} {
     pack $win.f.r.f -side top
 
     listbox $win.f.r.f.lb -height 10 -width 20 -yscroll "$win.f.r.f.sb set" \
-	-relief sunken -borderwidth 1 -selectmode single
+	-relief sunken -borderwidth 1 -selectmode single \
+        -selectforeground [resource activeForeground] \
+	-selectbackground [resource activeBackground] \
+	-highlightthickness 0
+
     bind $win.f.r.f.lb <1> "%W selection clear 0 end;\
                             %W selection set \[%W nearest %y\];\
                             show_encryption_group $win"
@@ -530,8 +534,13 @@ proc new_mk_session_security {win aid} {
 
     frame $win.f
     pack $win.f -side top -fill both -expand true
+
     listbox $win.f.lb -width 15 -height 4 -yscroll "$win.f.sb set" \
-	-borderwidth 1 -highlightthickness 0
+        -relief sunken -borderwidth 1 -selectmode single \
+        -selectforeground [resource activeForeground] \
+        -selectbackground [resource activeBackground] \
+        -highlightthickness 0
+
     pack $win.f.lb -side left -fill both -expand true
     scrollbar $win.f.sb -command "$win.f.lb yview" -borderwidth 1 \
 	 -highlightthickness 0
