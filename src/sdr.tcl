@@ -252,7 +252,7 @@ proc scroll_to_session {key list} {
 
 proc build_interface {first {dirName {}}} {
     global tcl_platform ifstyle gui sessbox 
-    global logfile argv0 argv
+    global logfile argv0 argv geometry
     if {$gui=="NO_GUI"} { return }
     log "Sdr started by [getusername] at [getreadabletime]"
     set lb $ifstyle(labels)
@@ -268,6 +268,9 @@ proc build_interface {first {dirName {}}} {
     set isNewWindow [expr {![info exists [cw]]}]
     if {$isNewWindow} {
         toplevel [cw]
+        if [ info exists geometry ] {
+          wm geometry [cw] $geometry
+        }
         wm protocol [cw] WM_DELETE_WINDOW [list handleWindowClose [cw]]
         wm protocol [cw] WM_SAVE_YOURSELF [list quit [cw]]
 

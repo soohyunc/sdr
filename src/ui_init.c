@@ -190,8 +190,7 @@ int ui_create_interface()
    * Set the geometry of the main window, if requested.
    */
   if (geometry != NULL) {
-    announce_error(Tcl_VarEval(interp, "wm geometry . ", geometry, 0), 
-		   "setting geometry");
+    Tcl_SetVar(interp, "geometry", geometry, TCL_GLOBAL_ONLY);
   }
 
   for(i=0;i<MAX_TCL_MODULE;i++)
