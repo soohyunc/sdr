@@ -2,7 +2,7 @@ media:audio
 tool:rat
 proto:RTP/AVP
 protoname:RTP
-
+cryptflag: -K
 #macro definition for default packetisation time
 @define:ptime
 {
@@ -142,6 +142,7 @@ fmt:*(DYNAMIC)
 #    value:$(RTPMAP) -rtp $(VALUE)
 #  }
 #}
+flags:$(CRYPTKEY)
 flags:-t $(TTL)
 flags:-C $(SESSNAME)
 flags:$(PRIMARY)$(SECONDARY)
