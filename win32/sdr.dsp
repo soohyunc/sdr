@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "\src\sdr\src" /I "\src\tcl-8.0\generic" /I "\src\tk-8.0\generic" /I "\src\tk-8.0\xlib" /I "\src\sdr\win32" /I "\src\common" /D "WIN32" /D "_DEBUG" /D "AUTH" /D "CANT_MCAST_BIND" /D "NORANDPROTO" /D "DIFF_BYTE_ORDER" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "\src\sdr\src" /I "\src\tcl-8.0\generic" /I "\src\tk-8.0\generic" /I "\src\tk-8.0\xlib" /I "\src\sdr\win32" /I "\src\common" /D "WIN32" /D "_DEBUG" /D "AUTH" /D "CANT_MCAST_BIND" /D "NORANDPROTO" /D "DIFF_BYTE_ORDER" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -356,7 +356,7 @@ InputPath=.\bugs.html
 InputName=bugs
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -385,7 +385,7 @@ InputPath=.\changes.html
 InputName=changes
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -414,7 +414,7 @@ InputPath=..\src\html\intro.html
 InputName=intro
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -443,7 +443,7 @@ InputPath=..\src\html\mbone_faq.html
 InputName=mbone_faq
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -472,7 +472,7 @@ InputPath=..\src\html\mbone_tools.html
 InputName=mbone_tools
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -501,7 +501,7 @@ InputPath=..\src\html\node1.html
 InputName=node1
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -530,7 +530,7 @@ InputPath=..\src\html\node10.html
 InputName=node10
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -559,7 +559,7 @@ InputPath=..\src\html\node11.html
 InputName=node11
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -588,7 +588,7 @@ InputPath=..\src\html\node12.html
 InputName=node12
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -617,7 +617,7 @@ InputPath=..\src\html\node13.html
 InputName=node13
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -646,7 +646,7 @@ InputPath=..\src\html\node14.html
 InputName=node14
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -675,7 +675,7 @@ InputPath=..\src\html\node15.html
 InputName=node15
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -704,7 +704,7 @@ InputPath=..\src\html\node2.html
 InputName=node2
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -733,7 +733,7 @@ InputPath=..\src\html\node3.html
 InputName=node3
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -762,7 +762,7 @@ InputPath=..\src\html\node4.html
 InputName=node4
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -791,7 +791,7 @@ InputPath=..\src\html\node5.html
 InputName=node5
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -820,7 +820,7 @@ InputPath=..\src\html\node6.html
 InputName=node6
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -849,7 +849,7 @@ InputPath=..\src\html\node7.html
 InputName=node7
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -878,7 +878,7 @@ InputPath=..\src\html\node8.html
 InputName=node8
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -907,7 +907,7 @@ InputPath=..\src\html\node9.html
 InputName=node9
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -936,7 +936,7 @@ InputPath=..\src\html\plugins.html
 InputName=plugins
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -965,7 +965,7 @@ InputPath=..\src\html\plugtut.html
 InputName=plugtut
 
 "$(InputName).ehtml" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe $(InputName) < $(InputPath) > $(InputName).ehtml
 
 # End Custom Build
 
@@ -987,7 +987,7 @@ InputPath=.\cache.tcl
 InputName=cache
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -998,7 +998,7 @@ InputPath=.\cache.tcl
 InputName=cache
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1043,7 +1043,7 @@ InputPath=..\src\cli.tcl
 InputName=cli
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1054,7 +1054,7 @@ InputPath=..\src\cli.tcl
 InputName=cli
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1072,7 +1072,7 @@ InputPath=..\src\generic.tcl
 InputName=generic
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1083,7 +1083,7 @@ InputPath=..\src\generic.tcl
 InputName=generic
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1101,7 +1101,7 @@ InputPath=..\src\new.tcl
 InputName=new
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1112,7 +1112,7 @@ InputPath=..\src\new.tcl
 InputName=new
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1130,7 +1130,7 @@ InputPath=.\parsed_plugins.tcl
 InputName=parsed_plugins
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1141,7 +1141,7 @@ InputPath=.\parsed_plugins.tcl
 InputName=parsed_plugins
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1159,7 +1159,7 @@ InputPath=..\src\pgp_crypt.tcl
 InputName=pgp_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1170,7 +1170,7 @@ InputPath=..\src\pgp_crypt.tcl
 InputName=pgp_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1188,7 +1188,7 @@ InputPath=..\src\pkcs7_crypt.tcl
 InputName=pkcs7_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1199,7 +1199,7 @@ InputPath=..\src\pkcs7_crypt.tcl
 InputName=pkcs7_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1216,7 +1216,7 @@ SOURCE=..\src\plugin2tcl.tcl
 InputPath=..\src\plugin2tcl.tcl
 
 "parsed_plugins.tcl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	c:\progra~1\tcl\bin\tclsh80 $(InputPath)
+	\src\sdr\win32\tclsh\tclsh.exe $(InputPath)
 
 # End Custom Build
 
@@ -1226,7 +1226,7 @@ InputPath=..\src\plugin2tcl.tcl
 InputPath=..\src\plugin2tcl.tcl
 
 "parsed_plugins.tcl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	tclsh80 $(InputPath)
+	\src\sdr\win32\tclsh\tclsh.exe $(InputPath)
 
 # End Custom Build
 
@@ -1244,7 +1244,7 @@ InputPath=..\src\plugins.tcl
 InputName=plugins
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1255,7 +1255,7 @@ InputPath=..\src\plugins.tcl
 InputName=plugins
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1273,7 +1273,7 @@ InputPath=..\src\sap_crypt.tcl
 InputName=sap_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1284,7 +1284,7 @@ InputPath=..\src\sap_crypt.tcl
 InputName=sap_crypt
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1302,7 +1302,7 @@ InputPath=..\src\sdp.tcl
 InputName=sdp
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1313,7 +1313,7 @@ InputPath=..\src\sdp.tcl
 InputName=sdp
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1331,7 +1331,7 @@ InputPath=..\src\sdr.tcl
 InputName=sdr
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1342,7 +1342,7 @@ InputPath=..\src\sdr.tcl
 InputName=sdr
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1360,7 +1360,7 @@ InputPath=..\src\sip.tcl
 InputName=sip
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1371,7 +1371,7 @@ InputPath=..\src\sip.tcl
 InputName=sip
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1389,7 +1389,7 @@ InputPath=..\src\start_tools.tcl
 InputName=start_tools
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1400,7 +1400,7 @@ InputPath=..\src\start_tools.tcl
 InputName=start_tools
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1418,7 +1418,7 @@ InputPath=..\src\www.tcl
 InputName=www
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Release\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
@@ -1429,7 +1429,7 @@ InputPath=..\src\www.tcl
 InputName=www
 
 "tcl_$(InputName).c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	\src\tcl-8.0\win\tcl2c\Debug\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
+	\src\tcl-8.0\win\tcl2c\tcl2c.exe tcl_$(InputName) < $(InputPath) > tcl_$(InputName).c
 
 # End Custom Build
 
