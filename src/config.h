@@ -3,8 +3,8 @@
  *
  *  Machine/operating-system specific definitions and includes for RAT.
  *  
- *  $Revision: 1.1 $
- *  $Date: 1998-03-21 15:27:49 $
+ *  $Revision: 1.2 $
+ *  $Date: 1998-07-28 15:06:53 $
  *
  * Copyright (c) 1995,1996 University College London
  * All rights reserved.
@@ -257,8 +257,8 @@ extern "C" {
 int uname(struct utsname *);
 int getopt(int, char * const *, const char *);
 int strcasecmp(const char *, const char *);
-int srandom(int);
-int random(void);
+void srandom(unsigned int);
+long random(void);
 double drand48();
 int gettimeofday(struct timeval *p, struct timezone *z);
 int gethostid(void);
