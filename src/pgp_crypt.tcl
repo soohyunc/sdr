@@ -26,9 +26,14 @@ proc enc_clear_asym_keys {win type} {
 #--------------------------------------------------------------------#
 proc pgpstate { } {
   global env
+  global pgpdisable
   if [info exists env(PGPSTATE)] {
     if { $env(PGPSTATE) == 1 } {
-      return 1
+      if {$pgpdisable == 1} {
+        return 0
+      } else {
+        return 1
+      }
     } else {
       return 0
     }
