@@ -137,8 +137,10 @@ time_t time(time_t *);
 
 #define M_PI		3.14159265358979323846
 
+/*
 #define srand48 srand
 #define lrand48 rand
+*/
 
 #endif /* WIN32 */
 

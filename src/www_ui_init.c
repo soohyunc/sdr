@@ -119,9 +119,7 @@ static void		StdinProc _ANSI_ARGS_((ClientData clientData,
  */
 
 int
-ui_init(argc, argv)
-    int argc;				/* Number of arguments. */
-    char **argv;			/* Array of argument strings. */
+ui_init(int argc, char *argv[])
 {
     char *args, *p;
 #ifdef NOTDEF
