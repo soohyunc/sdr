@@ -732,7 +732,7 @@ set new_wiz_tech_panels \
 proc create {} {
     global ttl dayix durationix send zone
     global timeofday minoffset hroffset media_attr media_fmt media_proto
-    global media_layers medialist new_createtime sess_type
+    global media_layers medialist new_sessid sess_type
     global rtp_payload sdrversion security
     global mediaenc security
 
@@ -756,7 +756,7 @@ proc create {} {
 #     puts "create: ttl = $ttl"
 
     set sess "v=0"
-    set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
+    set sess "$sess\no=[getusername] $new_sessid [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
     set sess "$sess\ns=[get_new_session_name .new.f.f]"
     if {[get_new_session_name .new.f.f]==""} {
         errorpopup "No Session Name" "You must give the session a name"

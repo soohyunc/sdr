@@ -23,7 +23,7 @@ proc new {aid} {
 
 proc new_wiz_init {aid iftype} {
     global new_wiz_norm_panels new_wiz_tech_panels 
-    global send new_createtime medialist ldata
+    global send new_sessid medialist ldata
     catch {destroy .new}
     toplevel .new
 
@@ -61,14 +61,14 @@ proc new_wiz_init {aid iftype} {
 	foreach i $medialist {
             set send($i) 0
         }
-  	set new_createtime $ldata($aid,createtime)
+  	set new_sessid $ldata($aid,sessid)
     } else {
 	wm title .new "Sdr: [tt "Create New Session"]"
 	foreach i $medialist {
 	    set send($i) 0
 	}
 	set send(audio) 1
-	set new_createtime [unix_to_ntp [gettimeofday]]
+	set new_sessid [unix_to_ntp [gettimeofday]]
     }
     
     if {$iftype=="tech"} {
