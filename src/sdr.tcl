@@ -4539,8 +4539,12 @@ initialise_resources
 # find where we are installed
 set app_name $argv0
 while {[file type $app_name] == "link"} {
+    set dir_name [file dirname $app_name]
     # don't worry about recursion since we know app must exist.
     set app_name [file readlink $app_name]
+    if {[file dirname $app_name] == "."} {
+        set app_name [concat $dir_name/$app_name]
+    }
 }
 set app_home [file dirname $app_name]
 
