@@ -1925,7 +1925,7 @@ int timed_send_advert(ClientData cd)
   if(((unsigned long)tv.tv_sec<=addata->end_time)||(addata->end_time==0))
     {
       send_advert(addata->data, addata->tx_sock, addata->ttl, 
-		  addata->keyid, addata->length);
+		  addata->encrypt, addata->length);
       interval = addata->interval;
       jitter = (unsigned)random() % interval;
       addata->timer_token=Tcl_CreateTimerHandler(interval + jitter,
@@ -1936,7 +1936,7 @@ int timed_send_advert(ClientData cd)
 }
 
 int send_advert(char *adstr, int tx_sock, unsigned char ttl, 
-		u_int keyid, u_int len)
+		int encrypt, u_int len)
 {
   char *buf;
 #ifdef WIN32
@@ -1947,8 +1947,8 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
   ttl=1;
 #endif
 
-  buf=(char *)malloc(sizeof(struct sap_header)+len+8);
-  len+=build_packet(buf, adstr, len, keyid);
+  buf=(char *)malloc(sizeof(struct sap_header)+len+4);
+  len+=build_packet(buf, adstr, len, encrypt);
 
 #ifdef WIN32
   wttl = ttl;
@@ -2029,7 +2029,7 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
       last_ad=addata;
       no_of_ads++;
     }
-  send_advert(addata->data, addata->tx_sock, ttl, addata->keyid, 
+  send_advert(addata->data, addata->tx_sock, ttl, addata->encrypt, 
 	      addata->length);
   return 0;
 }

@@ -51,14 +51,14 @@ int parse_announcement(int enc, char *data, int length,
 }
 
 
-int build_packet(char *buf, char *adstr, int len, u_int keyid)
+int build_packet(char *buf, char *adstr, int len, int encrypt)
 {
   struct sap_header *bp;
   int len_add=0;
 
   bp=(struct sap_header *)buf;
   bp->compress=0;
-  if (keyid==0) {
+  if (encrypt==0) {
     memcpy(buf+sizeof(struct sap_header), adstr, len);
     if (debug1==TRUE)
       printf("sending %s\n", adstr);
@@ -79,7 +79,7 @@ int store_data_to_announce(struct advert_data *addata,
 			   char * adstr, char *keyname)
 {
   addata->data=malloc(addata->length);
-  addata->keyid=0;
+  addata->encrypt=0;
   memcpy(addata->data, adstr, addata->length);
   return 0;
 }
@@ -96,8 +96,6 @@ int ui_createsession(dummy, interp, argc, argv)
   char aid[80];
   char data[2048];
   struct timeval tv;
-  char key[MAXKEYLEN];
-  int keyid;
   gettimeofday(&tv, NULL);
   endtime=atol(argv[2]);
   ttl=(unsigned char)atoi(argv[5]);

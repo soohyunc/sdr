@@ -153,7 +153,7 @@ struct advert_data {
   unsigned char ttl;
   unsigned int padding;
   unsigned int length;
-  unsigned int keyid;
+  int encrypt;
   struct advert_data *next_ad;
   struct advert_data *prev_ad;
   Tk_TimerToken timer_token;
@@ -177,7 +177,6 @@ struct sap_header {
 };
 
 struct enc_header {
-  u_int keyid;
   u_int timeout;
   u_int random;
 };

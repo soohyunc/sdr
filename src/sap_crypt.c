@@ -71,64 +71,58 @@ int encrypt_announcement(char *srcbuf, char **dstbuf, int *length,
 int decrypt_announcement(char *buf, int *len, char *recvkey)
 {
   char key[MAXKEYLEN];
-  char *dstbuf;
-  int try=0;
+  char *dstbuf, origbuf[*len];
   struct enc_header *enchead;
-#ifdef DEBUG 
-  int i;
-#endif
+  struct keydata *tmpkey=keylist;
+  int i, length=0;
 
-/* Decrypt splats the length and buffer so need to save it */
-  int length = 0;
-  char origbuf[*len];
-  memcpy(origbuf,buf,*len);
-
+  memcpy(origbuf,buf,*len);          /* decrypt splats buffer so save it */
   enchead=(struct enc_header *)buf;
+
 #ifdef DEBUG
-  printf("keyid: %d\n", enchead->keyid);
   printf("timeout: %d\n", enchead->timeout);
 #endif
 
-  /*the key ID might not be unique, so try each key that matched the 
-    key ID in turn until one of them seems to work*/
-  while(try!=-1)
-    {
-      try=find_key_by_id(enchead->keyid, key, try);
-      if (try==-1) return -1;
+/* No longer have key id so loop through all keys trying to decrypt buffer */
 
-/* reset the buffer if try != 0 before attempting decryption */
-      if (try != 0) memcpy(buf,origbuf,*len);
+  while(tmpkey != NULL)
+  {
+    strncpy(key, tmpkey->key, MAXKEYLEN);
+    memcpy(buf,origbuf,*len);
 
 #ifdef DEBUG
-      printf("setting key: %s\n", key);
-      Set_Key(key);
-      printf("..done\n");
+    printf("setting key: %s\n", key);
+    Set_Key(key);
+    printf("..done\n");
 #else
-      Set_Key(key);
+    Set_Key(key);
 #endif
-      dstbuf=malloc(*len);
+
+    dstbuf=malloc(*len);
+
 #ifdef DEBUG
-      printf("pre-decrypt     len: %d\n", *len-8);
+    printf("pre-decrypt     len: %d\n", *len-4);
 #endif
-      length=Decrypt(buf+8, dstbuf, (*len)-8);
+    length=Decrypt(buf+4, dstbuf, (*len)-4);
 #ifdef DEBUG
-      printf("post-decrypt length: %d\n", length);
-      for(i=0;i<16;i++)
-	printf("%d,", dstbuf[i]);
-      printf("\n");
+    printf("post-decrypt length: %d\n", length);
+    for(i=0;i<16;i++)
+      printf("%d,", dstbuf[i]);
+    printf("\n");
 #endif
-      if (length != -1) {
-        if (strncmp(dstbuf, "v=", 2)==0) {
-            printf("         ... decryption was successful\n");
-            *len = length;
-	    strncpy(recvkey, key, MAXKEYLEN);
-	    memcpy(buf, dstbuf, *len);
-	    buf[*len]='\0';
-	    break;
-	  }
-        } 
-      try++;
-    }
+
+    if (length != -1) {
+      if (strncmp(dstbuf, "v=", 2)==0) {
+        printf("         ... decryption was successful\n");
+        *len = length;
+        strncpy(recvkey, key, MAXKEYLEN);
+        memcpy(buf, dstbuf, *len);
+        buf[*len]='\0';
+        break;
+      }
+    } 
+    tmpkey=tmpkey->next;
+  }
       
   return 0;
 }
@@ -141,29 +135,7 @@ int get_sdr_home(char str[])
   return 0;
 }
 
-int find_key_by_id(u_int keyid, char *key, int try)
-{
-  struct keydata *tmpkey=keylist;
-  int keynum=0;
-
-  while(tmpkey!=NULL)
-    {
-      if (tmpkey->keyid==keyid) {
-        if (try==keynum) {
-          strncpy(key, tmpkey->key, MAXKEYLEN);
-          return try;
-        } else {
-          keynum++;
-        }
-      }
-      tmpkey=tmpkey->next;
-    }
-
-  return -1;
-}
-
-
-int find_key_by_name(char *keyname, u_int *keyid, char *key)
+int find_key_by_name(char *keyname, char *key)
 {
   struct keydata *tmpkey=keylist;
 
@@ -172,7 +144,6 @@ int find_key_by_name(char *keyname, u_int *keyid, char *key)
       if (strncmp(tmpkey->keyname,keyname, MAXKEYLEN)==0)
 	{
 	  strncpy(key, tmpkey->key, MAXKEYLEN);
-	  *keyid=tmpkey->keyid;
 	  return 0;
 	}
       tmpkey=tmpkey->next;
@@ -181,11 +152,11 @@ int find_key_by_name(char *keyname, u_int *keyid, char *key)
 }
 
 
-int register_key(char *key, char *keyname, u_int keyid)
+int register_key(char *key, char *keyname)
 {
   struct keydata *tmpkey=keylist;
 #ifdef DEBUG
-  printf("key: %s\nkeyname:%s\nkeyid: %u\n", key, keyname, keyid);
+  printf("key: %s\nkeyname:%s\n", key, keyname);
 #endif
 
   /*Check that there isn't already a key with this name*/
@@ -217,7 +188,6 @@ int register_key(char *key, char *keyname, u_int keyid)
   memset(keylist->key, MAXKEYLEN, 0);
   strncpy(keylist->keyname, keyname, MAXKEYLEN);
   strncpy(keylist->key, key, MAXKEYLEN);
-  keylist->keyid=keyid;
   keylist->starttime=1;
   keylist->endtime=2;
   keylist->keyversion=3;
@@ -282,7 +252,6 @@ int save_keys(void)
   tmpkey=keylist;
   for(i=0;i<no_of_keys;i++)
     {
-      p->keyid = htonl(tmpkey->keyid);
       p->keyversion = htonl(tmpkey->keyversion);
       p->starttime = htonl(tmpkey->starttime);
       p->endtime = htonl(tmpkey->endtime);
@@ -346,7 +315,6 @@ int load_keys(void)
 	keylist=addkey;
       addkey->prev=tmpkey;
       addkey->next=NULL;
-      addkey->keyid=htonl(p[i].keyid);
       addkey->keyversion=htonl(p[i].keyversion);
       addkey->starttime=htonl(p[i].starttime);
       addkey->endtime=htonl(p[i].endtime);

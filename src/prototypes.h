@@ -6,7 +6,7 @@ int aux_load_file(char *buf, char *name, char *flag);
 int parse_announcement(int enc, char *data, int length,
                    u_long src, u_long hfrom, char *rx_sock_addr,
                    int rx_sock_port, int sec);
-int build_packet(char *buf, char *adstr, int len, u_int keyid);
+int build_packet(char *buf, char *adstr, int len, int encrypt);
 int store_data_to_announce(struct advert_data *addata, char *adstr,
 			   char *keyname);
 
@@ -101,7 +101,7 @@ int xremove_interface(Display *d);
 int sd_listen(char *address, int port, int *rxsock, int *no_of_socks, int fatal);
 void recv_packets();
 int timed_send_advert(ClientData cd);
-int send_advert(char *adstr, int sock, unsigned char ttl, u_int keyid, 
+int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, 
 		u_int len);
 int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, char * address, int port, unsigned char ttl, char * keyname);
 int stop_session_ad(char *aid);

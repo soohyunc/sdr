@@ -40,11 +40,6 @@ proc select_security_info {win width height} {
     password $win.f.l.f.e2b -width 40 -relief sunken -borderwidth 1 \
 	-variable tmpeditpass2
     pack $win.f.l.f.e2b -side top -anchor w
-    label $win.f.l.f.l3 -text "Keyid:"
-    pack $win.f.l.f.l3 -side top -anchor w
-    entry $win.f.l.f.e3 -width 10 -relief sunken -borderwidth 1 \
-	-highlightthickness 0
-    pack $win.f.l.f.e3 -side top -anchor w
 
     frame $win.f.l.f.f 
     pack $win.f.l.f.f -side top -anchor w -fill x 
@@ -85,8 +80,6 @@ proc select_security_info {win width height} {
     $win.f.l.f.e2 configure -state disabled
     $win.f.l.f.l2b configure -foreground [resource disabledForeground]
     $win.f.l.f.e2b configure -state disabled
-    $win.f.l.f.l3 configure -foreground [resource disabledForeground]
-    $win.f.l.f.e3 configure -state disabled
     $win.f.l.f.f.b2 configure -state disabled
     if {[get_passphrase]==""} {
 	$win.f.r.l configure -foreground [resource disabledForeground]
@@ -132,7 +125,6 @@ proc show_encryption_group {win} {
     set keyname [string trimright [$win.f.r.f.lb get $sel] "\n"]
     set tmp [find_key_by_name $keyname]
     set key [lindex $tmp 0]
-    set keyid [lindex $tmp 1]
     
     $win.f.l.f.l1 configure -foreground [resource foreground]
     $win.f.l.f.e1 configure -state normal \
@@ -143,15 +135,10 @@ proc show_encryption_group {win} {
     $win.f.l.f.l2b configure -foreground [resource foreground]
     $win.f.l.f.e2b configure -state normal \
 	-background [resource entryBackground]
-    $win.f.l.f.l3 configure -foreground [resource foreground]
-    $win.f.l.f.e3 configure -state normal \
-	-background [resource entryBackground]
     $win.f.l.f.e1 delete 0 end
     $win.f.l.f.e1 insert 0 $keyname
     $win.f.l.f.e2.workaround set $key
     $win.f.l.f.e2b.workaround set $key
-    $win.f.l.f.e3 delete 0 end
-    $win.f.l.f.e3 insert 0 $keyid
     $win.f.l.f.f.b2 configure -state normal
     $win.f.l.f.f.b3 configure -state normal
 }
@@ -165,7 +152,6 @@ proc select_delete_key {win} {
     $win.f.l.f.e1 delete 0 end
     $win.f.l.f.e2.workaround set ""
     $win.f.l.f.e2b.workaround set ""
-    $win.f.l.f.e3 delete 0 end
     $win.f.l.f.f.b2 configure -state disabled
     $win.f.l.f.f.b3 configure -state disabled
     $win.f.l.f.l1 configure -foreground [resource disabledForeground]
@@ -174,8 +160,6 @@ proc select_delete_key {win} {
     $win.f.l.f.e2 configure -state disabled -background [resource background]
     $win.f.l.f.l2b configure -foreground [resource disabledForeground]
     $win.f.l.f.e2b configure -state disabled -background [resource background]
-    $win.f.l.f.l3 configure -foreground [resource disabledForeground]
-    $win.f.l.f.e3 configure -state disabled -background [resource background]
 }
 
 proc select_modify_key {win} {
@@ -201,24 +185,16 @@ proc select_modify_key {win} {
         after 3000 prefs_help "\"\""
         return
     }
-    if {[$win.f.l.f.e3 get]<10000} {
-        bell
-        prefs_help "Key ID must be in the range 10000-429496297"
-        after 3000 prefs_help "\"\""
-        return
-    }
-    set newkeyid [$win.f.l.f.e3 get]
     clear_prefs_keys
     delete_key $keyname
     clear_prefs_keys
-    add_key $tmpeditpass $newkeyname $newkeyid
+    add_key $tmpeditpass $newkeyname
     save_keys
     unset tmpeditpass
     unset tmpeditpass2
     $win.f.l.f.e1 delete 0 end
     $win.f.l.f.e2.workaround set ""
     $win.f.l.f.e2b.workaround set ""
-    $win.f.l.f.e3 delete 0 end
     $win.f.l.f.f.b2 configure -state disabled
     $win.f.l.f.f.b3 configure -state disabled
     $win.f.l.f.l1 configure -foreground [resource disabledForeground]
@@ -227,8 +203,6 @@ proc select_modify_key {win} {
     $win.f.l.f.e2 configure -state disabled -background [resource background]
     $win.f.l.f.l2b configure -foreground [resource disabledForeground]
     $win.f.l.f.e2b configure -state disabled -background [resource background]
-    $win.f.l.f.l3 configure -foreground [resource disabledForeground]
-    $win.f.l.f.e3 configure -state disabled -background [resource background]
     focus $keylistbox
 }
 
@@ -263,12 +237,6 @@ proc register_key {} {
     password .key.f.f.r.e -width 30 -variable tmpkey2 \
 	 -background [option get . entryBackground Sdr]
     pack .key.f.f.r.e -side top -anchor w
-
-    label .key.f.l3 -text "Key identifier (should be numeric):"
-    pack .key.f.l3 -side top -anchor w
-    entry .key.f.e3 -width 10 -background [option get . entryBackground Sdr] \
-	-highlightthickness 0
-    pack .key.f.e3 -side top -anchor w
 
 #    frame .key.f.f1
 #    pack .key.f.f1 -side top
@@ -305,13 +273,7 @@ proc submit_key {} {
 	after 3000 "catch {.key.f.msg configure -text \"\"}"
 	return
     }
-    if {[.key.f.e3 get]<10000} {
-	bell
-	.key.f.msg configure -text "Key ID must be in the range 10000-429496297"
-	after 3000 "catch {.key.f.msg configure -text \"\"}"
-	return
-    }    
-    add_key $tmpkey [.key.f.e1 get] [.key.f.e3 get]
+    add_key $tmpkey [.key.f.e1 get]
     unset tmpkey
     catch {destroy .key}
 

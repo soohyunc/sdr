@@ -7,9 +7,9 @@ char *get_pass_phrase();
 int load_keys();
 int save_keys();
 int get_sdr_home(char *str);
-int find_key_by_name(char *keyname, u_int *keyid, char *key);
+int find_key_by_name(char *keyname, char *key);
 int set_pass_phrase(char *newphrase);
-int register_key(char *key, char *keyname, u_int keyid);
+int register_key(char *key, char *keyname);
 int delete_key(char *keyname);
 
 /* ui_fns_crypt.c */

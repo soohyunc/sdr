@@ -68,7 +68,7 @@ int parse_announcement(int enc, char *data, int length,
   
   /*Decrypt the announcement, and skip the encryption fields*/
   if (enc==1) {
-    /*note - encrypted data includes keyid and timeout*/
+    /*note - encrypted data includes timeout*/
 #ifdef DEBUG
     printf("received encrypted announcement...\n");
 #endif
@@ -101,25 +101,24 @@ int parse_announcement(int enc, char *data, int length,
 }
 
 
-int build_packet(char *buf, char *adstr, int len, u_int keyid)
+int build_packet(char *buf, char *adstr, int len, int encrypt)
 {
   struct sap_header *bp;
   int len_add=0;
 
   bp=(struct sap_header *)buf;
   bp->compress=0;
-  if (keyid==0) {
+  if (encrypt==0) {
     memcpy(buf+sizeof(struct sap_header), adstr, len);
     bp->enc=0;
   } else {
-    memcpy(buf+sizeof(struct sap_header)+8, adstr, len);
+    memcpy(buf+sizeof(struct sap_header)+4, adstr, len);
 #ifdef DEBUG
     printf("sending encrypted session\n");
 #endif
     bp->enc=1;
-    *(u_int*)(buf+sizeof(struct sap_header))= htonl(keyid);	/* keyid   */
-    *(u_int*)(buf+sizeof(struct sap_header)+4)=0;		/* timeout */
-    len_add=8;
+    *(u_int*)(buf+sizeof(struct sap_header))=0;		/* timeout */
+    len_add=4;
   }
   bp->src=htonl(hostaddr);
   bp->msgid=0;
@@ -132,21 +131,20 @@ int build_packet(char *buf, char *adstr, int len, u_int keyid)
 int store_data_to_announce(struct advert_data *addata, 
 			   char * adstr, char *keyname)
 {
-  int   keyid;
   char  key[MAXKEYLEN];
   char *encdata;
 
   if (strcmp(keyname,"")!=0) {
-    if (find_key_by_name(keyname, &keyid, key)!=0)
+    if (find_key_by_name(keyname, key)!=0)
       return -1;
     encrypt_announcement(adstr, &encdata, &(addata->length), key);
     addata->data=malloc(addata->length);
     memcpy(addata->data, encdata, addata->length);
-    addata->keyid=keyid;
+    addata->encrypt=1;
     return 0;
   } else {
     addata->data=malloc(addata->length);
-    addata->keyid=0;
+    addata->encrypt=0;
     memcpy(addata->data, adstr, addata->length);
     return 0;
   }
@@ -165,7 +163,6 @@ int ui_createsession(dummy, interp, argc, argv)
   char data[2048];
   struct timeval tv;
   char key[MAXKEYLEN]="";
-  int keyid=-1;
 
   gettimeofday(&tv, NULL);
   endtime=atol(argv[2]);
@@ -174,7 +171,7 @@ int ui_createsession(dummy, interp, argc, argv)
   interval=INTERVAL;
   /*need the copy because parse entry splats the data*/
   strncpy(data, argv[1], 2047);
-  find_key_by_name(argv[6], &keyid, key);
+  find_key_by_name(argv[6], key);
   parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port, tv.tv_sec, "trusted", key);
   queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6]);
   return TCL_OK;
@@ -227,8 +224,7 @@ int ui_add_key(dummy, interp, argc, argv)
     char **argv;
 {
   return (register_key(/*key*/ argv[1], 
-		       /*keyname*/ argv[2], 
-		       /*keyid*/ atoi(argv[3])));
+		       /*keyname*/ argv[2] ));
 }
 
 int ui_delete_key(dummy, interp, argc, argv)
@@ -268,8 +264,7 @@ int ui_find_key_by_name(dummy, interp, argc, argv)
     char **argv;
 {
   char key[MAXKEYLEN];
-  u_int keyid;
-  find_key_by_name(argv[1], &keyid, key);
-  sprintf(interp->result, "{%s} %u", key, keyid);
+  find_key_by_name(argv[1], key);
+  sprintf(interp->result, "{%s}", key);
   return TCL_OK;
 }
