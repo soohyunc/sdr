@@ -1,6 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.5.6 
+  - 
+  - Rewrite of the new session UI (wizard style interface)
+  - Change order of scope zone initialisation
+
 2.5a5 E.Whelan@cs.ucl.ac.uk 5th August 1998
   - changed version number to 2.5a5 in preparation for the release
 
