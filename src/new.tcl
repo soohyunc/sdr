@@ -25,9 +25,8 @@ proc new_wiz_init {aid iftype} {
     global new_wiz_norm_panels new_wiz_tech_panels 
     global send new_sessid medialist ldata
     catch {destroy .new}
-    toplevel .new
+    sdr_toplevel .new "Session Creation Wizard" "Session Creation"
 
-    wm title .new "Session Creation Wizard"
     frame .new.f -borderwidth 2 -relief groove
     pack .new.f -side top -fill both -expand true
     label .new.f.l -text ""
@@ -58,12 +57,14 @@ proc new_wiz_init {aid iftype} {
 
     if {[string compare $aid "new"]!=0} {
 	wm title .new "Sdr: [tt "Edit Session"]"
+	wm iconname .new "Sdr: [tt "Edit Session"]"
 	foreach i $medialist {
             set send($i) 0
         }
   	set new_sessid $ldata($aid,sessid)
     } else {
 	wm title .new "Sdr: [tt "Create New Session"]"
+	wm iconname .new "Sdr: [tt "Create New Session"]"
 	foreach i $medialist {
 	    set send($i) 0
 	}
@@ -1840,8 +1841,7 @@ proc enter_phone_details {cmd} {
 	}
     }
     catch {destroy .phone}
-    toplevel .phone
-    wm title .phone "Sdr: Configure"
+    sdr_toplevel .phone "Configure"
     frame .phone.f -borderwidth 2 -relief groove
     pack .phone.f -side top
     message .phone.f.l -text "Please configure sdr with your name, email address and phone number.  
@@ -2394,8 +2394,7 @@ proc generate_address {args} {
 		return 1
 	    } else {
 		#should really warn the user when we have to do this
-		toplevel .warn
-		wm title .warn "Sdr: [tt "Warning"]"
+		sdr_toplevel .warn "Warning"
 		frame .warn.f -borderwidth 2 -relief groove
 		pack .warn.f -side top -fill both
 		message .warn.f.msg -aspect 400 -text \

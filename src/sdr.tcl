@@ -206,13 +206,16 @@ proc scroll_to_session {key list} {
 
 proc build_interface {first} {
     global tcl_platform ifstyle gui sessbox 
-    global logfile
+    global logfile argv0 argv
     if {$gui=="NO_GUI"} { return }
     log "Sdr started by [getusername] at [getreadabletime]"
     set lb $ifstyle(labels)
     global titlestr
     wm title . "sdr:[getemailaddress]"
+    wm iconname . "sdr:[getemailaddress]"
     wm iconbitmap . sdr
+    wm group . .
+    wm command . [concat $argv0 $argv]
     if {$first=="first"} {
 
         set tmpfile [clock format [clock seconds]  -format {%H%M%S}]
@@ -495,8 +498,7 @@ proc media_changed_warning {aid medianum} {
 	}
 	
 	catch {destroy .mediawarn}
-	toplevel .mediawarn$aid
-	wm title .mediawarn$aid "Sdr: Warning"
+	sdr_toplevel .mediawarn$aid "Warning"
 	frame .mediawarn$aid.f -borderwidth 2 -relief groove
 	set win .mediawarn$aid.f
 	pack $win -side top -fill both
@@ -1592,8 +1594,10 @@ proc popup {aid ifstyle msgsrc} {
 
   if {$msgsrc=="advert"} {
       wm title $wname "Sdr: Session Information"
+      wm iconname $wname "Sdr: Session Information"
   } else {
       wm title $wname "Sdr: Incoming call from $msgsrc"
+      wm iconname $wname "Sdr: Incoming call from $msgsrc"
       frame $win.inv -borderwidth 2 -relief groove
       pack $win.inv -side top -fill x -expand true
       label $win.inv.l -text "Incoming Call" -font [option get . largeFont Sdr]
@@ -2295,8 +2299,7 @@ proc delete_session {aid} {
 proc record {aid} {
     global ldata
     catch {destroy .record}
-    toplevel .record
-    wm title .record "Sdr: [tt "Record Session"]"
+    sdr_toplevel .record "Record Session"
     frame .record.f -borderwidth 2 -relief groove
     label .record.f.l -text $ldata($aid,session)
     pack .record.f.l -side top
@@ -2451,8 +2454,7 @@ proc stuff_mosaic {} {
 proc preferences2 {} {
     global showwhich balloonHelp binder_tags prefprocs
     catch {destroy .prefs}
-    toplevel .prefs
-    wm title .prefs "Sdr: Preferences"
+    sdr_toplevel .prefs "Preferences"
     posn_win .prefs
 
     frame .prefs.f3 -relief groove -borderwidth 2
@@ -3130,8 +3132,7 @@ proc pref_people {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
 proc preferences {} {
     global showwhich webtype webclient webproxy balloonHelp
     catch {destroy .prefs}
-    toplevel .prefs
-    wm title .prefs "Sdr: Preferences"
+    sdr_toplevel .prefs "Preferences"
     posn_win .prefs
 
     frame .prefs.f3 -relief groove -borderwidth 2
@@ -3299,8 +3300,7 @@ proc save_prefs {} {
 proc help {} {
     global balloonHelp
     catch {destroy .help}
-    toplevel .help
-    wm title .help "Sdr: Help"
+    sdr_toplevel .help "Help"
     posn_win .help
     frame .help.f -relief groove -borderwidth 2
     pack .help.f -side top
@@ -3544,8 +3544,7 @@ proc calendar {} {
     global ldata fullix fullnumitems daysinmonth taglist fh fw font ifstyle
     catch {destroy .cal}
     catch {unset taglist}
-    toplevel .cal
-    wm title .cal "Sdr: Daily Listings"
+    sdr_toplevel .cal "Daily Listings" "Calendar"
     posn_win .cal
     frame .cal.f0 -borderwidth 2 -relief groove
     if {$ifstyle(labels)=="long"} {
@@ -4253,6 +4252,18 @@ proc encinfo {win bgcolour encm} {
     pack $win.encinfo -side top -fill x  -after $win.hidden2
     message $win.encinfo.encmsg -aspect 800 -text "Encryption Information: $encm " -font $mf -bg $bgcolour
     pack $win.encinfo.encmsg  -side top -expand true
+}
+
+proc sdr_toplevel {win title {iconname {}}} {
+    set ret [toplevel $win]
+    wm group $ret .
+    wm title $ret "Sdr: [tt $title]"
+    if {$iconname == ""} {
+	set iconname $title
+    }
+    wm iconname $ret "Sdr: [tt $iconname]"
+    wm iconbitmap $ret sdr
+    return $ret
 }
 
 #set where to read config files from

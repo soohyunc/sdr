@@ -1,8 +1,7 @@
 proc add_address {} {
     global userlist
     catch {destroy .newuser}
-    toplevel .newuser
-    wm title .newuser "Add new user"
+    sdr_toplevel .newuser "Add new user"
     frame .newuser.f -relief groove -borderwidth 2
     pack .newuser.f -side top
     set win .newuser.f

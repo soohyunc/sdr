@@ -324,8 +324,7 @@ proc move_onscreen {w} {
 
 proc genericpopup {ename explan title} {
     catch {destroy .epopup}
-    toplevel .epopup
-    wm title .epopup $title
+    sdr_toplevel .epopup $title
     posn_win .epopup
     frame .epopup.f -relief groove -borderwidth 2
     label .epopup.f.l -text $ename -font "[option get . headerFont Sdr]"

@@ -212,8 +212,7 @@ proc select_modify_key {win} {
 
 proc register_key {} {
     catch {destroy .key}
-    toplevel .key
-    wm title .key "Sdr: Enter a new encryption key"
+    sdr_toplevel .key "Enter a new encryption key"
     frame .key.f -relief groove -borderwidth 2
     pack .key.f -side top
 
@@ -296,9 +295,8 @@ proc submit_key {} {
 
 proc query_passphrase { win } {
   catch {destroy .qpass}
-  toplevel .qpass
   global querypass
-  wm title .qpass "Sdr: Enter the pass phrase for your key file"
+  sdr_toplevel .qpass "Enter the pass phrase for your key file"
 
   frame .qpass.f -relief groove -borderwidth 2
   pack  .qpass.f -side top
@@ -366,8 +364,7 @@ proc enter_passphrase {} {
 
 proc enter_long_passphrase {mode} {
     catch {destroy .pass}
-    toplevel .pass
-    wm title .pass "Sdr: Enter the pass phrase for your key file"
+    sdr_toplevel .pass "Enter the pass phrase for your key file"
     frame .pass.f -relief groove -borderwidth 2
     pack .pass.f -side top
     

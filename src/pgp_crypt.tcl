@@ -590,9 +590,9 @@ proc get_pgppath {} {
 proc enter_pgp_path {} {
   global  env pgpinfo yourkey 
 
+  set w .pgpinfo
   catch {destroy $w}
-  set w [toplevel .pgpinfo -borderwidth 2] 
-  wm title .pgpinfo "Sdr: PGP Configuration"
+  sdr_toplevel $w "PGP Configuration"
 
   frame $w.f -borderwidth 5 -relief groove
   pack  $w.f -side top
@@ -1173,9 +1173,9 @@ global sspass
 proc Misc_GetPass { title label } {
     global getpass ppass spass sspass
 
+    set w .getpass
     catch {destroy $w}
-    set w [toplevel .getpass -borderwidth 10]
-    wm title .getpass  $title
+    sdr_toplevel $w $title
 
     checkbutton $w.b1 -text "Same Pass" -variable spass\
         -highlightthickness 0 -justify l \
@@ -1217,9 +1217,10 @@ proc Misc_GetPass { title label } {
 proc Misc_Gettext { title label } {
     global gettext
     global ptext
+
+     set w .gettext
      catch {destroy $w}
-    set w [toplevel .gettext -borderwidth 10]
-     wm title .gettext  $title
+     sdr_toplevel $w $title
      label $w.lab -text  $label
      pack $w.lab -side top  -anchor w
      entry $w.entry  -width 30 -relief sunken -borderwidth 1 \
@@ -1332,9 +1333,9 @@ proc pgp_AddCert { filename title label } {
       return 1
     }
 
+     set w .getans
      catch {destroy $w}
-    set w [toplevel .getans -borderwidth 10]
-     wm title .getans  $title
+     sdr_toplevel $w $title
      label $w.lab -text  $label
      pack $w.lab -side top -fill x -expand true
      frame $w.but
@@ -1371,9 +1372,9 @@ proc pgp_smart { title label but} {
       return 1
     }
 
+     set w .getsmartans
      catch {destroy $w}
-    set w [toplevel .getsmartans -borderwidth 10]
-     wm title .getsmartans  $title
+     sdr_toplevel $w $title
      label $w.lab -text  $label
      pack $w.lab -side top -fill x -expand true
      frame $w.but
@@ -1575,6 +1576,7 @@ proc Help1_Toplevel { path name {class Dialog} {x {}} {y {}} } {
         }
     }
     wm title $self $name
+    wm iconname $self $name
     wm group $self .
     return $self
 }
@@ -1770,9 +1772,9 @@ proc Des_Setup {  } {
 proc creat_des_key {} {
     global  env desinfo deskey
     global desname despass despass1
+    set w .desinfo
     catch {destroy $w}
-    set w [toplevel .desinfo -borderwidth 2]
-    wm title .desinfo "Sdr: Des Information to send to group"
+    sdr_toplevel $w "Des Information to send to group"
     frame $w.f -borderwidth 5 -relief groove
     pack $w.f -side top
     message $w.f.l -aspect 500  -text "Please enter name of encryption group and key"

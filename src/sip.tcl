@@ -38,8 +38,7 @@ proc qcall {} {
 	return 
     }
     
-    toplevel .qc
-    wm title .qc "Sdr: Quick Call"
+    sdr_toplevel .qc "Quick Call"
     posn_win .qc
     frame .qc.f -borderwidth 2 -relief groove
     pack .qc.f -side top
@@ -207,9 +206,8 @@ proc qcreate {} {
 proc invite {aid} {
     global invited_sessions ldata
     catch {destroy .inv}
-    toplevel .inv
+    sdr_toplevel .inv "Invite User"
 #    puts "C aid:$aid"
-    wm title .inv "Sdr: Invite User"
     if {$invited_sessions=={}} {
 	set invited_sessions $aid
     } else {
@@ -1647,8 +1645,7 @@ set sip_call_list {}
 proc add_to_call_list {aid} {
     global sip_call_list sessdetails
     if {$sip_call_list == {} } {
-	toplevel .calls
-	wm title .calls "Incoming Calls"
+	sdr_toplevel .calls "Incoming Calls"
 	frame .calls.f -borderwidth 2 -relief groove
 	pack .calls.f -side top -expand true -fill both
 	label .calls.f.l -text "While you were out..."
@@ -1698,9 +1695,8 @@ proc add_to_call_list {aid} {
 proc enter_new_address {menu entry} {
     global address_book ab
     catch {destroy .ab}
-    toplevel .ab
+    sdr_toplevel .ab "Address Book"
     posn_win .ab
-    wm title .ab "Address Book"
     frame .ab.f -borderwidth 2 -relief groove
     pack .ab.f -side top
 

@@ -916,8 +916,7 @@ proc select_tool_for_media {aid mnum proto fmt rulelist attrlist} {
     set media $ldata($aid,$mnum,media)
     set win .st$aid$mnum
     catch {destroy $win}
-    toplevel $win
-    wm title $win "Select a tool"
+    sdr_toplevel $win "Select a tool"
     frame $win.f -relief groove -borderwidth 2
     pack $win.f -side top
     label $win.f.l -text "More than one $media tool is available"

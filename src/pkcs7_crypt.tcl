@@ -404,9 +404,9 @@ Other {return $pkcs7result}
 proc Misc_GetX509Pass { title label } {
     global getpassx509
     global x509pass
+     set w .getpassx509
      catch {destroy $w}
-    set w [toplevel .getpassx509 -borderwidth 10]
-     wm title .getpassx509  $title
+     sdr_toplevel "$w -borderwidth 10" $title
      label $w.lab -text  $label
      pack $w.lab -side top  -anchor w
      password $w.entry -width 30 -relief sunken -borderwidth 1 \
@@ -434,9 +434,9 @@ proc Misc_GetX509Pass { title label } {
 proc Misc_GetPseL { title label } {
     global getpinl
     global ppinl
+     set w .getpinl
      catch {destroy $w}
-    set w [toplevel .getpinl -borderwidth 10]
-     wm title .getpinl  $title
+     sdr_toplevel "$w -borderwidth 10" $title
      label $w.lab -text  $label
      pack $w.lab -side top  -anchor w
      entry $w.entry -textvariable getpinl(result)
@@ -955,9 +955,9 @@ global env
 proc enter_pse_details {} {
     global  env x509info
     global yourpse yourpin
+    set w .x509info
     catch {destroy $w}
-    set w [toplevel .x509info -borderwidth 2] 
-    wm title .x509info "Sdr: X509  Configure Information"
+    sdr_toplevel "$w -borderwidth 2" "X509  Configure Information"
     frame $w.f -borderwidth 5 -relief groove
     pack $w.f -side top
     message $w.f.l -aspect 500  -text "Please configure sdr with your PSE name, and Pin (Passphrase).  "
@@ -1018,9 +1018,9 @@ proc x509state { } {
 proc enter_key_details {} {
     global  key x509keyinfo
     global keypse keydn keypin keysize keypin1
+    set w .x509keyinfo
     catch {destroy $w}
-    set w [toplevel .x509keyinfo -borderwidth 2] 
-    wm title .x509keyinfo "Sdr: X509  Configure Information"
+    sdr_toplevel "$w -borderwidth 2" "X509  Configure Information"
     frame $w.f -borderwidth 5 -relief groove
     pack $w.f -side top
     message $w.f.l -aspect 500  -text "you need a newname for PSE and PIN  "
@@ -1173,9 +1173,9 @@ global certresult
 proc enter_smart_pse_details {} {
     global  env smartinfo
     global smartpse smartpin
+    set w .smartinfo
     catch {destroy $w}
-    set w [toplevel .smartinfo -borderwidth 2] 
-    wm title .smartinfo "Sdr: SMART CARD  Configure Information"
+    sdr_toplevel "$w -borderwidth 2" "SMART CARD  Configure Information"
     frame $w.f -borderwidth 5 -relief groove
     pack $w.f -side top
     message $w.f.l -aspect 500  -text "Please configure sdr with your SMART CARD PSE name, and Pin (Passphrase). "

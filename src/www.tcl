@@ -140,6 +140,7 @@ proc webdisp2 {{reload {}}} {
     .web.f.c configure -state normal
     .web.f.c delete 1.0 end
     wm title .web "WWW browser"
+    wm iconname .web "Sdr WWW browser"
     #parse the header
     #
     # Some bonehead web servers forget to reply with HTTP 1.0 headers
