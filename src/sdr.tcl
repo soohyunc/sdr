@@ -2240,7 +2240,9 @@ proc text_times_english {aid} {
 	      
 	  }
       } else {
-	  if {$ldata($aid,endtime) == 0} {
+          if {
+             ![info exists ldata($aid,endtime)] ||
+	     $ldata($aid,endtime) == 0} {
 	      set timestr [format "%sstarting at %s %s %s" $timestr\
 			[croptime $ldata($aid,tfrom,$i)]\
 			[croptz $ldata($aid,tfrom,$i)]\
