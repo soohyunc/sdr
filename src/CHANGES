@@ -1,6 +1,13 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.6.0 E.Whelan@cs.ucl.ac.uk 22 Jan 1999
+
+  - changed a lot of the PGP authentication, PGP encryption and 
+    DES ecryption code     
+  - the X.509 code hasn't been looked at yet and the option of 
+    using it has been temporarily disabled
+
 2.5.9
   - 
 
