@@ -171,7 +171,7 @@ proc write_cache_entry {aid filename security} {
 
       clear {
         if {$auth!="none"} {
-          append adstr "\nz=\n"
+          append adstr "\nZ=\n"
           putlogfile "write_cache_entry - calling write_authentication"
           write_authentication $filename $adstr [string length $adstr] $aid
         } else {
@@ -182,14 +182,14 @@ proc write_cache_entry {aid filename security} {
       }
 
       symm   {
-        append adstr "\nz=\n"
+        append adstr "\nZ=\n"
         putlogfile "write_cache_entry - calling write_encryption"
         write_encryption $filename $adstr [string length $adstr] $aid $auth $enc
       }
 
       crypt {
         if {$auth!="none" } {
-          append adstr "\nz=\n"
+          append adstr "\nZ=\n"
         }
         putlogfile "write_cache_entry - calling write_crypted_file"
         write_crypted_file $filename $adstr [string length $adstr] $aid $auth
