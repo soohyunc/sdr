@@ -350,7 +350,7 @@ proc submit_qpass { qwin createwin msgwin str } {
     return
    }
    catch {destroy $qwin}
-   catch {destroy .f5}
+   catch {destroy [cw].f5}
 }
 
 proc enter_passphrase {} {
@@ -358,8 +358,8 @@ proc enter_passphrase {} {
     if {$ifstyle(labels)=="long"} {
 	enter_long_passphrase load
     } else {
-	pack .f4 -side top -fill both -expand true -after .f2
-	enter_short_passphrase .f5 .f4
+	pack [cw].f4 -side top -fill both -expand true -after [cw].f2
+	enter_short_passphrase [cw].f5 [cw].f4
     }
 }
 
