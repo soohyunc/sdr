@@ -315,7 +315,7 @@ int sip_readfrom_tcp()
 		}
 	}
     }
-    return 1; // REVIEW: what should we return?! 
+    return 1; /* REVIEW: what should we return?! */
 
     /* debug_tcp_conns(); (1.13) */
 }

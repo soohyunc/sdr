@@ -45,7 +45,7 @@ int sip_send_tcp_reply_to_fd(int fd, char *msg);
 
 /* maryann's debug define, see mdebug.h */
 #define MDEBUG_FLAG 0x0 
-//#define MDEBUG_FLAG 0x3 /* combination SIP and REG (sip register) levels */
+/*#define MDEBUG_FLAG 0x3 /* combination SIP and REG (sip register) levels */
 
 
 

@@ -45,7 +45,7 @@
 #include "prototypes.h"
 #include <tcl.h>
 
-//#define DEBUG
+/*#define DEBUG*/
 
 #define MAXINVITES 20
 

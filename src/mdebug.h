@@ -14,6 +14,6 @@ extern int mdebug;
 #else
 #define MDEBUG(level, arg)
 
-#endif // MDEBUG_FLAG
+#endif /* MDEBUG_FLAG */
 
-#endif // MM_DEBUG_H
+#endif /* MM_DEBUG_H */
