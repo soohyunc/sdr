@@ -333,7 +333,7 @@ int parse_sip_success(int sipfd, char *msg, char *addr)
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
-    if (Tcl_VarEval(interp, "sip_success ", 
+    if (Tcl_VarEval(interp, "sip_success ", sipfdstr, 
 		    addr, NULL)!=TCL_OK) {
 	Tcl_AddErrorInfo(interp, "\n");
 	fprintf(stderr, "%s\n", interp->result);
@@ -347,7 +347,7 @@ int parse_sip_fail(int sipfd, char *msg, char *addr)
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
-    if (Tcl_VarEval(interp, "sip_failure ", 
+    if (Tcl_VarEval(interp, "sip_failure ", sipfdstr,
 		    addr, NULL)!=TCL_OK) {
 	Tcl_AddErrorInfo(interp, "\n");
 	fprintf(stderr, "%s\n", interp->result);
@@ -384,7 +384,7 @@ int parse_sip_progress(int sipfd, char *msg, char *addr)
 
    MDEBUG(SIP, ("parse_sip_ringing\n"));
 	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
-   if (Tcl_VarEval(interp, "sip_status ",
+   if (Tcl_VarEval(interp, "sip_status ", sipfdstr,
 		   addr, NULL)!=TCL_OK) {
        Tcl_AddErrorInfo(interp, "\n");
        fprintf(stderr, "%s\n", interp->result);
