@@ -98,7 +98,7 @@ ui_init(int *argc, char **argv)
 {
     char buf[MAXCLINE];
     int i;
-
+    Tk_Window tk = 0;
     Tcl_FindExecutable(argv[0]);  
     interp = Tcl_CreateInterp();
 #ifdef TCL_MEM_DEBUG
@@ -136,16 +136,19 @@ ui_init(int *argc, char **argv)
     Tcl_SetVar(interp, "argv", buf, TCL_GLOBAL_ONLY);
 
     if (gui==GUI) {
-      /* There is no easy way of preventing the Init functions from
+        /* There is no easy way of preventing the Init functions from
 	 * loading the library files. Ignore error returns and load
 	 * built in versions.
 	 */
 	Tcl_Init(interp);
 	Tk_Init(interp);
 
-      mainWindow = Tk_MainWindow(interp);
-    }
-
+        tk = mainWindow = Tk_MainWindow(interp);
+	if (tk == 0) {
+            fprintf(stderr, "sdr: display error\n");
+            exit(1);
+	}    
+}
 #ifdef WIN32
     {
 	/*
