@@ -2,6 +2,7 @@
   the padding bit is 0x80 in byte 0, rather than 0x20 in RTP.*/
 
 #include <sys/types.h>
+#include <string.h>
 #include "crypt.h"
 #include "qfDES.h"
 #include "md5.h"
