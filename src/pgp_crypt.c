@@ -106,7 +106,7 @@ int generate_authentication_info(char *data,int len, char *authstatus, int irand
     Tcl_VarEval(interp, "pgp_create_signature ",  irandstr, NULL);
     code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY); 
     writelog(printf("\nReturn Code= %s\n", code);)
-    if (strcmp(code,"1") != 0 ) {
+    if (strncmp(code,"1",1) != 0 ) {
         writelog(printf("INCORRECT PASSWORD OR File not created\n"); )
         Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
         return 0;
@@ -551,7 +551,7 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
                          char *enc_asym_keyid, int irand,char *encmessage)
 {
   FILE *enc_fd=NULL;
-  char *enc_status_p=NULL, enc_status[10];
+  char *enc_status_p=NULL, *enc_status=NULL;
   char *enc_message=NULL, *key_id=NULL, *irandstr=NULL, *homedir=NULL;
   char *encfulltxt=NULL, *encfullenc=NULL;
  
@@ -562,6 +562,7 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   encfulltxt = (char *)malloc(MAXFILENAMELEN);
   encfullenc = (char *)malloc(MAXFILENAMELEN);
   irandstr   = (char *)malloc(10);
+  enc_status = (char *)malloc(10);
 
 #ifdef WIN32
   sprintf(encfulltxt, "%s\\sdr\\%d.%s", homedir, irand, enctxt_fname);
@@ -611,20 +612,33 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
 
   Tcl_VarEval(interp, "pgp_check_encryption ", irandstr, NULL);
   enc_status_p = Tcl_GetVar(interp, "recv_encstatus", TCL_GLOBAL_ONLY);
+
+/* watch out as Tcl doesn't return well terminated strings */
+
   if (enc_status_p == NULL) {
     return ("failed");
   } else {
-    writelog(printf("edmund:c_e: strlen(enc_status_p) = %d\n",strlen(enc_status_p));)
-    memcpy(enc_status,enc_status_p,strlen(enc_status_p));
+    if (strncmp(enc_status_p,"succes", 6) != 0) {
+      strcpy(enc_status,"failed");
+    } else {
+      strcpy(enc_status, "success");
+    }
     writelog(printf("edmund:c_e: enc_status = %s\n",enc_status);)
   }
+
+/* ditto for Tcl strings - PGP keyids are 8 bytes */
 
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
   if (key_id == NULL) {
     return ("failed");
   } else {
+#ifdef NEVER
+    strncat(enc_asym_keyid, 
     assert(strlen(key_id) < 9);
     memcpy(enc_asym_keyid, key_id, strlen(key_id));
+#else
+    memcpy(enc_asym_keyid, key_id, 8);
+#endif
     writelog(printf("edmund: c_e: enc_asym_keyid = %s\n",enc_asym_keyid);)
   }
 
