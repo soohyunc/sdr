@@ -1625,7 +1625,7 @@ void recv_packets(ClientData fd)
 	
 	if (encstatus_p==NULL) {
 	  fprintf(stderr, "Sdr internal error: encstatus_p failed to be set\n");
-	  return TCL_OK;
+	  return;
 	}
 	strcpy(encstatus, encstatus_p);
 
