@@ -1,6 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
+2.6.0 E.Whelan@cs.ucl.ac.uk 25 Feb 1999
+
+  - added test on PGPSTATE environment variable. To use PGP you must set
+    PGPSTATE = 1
+
 2.6.0 E.Whelan@cs.ucl.ac.uk 22 Jan 1999
 
   - changed a lot of the PGP authentication, PGP encryption and 
