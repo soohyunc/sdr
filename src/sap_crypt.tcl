@@ -517,6 +517,7 @@ proc install_key {keyname} {
 proc new_mk_session_security {win aid} {
     global ldata security keylist user_id key_id 
     global enc_old_key_sel auth_old_key_sel asympass asympse
+
     if {[winfo exists $win]==0} {
 	    frame $win -relief groove -borderwidth 2
 	 
@@ -716,10 +717,17 @@ proc pref_security {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
 #If you need to add more panels, create a function called 
 #new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
 #called.
-set new_wiz_norm_panels \
+if { ($pgpdisable==1) && ($x509disable==1) } {
+  set new_wiz_norm_panels \
+	"info type timing_norm scope_norm media_norm contact accept"
+  set new_wiz_tech_panels \
+	"info type timing_tech scope_tech media_tech contact accept"
+} else {
+  set new_wiz_norm_panels \
 	"info type timing_norm scope_norm media_norm contact security accept"
-set new_wiz_tech_panels \
+  set new_wiz_tech_panels \
 	"info type timing_tech scope_tech media_tech contact security accept"
+}
 
 proc create {} {
     global ttl dayix durationix send zone
@@ -737,6 +745,16 @@ proc create {} {
     global validauth
     global validfile
     global validkey
+    global pgpdisable x509disable
+
+    if { ($pgpdisable==1) && ($x509disable==1) } {
+      if {[info exists authtype]==0} {
+        set auth_type "none"
+      }
+      if {[info exists enctype]==0} {
+        set enc_type "none"
+      }
+    }
 
     log "creating a session"
     if {$ttl==0} { set ttl [.new.f.f.f3.rr.f.e get] }
