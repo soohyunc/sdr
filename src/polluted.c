@@ -373,6 +373,8 @@ int ui_createsession(dummy, interp, argc, argv)
   int irand, new_len;
   int rc;
   int addr_fam = IPv4;
+  int addr_len = IPV4_ADDR_LEN;
+
   struct in_addr in;
   static char source[INET6_ADDRSTRLEN];
 /* 
@@ -384,7 +386,7 @@ int ui_createsession(dummy, interp, argc, argv)
       inet_ntop(AF_INET6, &hostaddr_v6, source, INET6_ADDRSTRLEN);
 #endif
       addr_fam = IPv6;
-
+      addr_len = IPV6_ADDR_LEN;
   } else {
       in.s_addr=htonl(hostaddr);
 	  strncpy(source, inet_ntoa(in), INET_ADDRSTRLEN);
@@ -423,8 +425,8 @@ int ui_createsession(dummy, interp, argc, argv)
 /* create the advert_data structure */
 
     if (addata == NULL) {
-      addata=(struct advert_data *)malloc(sizeof (struct advert_data));
-      memset(addata, 0, sizeof (struct advert_data));
+      addata=(struct advert_data *)malloc(sizeof (struct advert_data)+addr_len);
+      memset(addata, 0, sizeof (struct advert_data)+addr_len);
       addata->sapenc_p = NULL;
       addata->data     = NULL;
       addata->sap_hdr  = NULL;
@@ -464,7 +466,7 @@ int ui_createsession(dummy, interp, argc, argv)
       return TCL_OK;
     } else {
       Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
-      addata=(struct advert_data *)malloc(sizeof (struct advert_data));
+      addata=(struct advert_data *)malloc(sizeof (struct advert_data)+addr_len);
       addata->data=NULL;
       addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
       strcpy(authstatus, "Authenticated");
@@ -497,8 +499,8 @@ int ui_createsession(dummy, interp, argc, argv)
 /* create the advert_data structure if not created already */
 
     if(addata == NULL) {
-      addata=(struct advert_data *)malloc(sizeof (struct advert_data));
-      memset(addata, 0, sizeof (struct advert_data));
+      addata=(struct advert_data *)malloc(sizeof (struct advert_data)+addr_len);
+      memset(addata, 0, sizeof (struct advert_data)+addr_len);
       addata->data     = NULL;
       addata->authinfo = NULL;
       addata->sap_hdr  = NULL;
@@ -538,8 +540,8 @@ int ui_createsession(dummy, interp, argc, argv)
     }
 
     if(addata == NULL) {
-      addata=(struct advert_data *)malloc(sizeof (struct advert_data));
-      memset(addata, 0, sizeof (struct advert_data));
+      addata=(struct advert_data *)malloc(sizeof (struct advert_data)+addr_len);
+      memset(addata, 0, sizeof (struct advert_data)+addr_len);
       addata->data     = NULL;
       addata->authinfo = NULL;
       addata->sap_hdr  = NULL;

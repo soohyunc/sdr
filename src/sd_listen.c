@@ -519,6 +519,7 @@ int load_cache_entry(
     int addr_fam=IPv4;
     int src_equals_host=0;
     int sap_hdr_len=SAPV4_HDR_LEN;
+	int addr_len = IPV4_ADDR_LEN;
     int do_it=0;
     time_t t;
 
@@ -676,6 +677,7 @@ int load_cache_entry(
         }
         /* } else {  REVIEW: what should we do is could not get a v6 addr */
         sap_hdr_len = SAPV6_HDR_LEN;
+		addr_len = IPV6_ADDR_LEN;
 #endif
     }
     
@@ -827,7 +829,7 @@ int load_cache_entry(
 
 /* malloc advert_data structure */
 
-    addata = (struct advert_data *)malloc(sizeof(struct advert_data));
+    addata = (struct advert_data *)malloc(sizeof(struct advert_data)+addr_len);
     
     addata->sap_hdr  = NULL;
     addata->sapenc_p = NULL;
@@ -1791,6 +1793,7 @@ void recv_packets(ClientData fd)
     int auth_len=0, authtmp=0, found=0, has_authentication=0;
     int newlength=0;
     int sap_hdr_len=SAPV4_HDR_LEN;
+	int addr_len = IPV4_ADDR_LEN;
     int irand;
     unsigned long src=0, hfrom=0;
     struct in_addr in;
@@ -1853,6 +1856,7 @@ void recv_packets(ClientData fd)
         bp6 = (struct sapv6_header *) buf;
         bp = (struct sap_header *) bp6;
         sap_hdr_len = SAPV6_HDR_LEN;
+		addr_len = IPV6_ADDR_LEN;
 #endif
     } else {
         bp4 = (struct sapv4_header *) buf;
@@ -1918,8 +1922,8 @@ void recv_packets(ClientData fd)
 
 /* create the advert_data structure to store details in the linked list */
 
-    addata = (struct advert_data *)malloc(sizeof(struct advert_data));
-    memset(addata, 0 , sizeof(struct advert_data));
+    addata = (struct advert_data *)malloc(sizeof(struct advert_data)+addr_len);
+    memset(addata, 0 , sizeof(struct advert_data)+addr_len);
     addata->sap_hdr  = NULL;
     addata->sapenc_p = NULL;
     addata->authinfo = NULL;
@@ -2475,8 +2479,8 @@ void recv_packets(ClientData fd)
            if ( addata != NULL ) {
 	     addata->aid=strdup(aid);
              addata->end_time = endtime;
-	     addata->sap_hdr = malloc(sizeof(struct sap_header));
-             memcpy(addata->sap_hdr, bp, sizeof(struct sap_header));
+	     addata->sap_hdr = malloc(sap_hdr_len);
+             memcpy(addata->sap_hdr, bp, sap_hdr_len);
 	     addata->next_ad = NULL;
 	     if(first_ad==NULL) {
 	       first_ad=addata;
@@ -3752,16 +3756,22 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
   static int no_of_ads=0;
   int i, auth_len=0;
   int hdr_len=0;
- 
+  int addr_len = IPV4_ADDR_LEN;
   writelog(printf("entered queue_ad_for_sending\n");)
+
+    if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6    
+		addr_len = IPV6_ADDR_LEN;
+#endif
+    }
 
 /* If the announcement is to contain authentication information then the   */
 /* advert_data entry will already have been created (in 'createsession')   */
 /* The privacy header won't have been set up for the purely symmetric case */
  
   if (addata == NULL) {
-    addata = (struct advert_data *)malloc(sizeof(struct advert_data));
-    memset(addata, 0, sizeof(struct advert_data));
+    addata = (struct advert_data *)malloc(sizeof(struct advert_data)+addr_len);
+    memset(addata, 0, sizeof(struct advert_data)+addr_len);
     addata->sap_hdr  = NULL;
     addata->authinfo = NULL;
     addata->sapenc_p = NULL;
