@@ -1093,22 +1093,48 @@ proc pgpExecw { arglist outvar } {
 }
 proc pgp_GetPass { key } {
     global  pgpPass
+    global sspass
+    global ppass
  
     set keyname [lindex $key 0]
+    if [info exists sspass] {
+         if {$sspass == 0} {
+              if [info exists pgpPass($keyname)] {
+               return $pgpPass($keyname)
+                }
+    		set passtimeout 60
+        		while 1 {
+        		if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw ] {
+            		return {}
+        		} elseif {[pgpExec_CheckPassword $passw $key]} {
+                		set pgpPass($keyname) $passw
+                		#after [expr $passtimeout * 60 * 1000] \
+                        	#	[list pgp_ClearPassword $key]
+            		return $passw
+        		}
+    			}
+ 
+       	} else {
+       	set pgpPass($keyname) $ppass
+         return $pgpPass($keyname)
+       	}
+   } else {
     if [info exists pgpPass($keyname)] {
         return $pgpPass($keyname)
     }
+     
     set passtimeout 60
 	while 1 {
         if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw] {
             return {}
         } elseif {[pgpExec_CheckPassword $passw $key]} {
                 set pgpPass($keyname) $passw
-                after [expr $passtimeout * 60 * 1000] \
-                        [list pgp_ClearPassword $key]
+                #after [expr $passtimeout * 60 * 1000] \
+                #        [list pgp_ClearPassword $key]
             return $passw
         }
     }
+   }
 }
 proc pgp_ClearPassword {{keyname {}}} {
     global pgpPass
@@ -1194,13 +1220,30 @@ proc certExec_Interactive { arglist outvar irand } {
  
     return $result
 }
+proc toggle_pass {} {
+global spass
+global sspass
+   if {$spass=="yes"} {
+     set sspass 1 
+    } else {
+     set sspass 0
+   }
+}
 
 proc Misc_GetPass { title label } {
     global getpass
     global ppass
+    global spass
+    global sspass
      catch {destroy $w}
     set w [toplevel .getpass -borderwidth 10]
      wm title .getpass  $title
+     checkbutton $w.b1 -text "Same Pass" -variable spass\
+        -highlightthickness 0 -justify l \
+        -relief flat -onvalue yes -offvalue no \
+        -command "toggle_pass"
+    #tixAddBalloon $w.b1 Button [tt "Select \"Same PASS\"  If you are using the same passphrase for all your secret Keys in the secrekey ring.  "]
+     pack $w.b1 -side top -anchor nw
      label $w.lab -text  $label
      pack $w.lab -side top  -anchor w
      #password $w.entry -width 30 -relief sunken -borderwidth 1 \
