@@ -368,7 +368,7 @@ proc build_interface {first {dirName {}}} {
 
     button [cw].f3.quit -text [tt "Quit"] -relief raised -command [list quit [cw]]  \
 	-padx 0 -pady 1 -borderwidth 1 -highlightthickness 0
-    tixAddBalloon [cw].f3.quit Button [tt "Quit from sdr.  Conference tools already running will continue."]
+    tixAddBalloon [cw].f3.quit Button [tt "Quit. Either close this window or, if this is the main SDR window, end the SDR session.  Conference tools already running will continue."]
     
     if {$lb=="short"} {
 	[cw].f3.new configure -text [tt "New"]
