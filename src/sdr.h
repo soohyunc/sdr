@@ -124,8 +124,8 @@ char *strerror(int i);
 #define OLD_SD_GROUP	"224.2.127.255"
 #define	OLD_SD_PORT	9876
 #endif
-#define SIP_GROUP        "224.2.127.253"
-#define SIP_PORT        9860
+#define SIP_GROUP        "224.0.1.75"
+#define SIP_PORT        5060
 
 
 #ifdef TRUE
