@@ -131,7 +131,7 @@ proc setcw {w} {
 }
 
 proc initialise_resources {} {
-    global gui tcl_platform
+    global gui tcl_platform font fh fw
     if {$gui=="NO_GUI"} { return }
     wm withdraw .
 
