@@ -542,10 +542,10 @@ proc new_mk_session_accept {win base aid} {
 		set stoptime [ntp_to_unix [lindex $tmp 1]]
 		set ldata(new,starttime,$no_of_times) $starttime
 		set ldata(new,tfrom,$no_of_times) \
-			[clock format $starttime -format {%d %b %y %H:%M %Z}]
+			[clock format $starttime -format {%d %b %Y %H:%M %Z}]
 		set ldata(new,stoptime,$no_of_times) $stoptime
 		set ldata(new,tto,$no_of_times) \
-			[clock format $stoptime -format {%d %b %y %H:%M %Z}]
+			[clock format $stoptime -format {%d %b %Y %H:%M %Z}]
 		if {($starttime < $ldata(new,starttime)) || \
 			($ldata(new,starttime)==0)} {
 		    set ldata(new,starttime) $starttime
