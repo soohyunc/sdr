@@ -637,12 +637,19 @@ proc start_media_tool {aid mnum proto fmt attrlist} {
 		set tmp enabled
 #		catch {puts "$media.$proto.$fmt.[lindex $subrule 0]"}
 		catch {set tmp $tool_state($media.$proto.$fmt.[lindex $subrule 0])}
-		if {$tmp=="enabled"} {
+		if {$tmp=="enabled" && $subrule != {}} {
 		    lappend rulelist $subrule
 		}
 	    }
 	}
 	if {[llength $rulelist]==0} {
+	    # Special case for handling SDP/SAP directory sessions:
+	    if {$media=="directory" && $proto=="SAP" && $fmt=="SDP"} {
+		return [launch_directory $ldata($aid,$mnum,addr) \
+			                 $ldata($aid,$mnum,port) \
+                                         $ldata($aid,ttl) \
+					 $ldata($aid,session)]
+	    }
 	    set toollist {}
 	    foreach subrule $rule {
 		lappend toollist [lindex $subrule 0]

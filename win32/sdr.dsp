@@ -1216,7 +1216,7 @@ SOURCE=..\src\plugin2tcl.tcl
 InputPath=..\src\plugin2tcl.tcl
 
 "parsed_plugins.tcl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	tclsh80 $(InputPath)
+	c:\progra~1\tcl\bin\tclsh80 $(InputPath)
 
 # End Custom Build
 

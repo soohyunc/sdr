@@ -45,7 +45,7 @@ proc write_cache {} {
     set ixnames {}
     catch {set ixnames [array names fullix]}
     foreach i $ixnames {
-	if {$ldata($fullix($i),list)=="norm"} {
+ 	if {[string match *norm $ldata($fullix($i),list)]} {
 	    set filename "$dirname/cache/$fullix($i)"
 	    write_cache_entry $fullix($i) $filename clear
 	} else {

@@ -135,6 +135,7 @@ int doexit=FALSE;
 int ui_visible=TRUE;
 int debug1=FALSE;
 jmp_buf env;
+unsigned initializationHasFinished = 0;
 
 void dump(buf, buflen)
 char *buf;
@@ -244,6 +245,12 @@ int sd_listen(char *address, int port, int rx_sock[], int *no_of_socks, int fata
     rx_sock_addr[*no_of_socks]=malloc(strlen(address)+1);
     strcpy(rx_sock_addr[*no_of_socks], address);
     rx_sock_port[*no_of_socks]=port;
+
+    if (initializationHasFinished) {
+      /* This socket was created after initialization, so start listening now */
+      linksocket(rxsock[*no_of_socks], TK_READABLE, (Tcl_FileProc*)recv_packets);
+    }
+
     (*no_of_socks)++;
     return(*no_of_socks);
 }
@@ -1386,6 +1393,8 @@ char *argv[];
       Tcl_CreateFileHandler(inChannel, TCL_READABLE, (Tcl_FileProc*)do_cli, (ClientData) inChannel);
     }
 #endif
+
+    initializationHasFinished = 1;
 
     while ((doexit==FALSE)||(Tk_GetNumMainWindows() > 0)) 
       {
@@ -3033,14 +3042,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     Tcl_SetVar(interp, "recvsap_port", namestr, TCL_GLOBAL_ONLY);
 
 /* add the session to the displayed list */
-
-#ifdef WIN32
-    Tcl_GlobalEval(interp,".f2.sb configure -command {}");
     code = Tcl_GlobalEval(interp, "add_to_list");
-    Tcl_GlobalEval(interp,"after 500 {.f2.sb configure -command {.f2.lb yview}}");
-#else
-    code = Tcl_GlobalEval(interp, "add_to_list");
-#endif
 
     if (code != TCL_OK) {
 	if (debug1==TRUE)

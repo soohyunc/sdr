@@ -874,6 +874,11 @@ proc create {} {
                 return 0
             }
             set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
+	    # Use a lower on-the-wire TTL if it would exceed our zone's:
+	    if {[info exists zone(ttl,$zone(cur_zone))]
+	        && $zone(ttl,$zone(cur_zone)) < $ttl} {
+		set ttl $zone(ttl,$zone(cur_zone))
+	    }
             if {$media_layers($media)>1} {
                 set sess "$sess/$media_layers($media)"
             }

@@ -63,6 +63,7 @@ extern Tcl_Interp *interp;
 #include "image_smeeting.xbm"
 #include "image_stest.xbm"
 #include "image_sdr.xbm"
+#include "directory.xbm"
 
 void init_bitmaps()
 {
@@ -95,4 +96,5 @@ void init_bitmaps()
   Tk_DefineBitmap(interp, Tk_GetUid("stest"), stest_bits, stest_width, stest_height);
   Tk_DefineBitmap(interp, Tk_GetUid("secure"), secure_bits, secure_width, secure_height);
   Tk_DefineBitmap(interp, Tk_GetUid("sdr"), sdr_bits, sdr_width, sdr_height);
+  Tk_DefineBitmap(interp, Tk_GetUid("directory"), directory_bits, directory_width, directory_height);
 }
