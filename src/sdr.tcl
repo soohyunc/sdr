@@ -776,7 +776,7 @@ proc list_session {aid lastix list} {
     if {$ifstyle(list)=="logo"} {
 	set type $ldata($aid,type)
 	if {[winfo exists $sessbox($list).win$aid]==0} {
-	    puts "creating new window $sessbox($list).win$aid"
+	    #puts "creating new window $sessbox($list).win$aid"
 	    label $sessbox($list).win$aid \
 		    -bitmap [get_type_icon $ldata($aid,type)] \
 		    -borderwidth 2 -relief groove
@@ -788,7 +788,7 @@ proc list_session {aid lastix list} {
 	    bind $sessbox($list).win$aid <2> "start_all $aid"
 	    bind $sessbox($list).win$aid <3> "hide_session $aid"
 	}
-	puts "$sessbox($list) window create ..."
+	#puts "$sessbox($list) window create ..."
 	$sessbox($list) window create [expr $lastix+1].0 -window \
 		$sessbox($list).win$aid
 	$sessbox($list) insert [expr $lastix+1].1 "$ldata($aid,session)                                             \n"
@@ -829,7 +829,7 @@ proc list_session {aid lastix list} {
 
 proc relist_session {aid lastix list} {
     global sessbox ldata showwhich
-    puts relist_session
+    #puts relist_session
     if {[listing_criteria $aid $showwhich]!=1} {
 	#this session just became unshown - better redisplay everything.
 	reshow_sessions $showwhich
@@ -840,7 +840,7 @@ proc relist_session {aid lastix list} {
     set txt [$sessbox($list) get [expr $lastix+1].0 [expr $lastix+1].end+1c]
     set txt [string trim $txt "\n"]
     set txt [string trim $txt]
-    puts "new:>>$ldata($aid,session)<<, old:>>$txt<<"
+    #puts "new:>>$ldata($aid,session)<<, old:>>$txt<<"
     if {[string compare $ldata($aid,session) $txt]!=0} {
 	$sessbox($list) delete [expr $lastix+1].0 [expr $lastix+1].end+1c
 	list_session $aid $lastix $list

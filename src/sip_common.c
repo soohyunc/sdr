@@ -498,7 +498,9 @@ int sip_tcp_listen(int port)
     fprintf(stderr, "listen failed!\n");
     return -1;
   }
+#ifdef DEBUG
   printf("listening on port %d\n", port);
+#endif
   return fd;
 }
 
