@@ -216,6 +216,7 @@ proc build_interface {first} {
     wm iconbitmap . sdr
     wm group . .
     wm command . [concat $argv0 $argv]
+    wm protocol . WM_DELETE_WINDOW quit
     if {$first=="first"} {
 
         set tmpfile [clock format [clock seconds]  -format {%H%M%S}]
