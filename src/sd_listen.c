@@ -3600,10 +3600,7 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
     int packetlength=0;
     int code;
     int addr_len = IPV4_ADDR_LEN;
-    
-#ifdef WIN32
     int wttl;
-#endif
     
 #ifdef LOCAL_ONLY
     ttl=1;
