@@ -45,21 +45,21 @@
 #include "sdr.h"
 #include "sap_crypt.h"
 
-static int randseed = 1;
+static int lblrandseed = 1;
 
 void
-srandom(unsigned int seed)
+lblsrandom(unsigned int seed)
 {
-	randseed = seed;
+	lblrandseed = seed;
 }
 
 #if sparc && !__SUNPRO_C
 #ifdef __svr4__
-#define RANDOM "random"
-#define RANDSEED "randseed"
+#define RANDOM "lblrandom"
+#define RANDSEED "lblrandseed"
 #else
-#define RANDOM "_random"
-#define RANDSEED "_randseed"
+#define RANDOM "_lblrandom"
+#define RANDSEED "_lblrandseed"
 #endif
 asm("\
 	.global	" RANDOM "			;\
@@ -104,15 +104,11 @@ asm("\
 	retl					;\
 	 st	%o0, [%g1 + %lo(" RANDSEED ")] ");
 #else
-#ifdef __linux__	/* yeuch :-( */
-int
-#else
 long
-#endif
-random(void)
+lblrandom(void)
 {
-	register int x = randseed;
-	register int hi, lo;
+	register unsigned int x = randseed;
+	register unsigned int hi, lo;
 	register long t;
 
 	hi = x / 127773;

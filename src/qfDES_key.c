@@ -174,7 +174,7 @@ QFDES_generate what;
     /* Set up a seed - 42 is the answer ... */
 #if 1
     if (!flag) {
-        srandom((int) (getpid() * 42) ^ (int) time((time_t *) 0));
+        lblsrandom((int) (getpid() * 42) ^ (int) time((time_t *) 0));
         flag = 1;
     }
 #else
@@ -183,7 +183,7 @@ QFDES_generate what;
 #endif
     do {
 
-        for(bp = buffer; bp <= &(buffer[7]); *bp++ = (char) (random() & mask));
+        for(bp = buffer; bp <= &(buffer[7]); *bp++ = (char) (lblrandom() & mask));
 
         if (what ==  qfDES_key)
             qfDES_setParity(buffer, 8, qfDES_odd);

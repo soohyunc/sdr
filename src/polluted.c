@@ -272,7 +272,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
 #ifdef AUTH
 
-  irand = (random()&0xffff);
+  irand = (lblrandom()&0xffff);
 
 /* use PGP to create authentication info for the SAP packet */
 
@@ -330,7 +330,7 @@ int ui_createsession(dummy, interp, argc, argv)
 
 /* use PGP to create encryption info for the SAP packet  */
 
-  irand = (random()&0xffff);
+  irand = (lblrandom()&0xffff);
   if ( (strcmp(argv[8],"pgp")==0  && strcmp(argv[6],"")==0) ) {
 
     writelog(printf("ui_create_session: (a) calling generate_encryption_info\n");)
@@ -404,7 +404,7 @@ int ui_createsession(dummy, interp, argc, argv)
     if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 ) {
 
       new_len=gen_new_data(data,new_data,argv[6],addata);
-      irand = (random()&0xffff);
+      irand = (lblrandom()&0xffff);
       memset(authmessage,0,AUTHMESSAGELEN);
       memset(authstatus,0,AUTHSTATUSLEN);
       free(addata->authinfo);
@@ -421,7 +421,7 @@ int ui_createsession(dummy, interp, argc, argv)
     } else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 ) {
 
       new_len=gen_new_data(data,new_data,argv[6],addata);
-      irand = (random()&0xffff);
+      irand = (lblrandom()&0xffff);
       memset(authmessage,0,AUTHMESSAGELEN);
       memset(authstatus,0,AUTHSTATUSLEN);
       free(addata->authinfo);

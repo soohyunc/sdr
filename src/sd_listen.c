@@ -90,7 +90,7 @@ void seedrand()
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  srandom(tv.tv_usec);
+  lblsrandom(tv.tv_usec);
 }
 
 void remove_cr(char *str)
@@ -658,7 +658,7 @@ int load_cache_entry(
 
 /* we have authentication info */
 
-	  irand = (random()&0xffff);
+	  irand = (lblrandom()&0xffff);
 	  advert[data_len-3]=0;
 	  new_len=(len+1)-abs((p-buf)+data_len);
 	  if (new_len>MAXADSIZE) {
@@ -836,7 +836,7 @@ int load_cache_entry(
 
 	writelog(printf("++ debug ++ bp->auth_len is %d\n",bp->authlen);)
 
-	irand = (random()&0xffff);
+	irand = (lblrandom()&0xffff);
         writelog(printf("load_cache_entry: (2)new random irand= %d\n",irand);)
 
 	if (bp->authlen !=0 && (strcmp(authtype,"none") != 0 )) {
@@ -936,7 +936,7 @@ int load_cache_entry(
 
 /* need a new random number */
 
-	irand = (random()&0xffff);
+	irand = (lblrandom()&0xffff);
 
 	    if (bp->authlen !=0 && (strcmp(authtype,"none") != 0 )) {
               auth_len=bp->authlen*4;
@@ -1582,7 +1582,7 @@ void recv_packets(ClientData fd)
     writelog(printf("recv_packet: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%x\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, bp->src);)
 
 /* moved this into the bp->enc loop */
-/*    irand = (random()&0xffff); */
+/*    irand = (lblrandom()&0xffff); */
 /*    writelog(printf("recv_packets: (1)new random irand= %d\n",irand);) */
 
     if (bp->authlen !=0) {
@@ -1597,7 +1597,7 @@ void recv_packets(ClientData fd)
 /*      Note - encrypted data includes timeout                    */
 
     if (bp->enc==1) {
-      irand = (random()&0xffff); 
+      irand = (lblrandom()&0xffff); 
       enc_p=(struct priv_header *) ( (char *)bp + sizeof(struct sap_header) + auth_len+4);
 
       writelog(printf("pgp priv  header follows\n");)
@@ -1751,7 +1751,7 @@ void recv_packets(ClientData fd)
 
 /* check authentication */
 
-          irand = (random()&0xffff);
+          irand = (lblrandom()&0xffff);
 	  if ( auth_hdr->auth_type == 1 || auth_hdr->auth_type == 3 ) {
 	    strncpy(authstatus,
 		    check_authentication(auth_hdr, 
@@ -3365,7 +3365,7 @@ int timed_send_advert(ClientData cd)
 		  addata->encrypt, addata->length);
 #endif
       interval = addata->interval;
-      jitter = (unsigned)random() % interval;
+      jitter = (unsigned)lblrandom() % interval;
       addata->timer_token=Tcl_CreateTimerHandler(interval + jitter,
                           (Tk_TimerProc*)timed_send_advert,
                           (ClientData)addata);

@@ -23,10 +23,8 @@ void parse_bus_message(char *buf, int len);
 int bus_send_new_app();
 
 /*random*/
-#ifndef NORANDPROTO
-void srandom(int seed);
-int random();
-#endif
+void lblsrandom(unsigned int seed);
+long lblrandom();
 
 #ifdef SIP_MODULE
 /*sip_register.c*/

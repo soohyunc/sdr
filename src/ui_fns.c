@@ -68,7 +68,7 @@ int ui_generate_port(dummy, interp, argc, argv)
 int ui_generate_id()
 {
   int i=0;
-  i=(random()&0xffff);
+  i=(lblrandom()&0xffff);
   sprintf(interp->result, "%d", i);
   return TCL_OK;
 }
