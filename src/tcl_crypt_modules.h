@@ -12,21 +12,26 @@ extern const char tcl_sdp[];
 extern const char tcl_sdr[];
 extern const char tcl_cache[];
 extern const char tcl_sap_crypt[];
+extern const char tcl_pgp_crypt[];
+extern const char tcl_pkcs7_crypt[];
 extern const char tcl_cli[];
 
-#define MAX_TCL_MODULE 12
+#define MAX_TCL_MODULE 15
 
 const char *modname[MAX_TCL_MODULE]=
 {"tcl_generic", "tcl_www", "tcl_new", "tcl_start_tools",
  "tcl_parsed_plugins", "tcl_plugins", "tcl_sip", "tcl_sdp", "tcl_cache",
- "tcl_sdr", "tcl_sap_crypt", "tcl_cli"};
+ "tcl_sdr", "tcl_sap_crypt", "tcl_pgp_crypt", "tcl_pkcs7_crypt", "tcl_cli"};
 
 const char *modvar[MAX_TCL_MODULE]=
 {tcl_generic, tcl_www, tcl_new, tcl_start_tools,
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
- tcl_sdr, tcl_sap_crypt, tcl_cli};
-
+ tcl_sdr, tcl_sap_crypt, tcl_pgp_crypt, tcl_pkcs7_crypt, tcl_cli};
+#ifdef AUTH
+#define MAX_UI_FN 38
+#else
 #define MAX_UI_FN 36
+#endif
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -65,7 +70,11 @@ const char *ui_fn_name[MAX_UI_FN]=
   "load_keys",
   "save_keys",
   "write_crypted_file",
-  "make_random_key"
+  "make_random_key",
+#ifdef AUTH
+  "write_authentication",
+  "write_encryption"
+#endif
 };
 
 void *ui_fn[MAX_UI_FN]=
@@ -105,9 +114,9 @@ void *ui_fn[MAX_UI_FN]=
   ui_load_keys,
   ui_save_keys,
   ui_write_crypted_file,
-  ui_make_random_key
+  ui_make_random_key,
+#ifdef AUTH
+  ui_write_authentication,
+  ui_write_encryption
+#endif
 };
-
-
-
-
