@@ -4256,7 +4256,7 @@ proc encinfo {win bgcolour encm} {
 }
 
 proc sdr_toplevel {win title {iconname {}}} {
-    set ret [toplevel $win]
+    set ret [eval "toplevel $win"]
     wm group $ret .
     wm title $ret "Sdr: [tt $title]"
     if {$iconname == ""} {
