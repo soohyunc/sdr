@@ -1,10 +1,10 @@
 <H1>Sdr changes log</H1>
-<B><pre>
+<pre>
 2.9 K.Hasler 26 Oct 1999
   - created a directory type for the directory icon, so that the directory icon 
     is displayed for directory sessions in the main SDR window.
   - Fix reshow_sessions to delete sessbox when they exist - fixes problem when
-    using the Apply button ffrom the preferences window.
+    using the Apply button from the preferences window.
 
 2.9 E.Whelan 25 Oct 1999
   - fixed window problems caused by adding directories - fixes problems
@@ -173,7 +173,7 @@
 
 fenner 20th Jan 98
 
-- I had previously sent you some code to handle duration > interval,
+- I had previously sent you some code to handle duration &gt; interval,
   e.g. "active every week for 2 weeks".  I noticed today a session that
   was "active every 2 days for 2 days", which could use the same fix.
 
@@ -354,7 +354,7 @@ fenner@parc.xerox.com 28 Apr 1997
 
 - new session interface
    can no long create sessions that repeat for time x every y seconds
-   where x > y/2.
+   where x &gt; y/2.
 
 - more label changes as a result of study by Louise Clark.
   "Detailed Time" button is no more - details are shown by default.
@@ -394,7 +394,7 @@ fenner@parc.xerox.com 28 Apr 1997
 
   This will not work (but should fail silent) on systems other than
   SunOS and Linux which have a BSD "ps" as it will default to doing "ps
-  -p <pid>" unless someone adds them to the relevant switch statement in
+  -p &lt;id&gt;" unless someone adds them to the relevant switch statement in
   media_changed_warning in sdr.tcl
 
 - editing bug fixed: sdr is now smarter about when it really needs to
@@ -572,9 +572,9 @@ fenner@parc.xerox.com 28 Apr 1997
 - Moved all config files into ~/.sdr (~/sdr under Windows) directory.
   Name of this directory can now be set with Sdr.sdrHome X resource.
   Changed filenames are:
-    ~/.sdr_prefs   ->  ~/.sdr/prefs
-    ~/.sdr.tcl     ->  ~/.sdr/sdr.tcl
-    ~/.sdr.&lt;lang>  ->  ~/.sdr/&lt;lang>
+    ~/.sdr_prefs   -&gt; ~/.sdr/prefs
+    ~/.sdr.tcl     -&gt; ~/.sdr/sdr.tcl
+    ~/.sdr.&lt;lang&gt;  -&gt; ~/.sdr/&lt;lang&gt;
 
 - under windows, use the right button (which tk calls `button 3') for
   the 'immediate start' funtion since there is no button 2.
@@ -678,9 +678,9 @@ fenner@parc.xerox.com 28 Apr 1997
 - Make "Invalid Content Type" message reflect the actual content type
   instead of the data of the last header that was parsed
 - Implement "#xxx" anchors (use catch instead of foreach?)
-- Indent &lt;dd> and center &lt;center> (sometimes)
-- Partially implement &lt;META HTTP-EQUIV> for "poor man's redirect"
-- Parse &lt;/br> as &lt;br> since Netscape allows it
+- Indent &lt;dd&gt; and center &lt;center&gt; (sometimes)
+- Partially implement &lt;META HTTP-EQUIV&gt; for "poor man's redirect"
+- Parse &lt;/br&gt; as &lt;br&gt; since Netscape allows it
 - Allow comments with &lt;!--stuff , the old code required a space
 - Add "parsestr" function to parse out KEY=value or KEY="va l u e" pairs
 - Impement full RFC1866 list of character elements, including &#nnn;
@@ -724,7 +724,7 @@ fenner@parc.xerox.com 28 Apr 1997
     deleting the old one.
 - Change \r\n to \n only, and then change \r to \n to attempt to handle
   HTTP servers that return \r-seperated lines.  Also fixes the \r's
-  at the end of &lt;PRE> lines.
+  at the end of &lt;PRE&gt; lines.
 - Made anchors use "catch" instead of "foreach" to move to the mark
 - Media setup bug in quick-call fixed.
 
@@ -755,10 +755,10 @@ fenner@parc.xerox.com 28 Apr 1997
 	- The "display url" code tended to make the status "Finished" 
 	  when it shouldn't be, so I started using a global variable to 
 	  hold the status.
-	- Parse and use "&lt;BASE HREF=>" elements; our proxy server depends 
+	- Parse and use "&lt;BASE HREF=&gt;" elements; our proxy server depends 
 	  on this (e.g. if you ask our proxy server for 
 	  ftp://ftp.parc.xerox.com/pub/net-research it puts in  
-	  &lt;BASE HREF="ftp://ftp.parc.xerox.com/pub/net-research/"> instead 
+	  &lt;BASE HREF="ftp://ftp.parc.xerox.com/pub/net-research/"&gt; instead 
 	  of sending a  redirect.
 
 2.2a8 8 May 96 mhandley
@@ -986,4 +986,4 @@ fenner@parc.xerox.com 28 Apr 1997
         Calendar label problem with German language labels fixed.
         Calendar day numbering problem with month 2 and month 3 fixed
         "unknown command .desc?.f.f0.desc" error fixed.
-</pre></B>
+</pre>

@@ -1,7 +1,7 @@
 <H1>SDR BUGS/UNFINISHED LIST</H1>
 
 There are many little things on the to-do list.  The main big things are:
-<PRE><I>
+<PRE>
 - end times of SIP sessions are bogus
 - changing session type should reposition the session in the main window
   but doesn't.
@@ -22,36 +22,31 @@ There are many little things on the to-do list.  The main big things are:
 - Doesn't do proper IPRA multicast address allocation
    + awaiting simulation results
 - Doesn't cope properly with DNS names for multicast groups
-</I>
-
-
+</PRE>
 <H2>Things which may still need looking at in SDR 2.9</H2>
-
-<H3>A) General</H3>
-
+<H3>A) General</H3><PRE>
 1) Modify session doesn't work
 
 2) Roy had problem:
 
-  >  when changing the scope from admin to ttl:
-  >    invalid command name ".new.f3.rr.f.r4"
-  >     while executing
-  > ".new.f3.rr.f.r4 invoke"
-  >   ("default" arm line 3)
+  |  when changing the scope from admin to ttl:
+  |    invalid command name ".new.f3.rr.f.r4"
+  |     while executing
+  | ".new.f3.rr.f.r4 invoke"
+  |   ("default" arm line 3)
 
  Then when changing the ttl from 15 to world:
 
-  >  can't read "win": no such variable
-  >   while executing
-  >  "$win.f3.rr.f.e configure -state normal"
-  >  (procedure "disable_scope_entry" line 2)
+  |  can't read "win": no such variable
+  |   while executing
+  |  "$win.f3.rr.f.e configure -state normal"
+  |  (procedure "disable_scope_entry" line 2)
 
  And when went back to admin scope - choose and configure media gave:
 
-  >  can't read "fmtlayers(html..)": no such element in array
-  >   while executing
-  > "return $fmtlayers($media.$proto.$fmt)"
+  |  can't read "fmtlayers(html..)": no such element in array
+  |   while executing
+  | "return $fmtlayers($media.$proto.$fmt)"
 
 3) conflict with random and srandom prototypes
-
-</pre>
+</PRE>
