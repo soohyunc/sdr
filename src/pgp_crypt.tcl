@@ -1330,6 +1330,62 @@ proc Help_asym {help} {
         Help1_AddBut .pgphelp.but setup "Make PGP Key" [list pgp_Setup]
         Help1_AddBut .pgphelp.but setup1 "Make X509 Key" [list x509_Setup]
         Help1_AddBut .pgphelp.but setup2 "Make Des Key" [list Des_Setup]
+        set help "
+
+For Asymmetric encryption and authentication we use Pretty Good Privacy
+(PGP) and Public Key Cryptographic System (PKCS7) and for symetric
+encryption DES.
+
+Pretty Good Privacy (tm) (PGP), from Network Associates, is a high
+security cryptographic software application for MSDOS, Unix, VAX/VMS, and
+other computers.  PGP allows people to exchange files or messages with
+privacy, authentication, and convenience. PGP is based on public key
+cryptography. PGP combines the convenience of the Rivest-Shamir-Adleman
+(RSA) public key cryptosystem with the speed of symmetric cryptography.
+It uses message digests for digital signatures, data compression before
+encryption, good ergonomic design, and sophisticated key management.
+PGP uses \"message digests\" to form signatures.  A message digest is a
+128-bit cryptographically strong one-way hash function of the message. 
+It is somewhat analogous to a \"checksum\" or CRC error checking code, in
+that it compactly \"represents\" the message and is used to detect
+changes in the message.  Unlike a CRC, however, it is computationally
+infeasible for an attacker to devise a substitute message that would
+produce an identical message digest.  The message digest gets encrypted
+by the private key to form a signature.  Documents are signed by
+prefixing them with signature certificates, which contain the key ID of
+the key that was used to sign it, a private-key-signed message digest
+of the document, and a timestamp of when the signature was made.  The
+receiver to look up the sender's public key to check the signature uses
+the key ID.  The receiver's software automatically looks up the
+sender's public key and user ID in the receiver's public key ring. The
+key ID of the public key used to encrypt them prefixes encrypted
+files.  The receiver uses this key ID message prefix to look up the
+private key needed to decrypt the message.  The receiver's software
+automatically looks up the necessary private decryption key in the
+receiver's private key ring. 
+
+Public Key Cryptographic System (PKCS7): There are many security
+toolkits. Our implementation of SDR v1.5 uses Secude for generating
+X509 keys and encryption and authentication. The Secude development kit
+is a library that offers well-known and established symmetric and
+asymmetric cryptography for popular hardware and operating system
+platforms. The development kit consists of a set of functions which
+allows the incorporation of security in practically any application (e.g.
+client/server, e-mail, office applications) and documentation in
+Hypertext Markup Language (HTML) which describes in detail the C
+programming interface. There are also various commands collected in a
+security command shell to ensure an immediate deployment of security. 
+
+Before you generate keys you need to get an e-mail system which has the
+capability of sending information securely; for example Exmh can send
+encrypted and authenticated text body part using PGP. Eudora can send PGP
+and S-MIME authenticated and encrypted messages. Next you need to
+establish a group membership, possibly with an e-mail list. Section 3.4.1
+of \"USER GUIDE\" shows the step required to generate DES, X509 and PGP
+keys and use your chosen mail system to send it to the group members.
+Section 3.4.2 of \"USER GUIDE\" will show you how to store keys recieved
+via E-mail to be used by SDR v2.5. "
+
    
         Help1_Text .pgphelp $help
     }
@@ -1460,12 +1516,13 @@ proc Help1_Text {frame help} {
                 -highlightthickness 0
         pack $frame.lb -side left -fill both -expand true
         pack $frame.sb -side right -fill y
-        if [catch {open $local_help_file r} in] {
-            $t insert insert "Cannot find file pgp.txt to display"
-            $t configure -state disabled
-        } else {
-            $t insert insert [read $in]
-        }
+        $t insert insert $help
+       # if [catch {open $local_help_file r} in] {
+       #     $t insert insert "Cannot find file pgp.txt to display"
+       #     $t configure -state disabled
+       # } else {
+       #     $t insert insert [read $in]
+       # }
 }
 
 
