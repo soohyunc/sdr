@@ -547,7 +547,6 @@ int load_cache_entry(
 /* Note "symm" is asymmetrically and "crypt" is symmetrically encrypted ! */
         
     if (strcmp(argv[2], "symm")==0) {
-        printf("symm\n");
         Tcl_Eval(interp, "pgpstate");
         if (strcmp(interp->result,"1") != 0) {
             writelog(printf("PGPSTATE != 1: Not loading %s\n",argv[1]);)
