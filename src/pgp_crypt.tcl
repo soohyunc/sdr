@@ -1263,42 +1263,48 @@ global sspass
 }
 
 proc Misc_GetPass { title label } {
-    global getpass
-    global ppass
-    global spass
-    global sspass
-     catch {destroy $w}
+    global getpass ppass spass sspass
+
+    catch {destroy $w}
     set w [toplevel .getpass -borderwidth 10]
-     wm title .getpass  $title
-     checkbutton $w.b1 -text "Same Pass" -variable spass\
+    wm title .getpass  $title
+
+    checkbutton $w.b1 -text "Same Pass" -variable spass\
         -highlightthickness 0 -justify l \
         -relief flat -onvalue yes -offvalue no \
         -command "toggle_pass"
     #tixAddBalloon $w.b1 Button [tt "Select \"Same PASS\"  If you are using the same passphrase for all your secret Keys in the secrekey ring.  "]
      pack $w.b1 -side top -anchor nw
+
      label $w.lab -text  $label
      pack $w.lab -side top  -anchor w
+
      #password $w.entry -width 30 -relief sunken -borderwidth 1 \
         -variable ppass
      password $w.entry -width 30  -relief sunken -borderwidth 1 -variable ppass \
          -background [option get . entryBackground Sdr]
      pack $w.entry -side top  -anchor w
-     frame $w.but
-     pack $w.but -side top -fill x -expand true
+     bind $w.entry <Key-Return> "set getpass(ok) 1"
+
+     frame  $w.but
+     pack   $w.but -side top -fill x -expand true
+
      button $w.but.ok -text OK -command {set getpass(ok) 1 }
+     pack $w.but.ok -side left -fill x -expand true
+
      button $w.but.cancel -text Cancel -command { set getpass(ok) 0} 
-      pack $w.but.ok -side left -fill x -expand true
-      pack $w.but.cancel -side left -fill x -expand true
-       grab $w
-       tkwait variable getpass(ok)
-       grab release $w
-       destroy $w
-       if { $getpass(ok) == 1} {
-     #putlogfile " PASSWORD from MIS_GetPass "
-          return $ppass
-       } else {
-             return {}
-       }
+     pack $w.but.cancel -side left -fill x -expand true
+
+     grab $w
+     tkwait variable getpass(ok)
+     grab release $w
+     destroy $w
+     if { $getpass(ok) == 1} {
+       #putlogfile " PASSWORD from MIS_GetPass "
+       return $ppass
+     } else {
+       return {}
+     }
 }
 proc Misc_Gettext { title label } {
     global gettext
@@ -1945,50 +1951,48 @@ proc creat_des_key {} {
 
  
 proc enter_pgp_path {} {
-    global  env 
-    global pgpinfo
-    global yourkey yourpin
+    global  env pgpinfo yourkey yourpin
+
     catch {destroy $w}
     set w [toplevel .pgpinfo -borderwidth 2] 
     wm title .pgpinfo "Sdr: PGP  Configure Information"
+
     frame $w.f -borderwidth 5 -relief groove
-    pack $w.f -side top
+    pack  $w.f -side top
+
     message $w.f.l -aspect 500  -text "Please configure sdr with your PGP PATH "
-    pack $w.f.l -side top
+    pack    $w.f.l -side top
+
     frame $w.f.f0 
-    pack $w.f.f0 -side top -fill x -expand true
+    pack  $w.f.f0 -side top -fill x -expand true
+
     label $w.f.f0.l -text "PGP Key Ring Location"
-    pack $w.f.f0.l -side left -anchor e -fill x -expand true
+    pack  $w.f.f0.l -side left -anchor e -fill x -expand true
+
     entry $w.f.f0.e -width 30 -relief sunken -borderwidth 1 \
 	-bg [option get . entryBackground Sdr] \
-	 -highlightthickness 0   -textvariable yourkey
-    pack $w.f.f0.e -side left
-
-    #frame $w.f.f1 
-    #pack $w.f.f1 -side top -fill x -expand true
-    #label $w.f.f1.l -text "PIN for X509"
-    #pack $w.f.f1.l -side left -anchor e -fill x -expand true
-    #password $w.f.f1.e -width 30 -relief sunken -borderwidth 1 \
-        #-variable yourpin -background [option get . entryBackground Sdr]
-    #pack $w.f.f1.e -side left
+	-highlightthickness 0   -textvariable yourkey
+    pack  $w.f.f0.e -side left
+    bind  $w.f.f0.e <Key-Return> "set pgpinfo(ok) 1"
 
     frame $w.f.f3 
-    pack $w.f.f3 -side top -fill x -expand true
+    pack  $w.f.f3 -side top -fill x -expand true
 
     button $w.f.f3.ok -text OK -command {set pgpinfo(ok) 1 }
-    pack $w.f.f3.ok -side left -fill x -expand true
+    pack   $w.f.f3.ok -side left -fill x -expand true
     button $w.f.f3.cancel -text Cancel \
-	    -command {set pgpinfo(ok) 0 }
-    pack $w.f.f3.cancel -side left -fill x -expand true
+	 -command {set pgpinfo(ok) 0 }
+    pack   $w.f.f3.cancel -side left -fill x -expand true
+
     grab $w
-       tkwait variable pgpinfo(ok)
-       grab release $w
-       destroy .pgpinfo
-       if { $pgpinfo(ok) == 1} {
-	set env(PGPPATH) $yourkey
-          return 1
-       } else {
-	set env(PGPPATH) "none"
-	return 0
-       }
+    tkwait variable pgpinfo(ok)
+    grab release $w
+    destroy .pgpinfo
+    if { $pgpinfo(ok) == 1} {
+      set env(PGPPATH) $yourkey
+      return 1
+    } else {
+      set env(PGPPATH) "none"
+      return 0
+    }
 }
