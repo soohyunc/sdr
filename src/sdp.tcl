@@ -130,6 +130,13 @@ proc parse_sdp {msg} {
 		    }
 		}
 	    }
+	    k {
+                if {$mn!=-1} {
+                  if { [lindex [split $value ":"] 0] == "clear" } {
+                    set ldata($aid,$mn,mediakey) [lindex [split $value ":"] 1]
+                  }
+                }
+	    }
 	    m {
 		incr mn
 		catch {
