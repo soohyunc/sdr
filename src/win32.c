@@ -172,9 +172,7 @@ WinMain(
     }
 /*    TclHasSockets(NULL);  ...not sure what this does? [csp] */
 
-#ifdef NDEF	/* What the hell does this do???? [csp] */
-    DllMain(hInstance, DLL_PROCESS_ATTACH, 0);
-#endif
+	TclWinInit(hInstance);
     TkWinXInit(hInstance);
 
     /*
