@@ -46,7 +46,7 @@
 
 
 #define MULTICAST
-/* #define DEBUG /* */
+/* #define DEBUG */
 
 #include <assert.h>
 #include <locale.h>
@@ -181,13 +181,13 @@ int sd_listen(char *address, int port, int addr_fam,
 {    
     struct sockaddr_in name;
     struct ip_mreq imr;
-    unsigned int group;
+    unsigned int group=0;
 #ifdef HAVE_IPv6
     struct sockaddr_in6 name6;
     struct ipv6_mreq imr6;
     struct in6_addr group6;
 #endif
-    int s, i, one=1, zero=0, af = AF_INET;
+    int s=0, i=0, one=1, zero=0, af = AF_INET;
 
     if (no_of_socks!=NULL) {
         for(i=0;i<*no_of_socks;i++) {
@@ -684,8 +684,14 @@ int load_cache_entry(
 /* check that the buffer is not clear, if it is then set enc and auth off */
 
    if (strncmp(authtype,"k",1)== 0) {
+#ifdef NEVER
        sscanf(&buf[2], "%s %s %lu %s %u %u %s", &origsrc,
               &src, &t, sap_addr, &sap_port, &ttl, trust);
+#else
+       sscanf(&buf[2], "%s %s %lu %s %u %u %s", origsrc,
+              src, &t, sap_addr, &sap_port, &ttl, trust);
+       printf("EDMUND: origsrc=%s, src=%s\n",origsrc,src);
+#endif
 
        strcpy(authstatus, "NOAUTH" );
        strcpy(authtype,   "none"   );
@@ -886,7 +892,7 @@ int load_cache_entry(
 /* call gen_new_auth_data to create new_data buffer. Basically this copies */
 /* the sap packet but sets bp->msgid=0 and skips the authentication header */
       
-          newlength = gen_new_auth_data(newbuf,new_data,bp,auth_len,newlen1);
+          newlength = gen_new_auth_data(newbuf,new_data,(struct sapv4_header *)bp,auth_len,newlen1);
           
 /* check the authentication */
           
@@ -1107,7 +1113,7 @@ int load_cache_entry(
 /* and skips the authentication header                                  */
 
             if (auth_len != 0) {
-              newlength=gen_new_auth_data(newbuf,new_data,bp,auth_len,newlen1);
+              newlength=gen_new_auth_data(newbuf,new_data,(struct sapv4_header *)bp,auth_len,newlen1);
             }
 
 /* check the encryption */
@@ -1334,8 +1340,8 @@ char *argv[];
     int inChannel;
     struct in_addr in;
     struct hostent *hstent;
-    struct hostent *thstent;
 #ifdef HAVE_IPv6
+    struct hostent *thstent;
     struct addrinfo hints;
     struct addrinfo *result;
 #endif
@@ -1745,9 +1751,11 @@ void rebuild_interface()
 void recv_packets(ClientData fd)
 {
     struct advert_data *advert=NULL, *addata=NULL;
-    struct sap_header *bp;
+    struct sap_header *bp=NULL;
+#ifdef HAVE_IPv6
     struct sapv6_header *bp6;
-    struct sapv4_header *bp4;
+#endif
+    struct sapv4_header *bp4 = NULL;
     struct sockaddr_in from;
     struct timeval tv;
     struct priv_header *enc_p=NULL;
@@ -2079,7 +2087,7 @@ void recv_packets(ClientData fd)
 /* fill new_data with original packet but set msg_id=0 and remove the */
 /* auth_hdr because of signature. Dunno why set msgid=0               */
 
-      newlength = gen_new_auth_data(debugbuf,new_data,bp,auth_len,orglength);
+      newlength = gen_new_auth_data(debugbuf,new_data,(struct sapv4_header *)bp,auth_len,orglength);
 
 /* check the version of the authentication header */
 
@@ -2435,7 +2443,10 @@ void recv_packets(ClientData fd)
 /* Store received authentication data in the linked list                */
 /* overwrite existing data if this is a repeated/modified announcement  */
 
-	if (hfrom !=hostaddr && (has_security==1 )) {
+       if (hfrom !=hostaddr ) {
+
+/* see if advert aid is already in the linked list */
+
 	  if (first_ad!=NULL) {
 	    advert=first_ad;
 	    do
@@ -2447,9 +2458,10 @@ void recv_packets(ClientData fd)
 	       }
 	     } while ((advert!=last_ad->next_ad) && !found);
            }
-	 }
 
-	 if (!found) {
+/* if not found advert in the linked list then add the advert_data to it  */
+
+         if (!found) {
            if ( addata != NULL ) {
 	     addata->aid=strdup(aid);
              addata->end_time = endtime;
@@ -2468,9 +2480,10 @@ void recv_packets(ClientData fd)
 	       no_of_ads++;
 	     }
 	   } 
+
 	 } else {
 
-/* This is a repeated announcement */
+/* Found advert in linked list so this is a repeated announcement          */
 /* Free up the old copy of the authentication info and replace it with the */
 /* new copy from the packet                                                */
 
@@ -2493,6 +2506,8 @@ void recv_packets(ClientData fd)
 	   advert->sapenc_p=addata->sapenc_p;
 	   free(addata);
 	 }
+
+       }
 
 out:
       free(buf);
@@ -2546,7 +2561,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     static char namestr[MAXADSIZE]="";
     char *cur, *end, *attr, *unknown, *version, *session=NULL, *desc=NULL, 
          *orig=NULL, *chan[MAXMEDIA], *media[MAXMEDIA], *times[MAXTIMES], 
-         *rpt[MAXTIMES][MAXRPTS], *uri, *phone[MAXPHONE], *email[MAXPHONE], 
+         *rpt[MAXTIMES][MAXRPTS], *uri=NULL, *phone[MAXPHONE], *email[MAXPHONE], 
          *bw[MAXBW], *key[MAXKEY], *data2;
     int mediactr, tctr, pctr, ectr, bctr, kctr, uctr;
     char vars[MAXMEDIA][TMPSTRLEN];
@@ -3220,14 +3235,14 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     if (check_net_type(in,ip,createaddr)<0)
       goto errorleap;
     for (p = sessid; *p; p++)
-      if (!isdigit(*p)) {
+      if (!isdigit((int)*p)) {
 	if (debug1)
 	  fprintf(stderr, "non-digit in session ID\n");
 	dump(data2, origlen);
 	goto errorleap;
       }
     for (p = sessvers; *p; p++)
-      if (!isdigit(*p)) {
+      if (!isdigit((int)*p)) {
 	if (debug1)
 	  fprintf(stderr, "non-digit in session version\n");
 	dump(data2, origlen);
@@ -3479,7 +3494,7 @@ int check_net_type(char *in, char *ip, char *addr)
        * ("Be generous in what you accept.")
        */
       for (p = addr; *p; p++) {
-          if (isalpha(*p)) {
+          if (isalpha((int)*p)) {
               isok = 1;
               break;
           }
