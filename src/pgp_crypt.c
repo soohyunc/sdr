@@ -107,7 +107,7 @@ int generate_authentication_info(char *data,int len, char *authstatus, int irand
     code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY); 
     writelog(printf("\nReturn Code= %s\n", code);)
     if (strcmp(code,"1") != 0 ) {
-        printf("INCORRECT PASSWORD OR File not created\n");
+        writelog(printf("INCORRECT PASSWORD OR File not created\n"); )
         Tcl_VarEval(interp, "pgp_cleanup  ", irandstr, NULL);
         return 0;
     }
@@ -166,6 +166,14 @@ char *check_authentication(struct auth_header *auth_p, char *authinfo,
     writelog(printf("Padding Length=%d\n", *(authinfo+(auth_len-2)-1));)
   }
  
+/* quick check to see if things look okay */
+
+  if ( auth_p->auth_type == 1 && key_len != 0 ) {
+    writelog(printf("check_auth: Error: have authtype %d and key_len %d\n",auth_p->auth_type,key_len);)
+    return("failed");
+
+  }
+
   writelog(printf("Key Certificate=%d bytes\n", key_len);)
  
   /* Extract the signature and key certificate from the packet and */
@@ -503,7 +511,7 @@ int generate_encryption_info(char *data, char *encstatus, int irand,char *encmes
 
     code = Tcl_GetVar(interp, "recv_result", TCL_GLOBAL_ONLY);
     if (strcmp(interp->result,"1") != 0 ) {
-      printf("File has not been created\n");
+      /* printf("File has not been created\n"); */
       Tcl_VarEval(interp, "enc_pgp_cleanup  ", irandstr, NULL);
       return 0;
     }
@@ -637,7 +645,9 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   free(encfulltxt);
   free(irandstr);
 
-  if ( strcmp(enc_status, "success") == 0 ) {
+/* enc_status is not a well terminated string - should be sorted out earlier */
+/* but as a quick fix just look at the first 7 characters :)                 */
+  if ( strncmp(enc_status, "success",7) == 0 ) {
     return ("success");
   } else {
     return ("failed");
