@@ -4,6 +4,10 @@
 #see ui_fns.c for information on usage and redistribution of this file
 #and for a DISCLAIMER OF ALL WARRANTIES.
 
+# set the following to 1 to disable enc/auth and 0 to enable it
+set pgpdisable  1
+set x509disable 1
+
 set initWait 400
 set last_widget foo
 set showwhich all
