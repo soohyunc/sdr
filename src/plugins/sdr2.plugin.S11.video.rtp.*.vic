@@ -1,0 +1,28 @@
+media:video
+proto:RTP/AVP
+protoname:RTP
+tool:vic
+fmt:31
+{
+  fmtname:H.261
+  flags:-f h261
+}
+fmt:28
+{
+  fmtname:nv
+  flags:-f nv
+}
+fmt:26
+{
+  fmtname:M-JPEG
+  flags:-f jpeg
+}
+fmt:25
+{
+  fmtname:Cell B
+  flags:-f celb
+}
+flags:-t $(TTL)
+flags:-I $(CHAN)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)

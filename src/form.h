@@ -1,0 +1,164 @@
+<FORM ACTION=/create/new METHOD=post>
+<B>Session Name:</B>
+<INPUT TYPE=text NAME=sname SIZE=40>
+<br>
+<B>Description:</B>
+<br>
+<TEXTAREA NAME=desc ROWS=4 COLS=73>
+</TEXTAREA>
+<br>
+<B>URI:</B>
+<INPUT TYPE=text NAME=uri SIZE=70>
+<hr>
+<B>Media to be used:</b>
+<br>
+<TABLE BORDER=0>
+<TH><img src=audio.xbm> Audio</TH>
+<TH><img src=eye.xbm> Video</TH>
+<TH><img src=wb.xbm> Whiteboard</TH>
+<TH><img src=text.xbm> Text</TH>
+<TR>
+<TD><SELECT NAME=audio SIZE=1>
+<OPTION>---
+<OPTION SELECTED>PCM
+<OPTION>DVI
+<OPTION>GSM
+<OPTION>LPC
+</SELECT>
+</TD>
+<TD>
+<SELECT NAME=video SIZE=1>
+<OPTION SELECTED>---
+<OPTION>H261
+<OPTION>nv
+</SELECT>
+</TD>
+<TD>
+<SELECT NAME=whiteboard SIZE=1>
+<OPTION>---
+<OPTION>wb
+<OPTION>nt
+</SELECT>
+</TD>
+<TD>
+<SELECT NAME=text SIZE=1>
+<OPTION SELECTED>---
+<OPTION>mumble
+</SELECT>
+</TD>
+</TR>
+</TABLE>
+<hr>
+<B>Scope</B> (how far the conference will reach)
+<SELECT NAME=scope SIZE=1>
+<OPTION SELECTED>Site
+<OPTION>Region
+<OPTION>World
+</SELECT>
+<hr>
+<B>Session will be active:</B>
+<br>
+<SELECT NAME=rptmode>
+<OPTION SELECTED>Once
+<OPTION>Daily
+<OPTION>Weekly
+<OPTION>Every two Weeks
+</SELECT>
+<br>
+<TABLE>
+<TR>
+<TD></TD><TD ALIGN=center>DD</TD><TD>MM</TD><TD>YY</TD>
+<TR>
+<TD>From: </TD>
+<TD><INPUT TYPE=text NAME=sday SIZE=2 VALUE=27></TD>
+<TD><INPUT TYPE=text NAME=smon SIZE=2 VALUE=01></TD>
+<TD><INPUT TYPE=text NAME=syear SIZE=2 VALUE=96></TD>
+<TD> at 
+<SELECT NAME=stime>
+<OPTION>01:00
+<OPTION>01:30
+<OPTION>02:00
+<OPTION>02:30
+<OPTION>03:00
+<OPTION>03:30
+<OPTION>04:00
+<OPTION>04:30
+<OPTION>05:00
+<OPTION>05:30
+<OPTION>06:00
+<OPTION>06:30
+<OPTION>07:00
+<OPTION>07:30
+<OPTION>08:00
+<OPTION>08:30
+<OPTION>09:00
+<OPTION>09:30
+<OPTION>10:00
+<OPTION>10:30
+<OPTION>11:00
+<OPTION>11:30
+<OPTION>12:00
+<OPTION>12:30
+</SELECT>
+<SELECT NAME=sdn>
+<OPTION>am
+<OPTION>pm
+</SELECT>
+for
+<SELECT NAME=duration>
+<OPTION>1
+<OPTION>2
+<OPTION>3
+<OPTION>4
+<OPTION>5
+<OPTION>6
+<OPTION>7
+<OPTION>8
+<OPTION>9
+<OPTION>10
+<OPTION>11
+<OPTION>12
+<OPTION>13
+<OPTION>14
+</SELECT>
+<SELECT NAME=dunits>
+<OPTION>hours
+<OPTION>days
+</SELECT>
+</TR>
+</TABLE>
+<br>
+Repeated for:
+<SELECT NAME=rptfor>
+<OPTION SELECTED>0
+<OPTION>2
+<OPTION>3
+<OPTION>4
+<OPTION>5
+<OPTION>6
+<OPTION>7
+<OPTION>8
+<OPTION>9
+<OPTION>10
+<OPTION>11
+<OPTION>12
+<OPTION>12
+<OPTION>14
+</SELECT>
+<SELECT NAME=rptunits>
+<OPTION SELECTED>days
+<OPTION> weeks
+</SELECT>
+<hr>
+<B>Person to contact about this session</B>:
+<TABLE BORDER=0>
+<TR><TD>Name:</TD><TD><INPUT TYPE=text NAME=name SIZE=30></TD>
+<TD>Phone</TD><TD><INPUT TYPE=text NAME=phone SIZE=30></TD>
+<TR><TD></TD><TD></TD><TD>Email</TD>
+<TD><INPUT TYPE=text NAME=email SIZE=30></TD>
+</TABLE>
+
+<hr>
+<INPUT TYPE=submit VALUE=Submit>
+<INPUT TYPE=reset VALUE=Reset>
+</FORM>

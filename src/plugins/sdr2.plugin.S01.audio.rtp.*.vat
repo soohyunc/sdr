@@ -1,0 +1,82 @@
+media:audio
+tool:vat
+proto:RTP/AVP
+protoname:RTP
+fmt:0
+{
+  fmtname:PCM
+  attr:ptime
+  {
+    attrname:packet size
+    def:true
+    attrvalue:20
+    {
+      attrvaluename:20ms
+      flags:-f pcm
+    }
+    attrvalue:40
+    {
+      attrvaluename:40ms
+      def:true
+      flags:-f pcm2
+    }
+    attrvalue:80
+    {
+      attrvaluename:80ms
+      flags:-f pcm4
+    }
+  }
+  noattr:ptime
+  {
+    flags:-f pcm2
+  }
+}
+fmt:5
+{
+  fmtname:DVI
+  attr:ptime
+  {
+    attrname:packet size
+    def:true
+    attrvalue:20
+    {
+      attrvaluename:20ms
+      flags:-f dvi
+    }
+    attrvalue:40
+    {
+      attrvaluename:40ms
+      def:true
+      flags:-f dvi2
+    }
+    attrvalue:80
+    {
+      attrvaluename:80ms
+      flags:-f dvi4
+    }
+  }
+  noattr:ptime
+  {
+    flags:-f dvi2
+  }
+}
+fmt:3
+{
+  fmtname:GSM
+  flags:-f gsm
+}
+fmt:7
+{
+  fmtname:LPC
+  flags:-f lpc
+}
+attr:recvonly
+{
+  attrname:Receive-Only Mode
+  flags:-R
+}
+flags:-r
+flags:-I $(CHAN)
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)

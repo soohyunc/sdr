@@ -1,0 +1,13 @@
+<HEAD>
+<TITLE> Bandwidth Allocation</TITLE>
+</HEAD>
+<BODY>
+<H1><A NAME=SECTION00050000000000000000> Bandwidth Allocation</A></H1>
+<P>
+Each scope range (whether TTL scoped or administratively scoped) has a recommended maximum bandwidth associated with it.  This is the maximum bandwidth a <em> session</em> should use at that scope.  Most of the Mbone is currently configured for only a small number of concurrent sessions, (although this is likely to change as the Mbone is increasingly provided using native multicast in routers rather than an overlay of multicast tunnels).  For this reason it is important to be able to see if a session I wish to schedule will clash with other sessions already scheduled, and to automatically set the maximum bandwidth of the tools to comprise my session.
+<P>
+Unfortunately many users do not know sufficient about the network to be able to decide on appropriate bandwidth figures for their session.  
+To get around this, sdr allows users to specify their sessions as ``meetings'' or as ``broadcasts'', and lets the audio and video rates be set as ``low'', ``normal'' and ``other'', where ``other'' requires that a bandwidth value be inserted.  ``meetings'' also allow the user to specify ``number of simultaneous video streams''.  Sdr users this information to set fields indicating the total bandwidth of the conference and the bandwidth to be used by each tool in the conference.
+<P>
+If a user attempts to schedule a session that will exceed the recommended available bandwidth for that scope (based on what other sessions are scheduled) then it will issue a warning and indicate which other session the new session will clash with.
+</BODY>

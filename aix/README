@@ -1,0 +1,11 @@
+Building sdr under AIX 4.1.x
+
+    Denis DeLaRoca <delaroca@ucla.edu>, Sat Aug  3 15:57:30 PDT 1996
+
+o Either GNU's gcc or IBM's cc compilers can be used to compile the
+  distribution. But cc with the -qarch=com option is needed to be able
+  to generate code runnable across the various RS6K and PowerPC
+  platforms.
+
+o GNU's make is necessary to handle the distribution's Makefile.
+

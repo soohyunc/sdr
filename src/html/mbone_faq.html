@@ -1,0 +1,581 @@
+<h1>Frequently Asked Questions (FAQ) on the Multicast Backbone (MBONE)</h1>
+<h2>Steve Casner, casner@isi.edu, 22-Dec-94</h2>
+
+*** This file is <a href=ftp://ftp.isi.edu/mbone/faq.txt>ftp://ftp.isi.edu/mbone/faq.txt</a> ***
+<br>
+***  Corrections and Additions Requested   ***
+<p>
+Note: This file has badly needed updating since the 6-May-93
+version.  Some of the most glaring errors have been fixed here,
+but more rewriting is required.  It is also intended that this
+text form and an HTML form will be generated from a common source.
+Some other sources of info are:<br>
+<a href=http://www.research.att.com/mbone-faq.html>http://www.research.att.com/mbone-faq.html</a><br>
+<a href=ftp://taurus.cs.nps.navy.mil/pub/mbmg/mbone.html>ftp://taurus.cs.nps.navy.mil/pub/mbmg/mbone.html</a><br>
+<a href=ftp://genome-ftp.stanford.edu/pub/mbone/mbone-connect>ftp://genome-ftp.stanford.edu/pub/mbone/mbone-connect</a><br>
+<a href=http://www.cl.cam.ac.uk/mbone/>http://www.cl.cam.ac.uk/mbone/</a><br>
+<a href=http://www.eit.com/techinfo/mbone/mbone.html>http://www.eit.com/techinfo/mbone/mbone.html</a>
+
+
+<h2>What is the MBONE?</h2>
+
+   The MBONE is an outgrowth of the first two IETF "audiocast"
+    experiments in which live audio and video were multicast from the
+    IETF meeting site to destinations around the world.  The idea is
+    to construct a semi-permanent IP multicast testbed to carry the
+    IETF transmissions and support continued experimentation between
+    meetings.  This is a cooperative, volunteer effort.
+<p>
+    The MBONE is a virtual network.  It is layered on top of portions
+    of the physical Internet to support routing of IP multicast
+    packets since that function has not yet been integrated into many
+    production routers.  The network is composed of islands that can
+    directly support IP multicast, such as multicast LANs like
+    Ethernet, linked by virtual point-to-point links called "tunnels".
+    The tunnel endpoints are typically workstation-class machines
+    having operating system support for IP multicast and running the
+    "mrouted" multicast routing daemon.
+
+<h2>How do IP multicast tunnels work?</h2>
+
+    IP multicast packets are encapsulated for transmission through
+    tunnels, so that they look like normal unicast datagrams to
+    intervening routers and subnets.  A multicast router that wants to
+    send a multicast packet across a tunnel will prepend another IP
+    header, set the destination address in the new header to be the
+    unicast address of the multicast router at the other end of the
+    tunnel, and set the IP protocol field in the new header to be 4
+    (which means the next protocol is IP).  The multicast router at
+    the other end of the tunnel receives the packet, strips off the
+    encapsulating IP header, and forwards the packet as appropriate.
+<p>
+    Previous versions of the IP multicast software (before March 1993)
+    used a different method of encapsulation based on an IP Loose
+    Source and Record Route option.  This method remains an option in
+    the new software for backward compatibility with nodes that have
+    not been upgraded.  In this mode, the multicast router modifies
+    the packet by appending an IP LSRR option to the packet's IP
+    header.  The multicast destination address is moved into the
+    source route, and the unicast address of the router at the far end
+    of the tunnel is placed in the IP Destination Address field.  The
+    presence of IP options, including LSRR, may cause modern router
+    hardware to divert the tunnel packets through a slower software
+    processing path, causing poor performance.  Therefore, use of the
+    new software and the IP encapsulation method is strongly
+    encouraged.
+
+<h2>What is the topology of the MBONE?</h2>
+
+    We anticipate that within a continent, the MBONE topology will be
+    a combination of mesh and star: the backbone and regional (or
+    mid-level) networks will be linked by a mesh of tunnels among
+    mrouted machines located primarily at interconnection points of
+    the backbones and regionals.  Some redundant tunnels may be
+    configured with higher metrics for robustness.  Then each regional
+    network will have a star hierarchy hanging off its node of the
+    mesh to fan out and connect to all the customer networks that want
+    to participate.
+<p>
+    Between continents there will probably be only one or two tunnels,
+    preferably terminating at the closest point on the MBONE mesh.  In
+    the US, this may be on the Ethernets at the two FIXes (Federal
+    Internet eXchanges) in California and Maryland.  But since the
+    FIXes are fairly busy, it will be important to minimize the number
+    of tunnels that cross them.  This may be accomplished using IP
+    multicast directly (rather than tunnels) to connect several
+    multicast routers on the FIX Ethernet.
+
+<h2>How is the MBONE topology going to be set up and coordinated?</h2>
+
+    The primary reason we set up the MBONE e-mail lists (see below)
+    was to coordinate the top levels of the topology (the mesh of
+    links among the backbones and regionals).  This must be a
+    cooperative project combining knowledge distributed among the
+    participants, somewhat like Usenet.  The goal is to avoid loading
+    any one individual with the responsibility of designing and
+    managing the whole topology, though perhaps it will be necessary
+    to periodically review the topology to see if corrections are
+    required.
+<p>
+    The intent is that when a new regional network wants to join in,
+    they will make a request on the appropriate MBONE list, then the
+    participants at "close" nodes will answer and cooperate in setting
+    up the ends of the appropriate tunnels.  To keep fanout down,
+    sometimes this will mean breaking an existing tunnel to inserting
+    a new node, so three sites will have to work together to set up
+    the tunnels.
+<p>
+    To know which nodes are "close" will require knowledge of both the
+    MBONE logical map and the underlying physical network topology,
+    for example, the physical T3 NSFnet backbone topology map combined
+    with the network providers' own knowledge of their local topology.
+<p>
+    Within a regional network, the network's own staff can
+    independently manage the tunnel fanout hierarchy in conjunction
+    with end-user participants.  New end-user networks should contact
+    the network provider directly, rather than the MBONE list, to get
+    connected.
+
+<h2>What is the anticipated traffic level?</h2>
+
+    The traffic anticipated during IETF multicasts is 100-300Kb/s, so
+    500Kb/s seems like a reasonable design bandwidth.  Between IETF
+    meetings, most of the time there will probably be no audio or
+    video traffic, though some of the background session/control
+    traffic may be present.  A guess at the peak level of experimental
+    use might be 5 simultaneous voice conversations (64Kb/s each).
+    Clearly, with enough simultaneous conversations, we could exceed
+    any bandwidth number, but 500Kb/s seems reasonable for planning.
+<p>
+    Note that the design bandwidth must be multiplied by the number of
+    tunnels passing over any given link since each tunnel carries a
+    separate copy of each packet.  This is why the fanout of each
+    mrouted node should be no more than 5-10 and the topology should
+    be designed so that at most 1 or 2 tunnels flow over any T1 line.
+<p>
+    While most MBONE nodes should connect with lines of at least T1
+    speed, it will be possible to carry restricted traffic over slower
+    speed lines.  Each tunnel has an associated threshold against
+    which the packet's IP time-to-live (TTL) value is compared.  By
+    convention in the IETF multicasts, higher bandwidth sources such
+    as video transmit with a smaller TTL so they can be blocked while
+    lower bandwidth sources such as compressed audio are allowed
+    through.
+
+<h2>Why should I (a network provider) participate?</h2>
+
+    To allow your customers to participate in IETF audiocasts and
+    other experiments in packet audio/video, and to gain experience
+    with IP multicasting for a relatively low cost.
+
+<h2>What technical facilities and equipment are required for a network
+  provider to join the MBONE?</h2>
+
+    Each network-provider participant in the MBONE provides one or
+    more IP multicast routers to connect with tunnels to other
+    participants and to customers.  The multicast routers are
+    typically separate from a network's production routers since most
+    production routers don't yet support IP multicast.  Most sites use
+    workstations running the mrouted program, but the experimental
+    MOSPF software for Proteon routers is an alternative (see MOSPF
+    question below).
+<p>
+    It is best if the workstations can be dedicated to the multicast
+    routing function to avoid interference from other activities and
+    so there will be no qualms about installing kernel patches or new
+    code releases on short notice.  Since most MBONE nodes other than
+    endpoints will have at least three tunnels, and each tunnel
+    carries a separate (unicast) copy of each packet, it is also
+    useful, though not required, to have multiple network interfaces
+    on the workstation so it can be installed parallel to the unicast
+    router for those sites with configurations like this:
+<pre>
+		   +----------+
+		   | Backbone |
+		   |   Node   |
+		   +----------+
+			|
+    ------------------------------------------ External DMZ Ethernet
+	     |               |
+	+----------+    +----------+
+	|  Router  |    |  mrouted |
+	+----------+    +----------+
+	     |               |
+    ------------------------------------------ Internal DMZ Ethernet
+</pre><p>
+    (The "DMZ" Ethernets borrow that military term to describe their
+    role as interface points between networks and machines controlled
+    by different entities.)  This configuration allows the mrouted
+    machine to connect with tunnels to other regional networks over
+    the external DMZ and the physical backbone network, and connect
+    with tunnels to the lower-level mrouted machines over the internal
+    DMZ, thereby splitting the load of the replicated packets.  (The
+    mrouted machine would not do any unicast forwarding.)
+<p>
+    Note that end-user sites may participate with as little as one
+    workstation that runs the packet audio and video software and has
+    a tunnel to a network-provider node.
+
+<h2>What skills are needed to participate and how much time might have
+  to be devoted to this?</h2>
+
+    The person supporting a network's participation in the MBONE
+    should have the skills of a network engineer, but a fairly small
+    percentage of that person's time should be required.  Activities
+    requiring this skill level would be choosing a topology for
+    multicast distribution with in the provider's network and
+    analyzing traffic flow when performance problems are identified.
+<p>
+    To set up and run an mrouted machine will require the knowledge to
+    build and install operating system kernels.  If you would like to
+    use a hardware platform other than those currently supported, then
+    you might also contribute some software implementation skills!
+<p>
+    We will depend on participants to read mail on the appropriate
+    mbone mailing list and respond to requests from new networks that
+    want to join and are "nearby" to coordinate the installation of
+    new tunnel links.  Similarly, when customers of the network
+    provider make requests for their campus nets or end systems to be
+    connected to the MBONE, new tunnel links will need to be added
+    from the network provider's multicast routers to the end systems
+    (unless the whole network runs MOSPF).
+<p>
+    Part of the resources that should be committed to participate
+    would be for operations staff to be aware of the role of the
+    multicast routers and the nature of multicast traffic, and to be
+    prepared to disable multicast forwarding if excessive traffic is
+    found to be causing trouble.  The potential problem is that any
+    site hooked into the MBONE could transmit packets that cover the
+    whole MBONE, so if it became popular as a "chat line", all
+    available bandwidth could be consumed.  Steve Deering plans to
+    implement multicast route pruning so that packets only flow over
+    those links necessary to reach active receivers; this will reduce
+    the traffic level.  This problem should be manageable through the
+    same measures we already depend upon for stable operation of the
+    Internet, but MBONE participants should be aware of it.
+
+<h2>Which workstation platforms can support the mrouted program?</h2>
+
+    The most convenient platform is a Sun SPARCstation simply because
+    that is the machine used for mrouted development.  An older
+    machine (such as a SPARC-1 or IPC) will provide satisfactory
+    performance as long as the tunnel fanout is kept in the 5-10
+    range.  The platforms for which software is available:
+<pre>
+    Machines             Operating Systems       Network Interfaces
+    --------             -----------------       ------------------
+    Sun SPARC            SunOS 4.1.1,2,3         ie, le, lo
+    Vax or Microvax      4.3+ or 4.3-tahoe       de, qe, lo
+    Decstation 3100,5000 Ultrix 3.1c, 4.1, 4.2a  ln, se, lo
+    Silicon Graphics     All ship with multicast
+</pre>
+    There is an interested group at DEC that may get the software
+    running on newer DEC systems with Ultrix and OSF/1.  Also, some
+    people have asked about support for the RS-6000 and AIX or other
+    platforms.  Those interested could use the mbone list to coordinate
+    collaboration on porting the software to these platforms!
+<p>
+    An alternative to running mrouted is to run the experimental MOSPF
+    software in a Proteon router (see MOSPF question below).
+
+<h2>Where can I get the IP multicast software and mrouted program?</h2>
+
+    The IP multicast software is available by anonymous FTP from the
+    vmtp-ip directory on host gregorio.stanford.edu.  Here's a
+    snapshot of the files:
+<pre>
+	ipmulti-pmax31c.tar
+	ipmulti-sunos41x.tar.Z	    Binaries & patches for SunOS 4.1.1,2,3
+	ipmulticast-ultrix4.1.patch
+	ipmulticast-ultrix4.2a-binary.tar
+	ipmulticast-ultrix4.2a.patch
+	ipmulticast.README	    [** Warning: out of date **]
+	ipmulticast.tar.Z	    Sources for BSD
+
+### Release 3.3 of the SunOS kernel multicast extensions was made in
+### late August, but was not put on gregorio like previous releases.
+### Instead, it is on parcftp.xerox.com, directory pub/net-research,
+### file ipmulti3.3-sunos413x.tar.Z  This release has multicast
+### pruning and several other major improvements over previous
+### releases, so upgrading is encouraged.
+</pre>
+    You don't need kernel sources to add multicast support.  Included
+    in the distributions are files (sources or binaries, depending
+    upon the system) to modify your BSD, SunOS, or Ultrix kernel to
+    support IP multicast, including the mrouted program and special
+    multicast versions of ping and netstat.
+<p>
+    Silicon Graphics includes IP multicast as a standard part of their
+    operating system.  The mrouted executable and ip_mroute kernel
+    module are not installed by default; you must install the
+    eoe2.sw.ipgate subsystem and "autoconfig" the kernel to be able to
+    act as a multicast router.  In the IRIX 4.0.x release, there is a
+    bug in the kernel code that handles multicast tunnels; an
+    unsupported fix is available via anonymous ftp from sgi.com in the
+    sgi/ipmcast directory.  See the README there for details on
+    installing it.
+<p>
+    IP multicast is also included in all Solaris 2 releases.  Solaris
+    2.3 out of the box supports the non-pruning version of mrouted
+    (mrouted version 2.0-2.2), but mrouted is not included with
+    Solaris so you must fetch the mrouted sources from the multicast
+    software distribution and compile them.  Solaris 2.2 requires
+    patches to run mrouted, available from ftp.uoregon.edu in the
+    directory /pub/Solaris2.x/src/MBONE/Solaris2.x/Kernel.
+<p>
+    IP multicast is supported in BSD 4.4.
+<p>
+    The most common problem encountered when running this software is
+    with hosts that respond incorrectly to IP multicasts.  These
+    responses typically take the form of ICMP network unreachable,
+    redirect, or time-exceeded error messages, which are a waste of
+    bandwidth and can cause an error in the packet send operation
+    executed by a multicast source.  The result may be dropouts in an
+    audio or video stream.  These responses are in violation of the
+    current IP specification and, with luck, will disappear over time.
+
+<h2>What documentation is available?</h2>
+
+    Documentation on the IP multicast software is included in the
+    distribution on gregorio.stanford.edu (ipmulticast.README).
+    RFC1112 specifies the "Host Extensions for IP Multicasting".
+<p>
+    Multicast routing algorithms are described in the paper "Multicast
+    Routing in Internetworks and Extended LANs" by S. Deering, in the
+    Proceedings of the ACM SIGCOMM '88 Conference.
+<p>
+    There is an article in the June 1992 ConneXions about the first
+    IETF audiocast from San Diego, and a later version of that article
+    is in the July 1992 ACM SIGCOMM CCR.  A reprint of the latter
+    article is available by anonymous FTP from venera.isi.edu in the
+    file pub/ietf-audiocast-article.ps.  There is no article yet about
+    later IETF audio/videocasts.
+
+<h2>Where can I get a map of the MBONE?</h2>
+
+    The most recent "complete" map of the MBONE is available in two
+    Postscript files are available on parcftp.xerox.com: 
+<pre>
+        /pub/net-research/mbone-map-{big,small}.ps
+</pre>
+    The small one fits on one page but is hard to read, and the big
+    one is four pages that have to be taped together for viewing.
+    This map was produced from topology information collected
+    automatically from all MBONE nodes that respond to remote queries
+    for mapping information (some are running ancient versions of
+    mrouted that do not respond, and some are hidden by firewalls or
+    routing boundaries).  Pavel Curtis at Xerox PARC has added the
+    mechanisms to automatically collect the map data and produce the
+    map.  (Thanks also to Paul Zawada of NCSA who manually produced an
+    earlier map of the MBONE.)
+<p>
+    The MBONE is now large enough that it is hard to show all nodes
+    and links on one graph.  To give a higher level view of the MBONE,
+    there is another map that shows only the major links and nodes in
+    a roughly geographical representation that was created manually by
+    Steve Casner.  It is available from ftp.isi.edu:
+<pre>
+	mbone/mbone-topology.ps
+</pre>
+<h2>What is DVMRP?</h2>
+
+    DVMRP is the Distance Vector Multicast Routing Protocol; it is the
+    routing protocol implemented by the mrouted program.  An earlier
+    version of DVMRP is specified in RFC-1075.  However, the version
+    implemented in mrouted is quite a bit different from what is
+    specified in that RFC (different packet format, different tunnel
+    format, additional packet types, and more).  It maintains
+    topological knowledge via a distance-vector routing protocol (like
+    RIP, described in RFC-1058), upon which it implements a multicast
+    forwarding algorithm called Truncated Reverse Path Broadcasting.
+    DVMRP suffers from the well-known scaling problems of any
+    distance-vector routing protocol.
+
+<h2>What is MOSPF?</h2>
+
+    MOSPF is the IP multicast extension to the OSPF routing protocol,
+    currently an Internet Draft.  John Moy has implemented MOSPF for
+    the Proteon router.  A network of routers running MOSPF can
+    forward IP multicast packets directly, sending no more than one
+    copy over any link, and without the need for any tunnels.  This is
+    how IP multicasting within a domain is supposed to work.
+
+<h2>Can MOSPF and DVMRP interoperate?</h2>
+
+    At the Boston IETF, John Moy agreed to add support for DVMRP to his
+    MOSPF implementation.  He hopes to have this completed "well in
+    advance of the next IETF".  When it is finished, you will be able
+    to set up a DVMRP tunnel from an mrouted to Proteon a router,
+    glueing together the DVMRP with MOSPF domains (the MOSPF domains
+    will look pretty like ethernets to the multicast topology).
+<p>
+    The advantages to linking DVMRP with MOSPF are: fewer configured
+    tunnels, and less multicast traffic on the links inside the MOSPF
+    domain.  There are also a couple potential drawbacks: increasing
+    the size of DVMRP routing messages, and increasing the number of
+    external routes in the OSPF systems.  However, it should be
+    possible to alleviated these drawbacks by configuring area address
+    ranges and by judicious use of MOSPF default routing.
+
+<h2>How do I join the MBONE?</h2>
+
+    STEP 1: If you are an end-user site (e.g., a campus), please
+    contact your network provider.  If your network provider is not
+    participating in the MBONE, you can arrange to connect to some
+    nearby point that is on the MBONE, but it is far better to
+    encourage your network provider to participate to avoid
+    overloading links with duplicate tunnels to separate end nodes.
+    Below is a list of some network providers who are participating in
+    the MBONE, but this list is likely not to be complete.
+<pre>
+	AlterNet	mbone-request@uunet.uu.net
+	CA*net		canet-eng@canet.ca
+	CERFnet		mbone@cerf.net
+	CICNet		mbone@cic.net
+	CONCERT		mbone@concert.net
+	Cornell		swb@nr-tech.cit.cornell.edu
+	JvNCnet		multicast@jvnc.net
+	Los Nettos	prue@isi.edu
+	NCAR		mbone@ncar.ucar.edu
+	NCSAnet		mbone@cic.net
+	NEARnet		nearnet-eng@nic.near.net
+	OARnet		oarnet-mbone@oar.net
+	ONet		onet-eng@onet.on.ca
+	PSCnet		pscnet-admin@psc.edu
+	PSInet		mbone@nisc.psi.net
+	SESQUINET	mbone@sesqui.net
+	SDSCnet		mbone@sdsc.edu
+	Sprintlink	mbone@sprintlink.net
+	SURAnet		multicast@sura.net
+	UNINETT		mbone-no@uninett.no
+</pre>
+    If you are a network povider, send a message to the -request
+    address of the mailing list for your country to be added to that
+    list for purposes of coordinating setup of tunnels, etc:
+<pre>
+	Australia:	mbone-oz-request@internode.com.au
+	Austria:	mbone-at-request@noc.aco.net
+	Canada:	 	canet-mbone-request@canet.ca
+	Denmark:	mbone-request@daimi.aau.dk
+	France:		mbone-fr-request@inria.fr
+	Germany:	mbone-de-request@informatik.uni-erlangen.de
+	Italy:		mbone-it-request@nis.garr.it
+	Japan:		mbone-jp-request@wide.ad.jp
+	Korea:		mbone-korea-request@cosmos.kaist.ac.kr
+	Netherlands:	mbone-nl-request@nic.surfnet.nl
+	New Zealand:	mbone-nz-request@waikato.ac.nz
+	Singapore:	mbone-sg-request@technet.sg
+	UK:		mbone-uk-request@cs.ucl.ac.uk
+</pre>
+    If your country is not listed, send your request to the appropriate
+    regional sublist:
+<pre>
+	Europe:		mbone-eu-request@sics.se
+	N. America:	mbone-na-request@isi.edu
+	other:		mbone-request@isi.edu
+</pre>
+    These lists are primarily aimed at network providers who would be
+    the top level of the MBONE organizational and topological
+    hierarchy.  The mailing list is also a hierarchy; mbone@isi.edu
+    forwards to the regional lists, then those lists include expanders
+    for network providers and other institutions.  Mail of general
+    interest should be sent to mbone@isi.edu, while regional topology
+    questions should be sent to the appropriate regional list.
+<p>
+    Individual networks may also want to set up their own lists for
+    their customers to request connection of campus mrouted machines
+    to the network's mrouted machines.  Some that have done so were
+    listed above.
+<p>
+    STEP 2: Set up an mrouted machine, build a kernel with IP
+    multicast extensions added, and install the kernel and mrouted;
+    or, install MOSPF software in a Proteon router.
+<p>
+    STEP 3: Send a message to the mbone list for your region asking to
+    hook in, then coordinate with existing nodes to join the tunnel
+    topology.
+
+<h2>How is a tunnel configured?</h2>
+
+    Mrouted automatically configures itself to forward on all
+    multicast-capable interfaces, i.e. interfaces that have the
+    IFF_MULTICAST flag set (excluding the loopback "interface"), and
+    it finds other mrouteds directly reachable via those interfaces.
+    To override the default configuration, or to add tunnel links to
+    other mrouteds, configuration commands may be placed in
+    /etc/mrouted.conf.  There are two types of configuration command:
+<pre>
+        phyint <local-addr>   [disable]   [metric <m>] [threshold <t>]
+
+        tunnel <local-addr> <remote-addr> [metric <m>] [threshold <t>]
+</pre>
+    The phyint command can be used to disable multicast routing on the
+    physical interface identified by local IP address <local-addr>, or
+    to associate a non-default metric or threshold with the specified
+    physical interface.  Phyint commands should precede tunnel
+    commands.
+<p>
+    The tunnel command can be used to establish a tunnel link between
+    local IP address <local-addr> and remote IP address <remote-addr>,
+    and to associate a non-default metric or threshold with that
+    tunnel.  The tunnel must be set up in the mrouted.conf files of
+    both ends before it will be used.  The keyword "srcrt" can be
+    added just before the keyword "metric" to choose source routing
+    for the tunnel if necessary because the other end has not yet
+    upgraded to use IP encapsulation.  Upgrading is highly encouraged.
+    If the methods don't match at the two ends, the tunnel will appear
+    to be up according to mrouted typeouts, but no multicast packets
+    will flow.
+<p>
+    The metric is the "cost" associated with sending a datagram on the
+    given interface or tunnel; it may be used to influence the choice
+    of routes.  The metric defaults to 1.  Metrics should be kept as
+    small as possible, because mrouted cannot route along paths with a
+    sum of metrics greater than 31.  It is recommended that the metric
+    of all links be set to 1 unless you are specifically trying to
+    force traffic to take another path.  On such a "backup tunnel",
+    the metric should be the sum of metrics on primary path + 1.
+<p>
+    The threshold is the minimum IP time-to-live required for a
+    multicast datagram to be forwarded to the given interface or
+    tunnel.  It is used to control the scope of multicast datagrams.
+    (The TTL of forwarded packets is only compared to the threshold,
+    it is not decremented by the threshold.  Every multicast router
+    decrements the TTL by 1.)  The default threshold is 1.
+<p>
+    Since the multicast routing protocol implemented by mrouted does
+    not yet prune the multicast delivery trees based on group
+    membership (it does something called "truncated broadcast", in
+    which it prunes only the leaf subnets off the broadcast trees), we
+    instead use a kludge known as "TTL thresholds" to prevent
+    multicasts from traveling along unwanted branches.  This is NOT
+    the way IP multicast is supposed to work; MOSPF does it right, and
+    mrouted will do it right some day.
+<p>
+    Before the November 1992 IETF we established the following
+    thresholds.  The "TTL" column specifies the originating IP
+    time-to-live value to be used by each application.  The "thresh"
+    column specifies the mrouted threshold required to permit passage
+    of packets from the corresponding application, as well as packets
+    from all applications above it in the table:
+<pre>						TTL     thresh
+						---     ------
+	IETF chan 1 low-rate GSM audio		255	 224
+	IETF chan 2 low-rate GSM audio		223	 192
+	IETF chan 1 PCM audio			191	 160
+	IETF chan 2 PCM audio			159	 128
+	IETF chan 1 video			127	  96
+	IETF chan 2 video			 95	  64
+	local event audio			 63	  32
+	local event video			 31	   1
+</pre>
+    It is suggested that a threshold of 128 be used initially, and
+    then raise it to 160 or 192 only if the 64 Kb/s voice is excessive
+    (GSM voice is about 18 Kb/s), or lower it to 64 to allow video to
+    be transmitted to the tunnel.
+<p>
+    Mrouted will not initiate execution if it has fewer than two
+    enabled vifs, where a vif (virtual interface) is either a physical
+    multicast-capable interface or a tunnel.  It will log a warning if
+    all of its vifs are tunnels, based on the reasoning that such an
+    mrouted configuration would be better replaced by more direct
+    tunnels (i.e., eliminate the middle man).  However, to create a
+    hierarchical fanout for the MBONE, we will have mrouted
+    configurations that consist only of tunnels.
+<p>
+    Once you have edited the mrouted.conf file, you must run mrouted
+    as root.  See ipmulticast.README for more information.
+
+<h2>Have there been any movements towards productizing any of this?</h2>
+
+    The network infrastructure will require resource management
+    mechanisms to provide low delay service to real-time applications
+    on any significant scale.  That will take a few years.  Until that
+    time, product-level robustness won't be possible.  However,
+    vendors are certainly interested in these applications, and
+    products may be targeted initially to LAN operation.
+<p>
+    IP multicast host extensions are being added to some vendors'
+    operating systems.  That's one of the first steps.  Proteon has
+    announced IP multicast support in their routers.  No network
+    provider is offering production IP multicast service yet.

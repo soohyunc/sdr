@@ -1,0 +1,40 @@
+<HEAD>
+<TITLE> The Session Description Protocol</TITLE>
+</HEAD>
+<BODY>
+<H1><A NAME=SECTION00020000000000000000> The Session Description Protocol</A></H1>
+<P>
+The Session Description Protocol (SDP) is an ASCII text based protocol for
+describing multimedia sessions and their related scheduling
+information.  It was originally based on the protocol used by the <em>
+sd</em> session directory from Lawrence Berkeley Labs, but has been
+extended and generalised significantly since then.
+<P>
+The purpose of SDP is to convey information about media streams in
+multimedia sessions to allow the recipients of a session description
+to participate in the session.  SDP is primarily intended for use in a
+internetwork, although it is sufficiently general that it can describe
+conferences in other network environments.
+<P>
+A multimedia session, for these purposes, is defined as a set of media
+streams that exist for a duration of time.  Media streams can be
+many-to-many.  The times during which the session is active need not
+be continuous.
+<P>
+Multicast based sessions on the internet differ from many other forms
+of conferencing in that anyone receiving the traffic can join the
+session (unless the session traffic is encrypted).  In such an
+environment, SDP serves two primary purposes - as a means to
+communicate the existence and timing of a session, and as a means to
+convey sufficient information to enable joining and participating in
+the session.  In a unicast environment, only the latter purpose is
+likely to be relevant.
+<P>
+Thus the information SDP must convey includes:
+<UL><LI> Name and purpose of session
+<LI> Time(s) the session is active
+<LI> The media comprising the session
+<LI> Information to receive those media
+</UL>
+<P>
+</BODY>

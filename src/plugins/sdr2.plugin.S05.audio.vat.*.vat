@@ -1,0 +1,35 @@
+media:audio
+proto:vat
+tool:vat
+fmt:pcm
+fmt:pcm2
+fmt:pcm4
+fmt:dvi
+fmt:dvi2
+fmt:dvi4
+fmt:gsm
+fmt:lpc4
+attr:id
+{
+  attrname:Channel Id
+  inputvalue:numeric
+  {
+    min:0
+    max:65535
+    def:0
+  }
+  macro:ID
+  {
+    value:/$(VALUE)
+  }
+}
+attr:recvonly
+{
+  attrname:Receive-Only Mode
+  flags:-R
+}
+flags:-I $(CHAN) 
+flags:-t $(TTL)
+flags:-C $(SESSNAME)
+flags:-f $(FMT)
+flags:$(ADDRESS)/$(PORT)$(ID)

@@ -1,0 +1,14 @@
+CC=gcc
+INCLUDES=-I/cs/research/mice/speedy/common/linux/include
+LIB_DIR=/cs/research/mice/speedy/common/linux/lib
+LIBS= -L$(LIB_DIR) -ltk4.1 -ltcl7.5 \
+	-L/usr/X11R6/lib -lX11	-lieee -lc -lm 
+LIBRARY_TCL = $(LIB_DIR)/tcl7.5
+LIBRARY_TK = $(LIB_DIR)/tk4.1
+CFLAGS=$(INCLUDES) -Wall -DNEEDSTRERROR -DNORANDPROTO
+all::	sdr
+install:
+	cp ./sdr /cs/research/mice/speedy/common/linux/bin/sdr
+	chmod 755 /cs/research/mice/speedy/common/linux/bin/sdr
+
+

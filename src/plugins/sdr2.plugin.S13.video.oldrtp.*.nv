@@ -1,0 +1,9 @@
+media:video
+proto:rtp
+tool:nv
+create:no
+fmt:nv
+flags:
+flags:-ttl $(TTL)
+flags:-title $(SESSNAME)
+flags:$(ADDRESS) $(PORT)

@@ -1,0 +1,2 @@
+#!/bin/sh
+cat Makefile.freebsd ../src/Makefile.template > Makefile

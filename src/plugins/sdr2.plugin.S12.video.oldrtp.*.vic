@@ -1,0 +1,32 @@
+media:video
+proto:rtp
+tool:vic
+create:no
+fmt:h261
+{
+  flags:-f h261
+}
+fmt:nv
+{
+  flags:-f nv -Anv
+}
+fmt:jpeg
+{
+  flags:-f jpeg
+}
+fmt:celb
+{
+  flags:-f celb
+}
+fmt:vic
+{
+  flags:-f h261
+}
+fmt:ivs
+{
+  flags:-f h261 -Aivs
+}
+flags:-t $(TTL)
+flags:-I $(CHAN)
+flags:-C $(SESSNAME)
+flags:$(ADDRESS)/$(PORT)
