@@ -197,7 +197,11 @@ int store_data_to_announce(struct advert_data *addata,
     if (find_key_by_name(keyname, key)!=0)
       return -1;
     addata->length= strlen(adstr);
+#ifdef NEVER
+    encrypt_announcement(adstr, &encdata, &(addata->length), key);
+#else
     encrypt_announcement(adstr, &encdata, (int *)addata->length, key);
+#endif
     addata->data=malloc(addata->length);
     memcpy(addata->data, encdata, addata->length);
     addata->encrypt=1;
@@ -221,134 +225,162 @@ int ui_createsession(dummy, interp, argc, argv)
   unsigned char ttl;
   int port;
   char aid[80]="";
-  char data[2048]="";
-  char new_data[2048]="";
   struct timeval tv;
   char key[MAXKEYLEN]="";
-  char *tempptr;
-#ifdef AUTH
+  char *tempptr=NULL;
   int i, *authinfo=0;
   int  *encinfo=0;
   struct advert_data *addata=NULL;
-  char authstatus[14]="";
-  char encstatus[14]="";
-  char authmessage[400]="";
-  char encmessage[400]="";
+
+  char *data=NULL;
+  char *new_data=NULL;
+  char *authstatus=NULL;
+  char *encstatus=NULL;
+  char *authmessage=NULL;
+  char *encmessage=NULL;
+
   int irand;
   int new_len;
-#endif
+  int rc_storauth;
+  int rc_genauth;
+  int rc_storenc;
 
   tempptr = (char *)malloc(10);
 
-#ifdef AUTH
 /* Clear key */
   for (i=0; i<MAXKEYLEN; ++i) {
     key[i]=0;
   }
-     memset(authmessage,400,0);
-     memset(encmessage,400,0);
-     memset(authstatus,14,0);
-     memset(encstatus,14,0);
-     memset(new_data,2048,0);
-     memset(data,2048,0);
-    
-     
-#endif /* AUTH */
+
+  authmessage = (char *)malloc(400);
+  encmessage  = (char *)malloc(400);
+  authstatus  = (char *)malloc(14);
+  encstatus   = (char *)malloc(14);
+  new_data    = (char *)malloc(2048);
+  data        = (char *)malloc(2048);
+
+  memset(authmessage,0,400);
+  memset(encmessage, 0,400);
+  memset(authstatus, 0,  14);
+  memset(encstatus,  0,  14);
+  memset(new_data,   0,2048);
+  memset(data,       0,2048);
 
   gettimeofday(&tv, NULL);
   endtime=atol(argv[2]);
   ttl=(unsigned char)atoi(argv[5]);
   port=atoi(argv[4]);
   interval=INTERVAL;
-  /*need the copy because parse entry splats the data*/
+
+/* need the copy because parse entry splats the data */
+
   strncpy(data, argv[1], 2047);
   find_key_by_name(argv[6], key);
+
 #ifdef AUTH
-   irand = (random()&0xffff);
+
+  irand = (random()&0xffff);
+
 /* use PGP to create authentication info for the SAP packet */
-  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 )
-   {
-       if(!generate_authentication_info(data,strlen(data), authstatus, irand ,authmessage)) {
-         Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
-         return TCL_OK;
-      } else {
-        Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
-        addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
- 
-        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
-        addata->sapenc_p=NULL;
-        strcpy(authstatus, "Authenticated");
-        if (store_authentication_in_memory(addata , argv[7], irand) == 2) {
-         Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
-          return TCL_OK;
-       } else  {
-         Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
-       }
-     }
-  }
-  else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 )
-   {
-       if(!generate_x509_authentication_info(data,strlen(data), authstatus, irand,authmessage)) {
-	Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
-         return TCL_OK;
-      } else {
-        Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
-         
-        addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
- 
-        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
-        strcpy(authstatus, "Authenticated");
-        if (store_x509_authentication_in_memory(addata , argv[7], irand) == 2 ) {
-         Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
-          return TCL_OK;
-        } else {
+
+  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 ) {
+
+    writelog(printf("ui_create_session: (a) calling generate_authentication_info\n");)
+    if(!generate_authentication_info(data,strlen(data), authstatus, irand ,authmessage)) {
+      Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
+      return TCL_OK;
+    } else {
+      Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
+
+      addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
+      addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+      addata->sapenc_p=NULL;
+#ifdef EDNEVER
+/* this is already set in generate_authentication_info */
+      strcpy(authstatus, "Authenticated");
+#endif
+      writelog(printf("ui_create_session: (a) calling store_authentication_in_memory\n");)
+      rc_storauth = store_authentication_in_memory(addata , argv[7], irand);
+      if ( rc_storauth == 0 || rc_storauth == 2 ) {
+        Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
+        return TCL_OK;
+      } else  {
         Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
-        }
-       }
+      }
      }
-  else {
-     strcpy(authstatus, "noauth");
-     strcpy(authmessage, "none");
-     strcpy(argv[7],"none");
-       }
-   
+
+  } else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 ) {
+
+    if (!generate_x509_authentication_info(data,strlen(data), authstatus, irand,authmessage)) {
+      Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
+      return TCL_OK;
+    } else {
+      Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
+      addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
+      addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+      strcpy(authstatus, "Authenticated");
+      if (store_x509_authentication_in_memory(addata , argv[7], irand) == 2 ) {
+        Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
+        return TCL_OK;
+      } else {
+        Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
+      }
+    }
+  } else {
+   strcpy(authstatus, "noauth");
+   strcpy(authmessage, "none");
+   strcpy(argv[7],"none");
+  }
 
 /* use PGP to create encryption info for the SAP packet  */
-   irand = (random()&0xffff);
-  if ( (strcmp(argv[8],"pgp")==0  && strcmp(argv[6],"")==0) )
-   {
-     if (!generate_encryption_info(data, encstatus, irand,encmessage )) { 
-        Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
-         return TCL_OK;
-      } else {
-        Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
-      }
-    if(addata == NULL)
-    {
-    addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
-    addata->sapauth_p=NULL;
-     }
-    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof(struct priv_header));
-    strcpy(encstatus, "Encrypted");
-    store_encryption_in_memory(addata, argv[8], irand);
-    }
-  else if ( (strcmp(argv[8],"x509")==0  && strcmp(argv[6],"")==0) )
-   {
-     if (!generate_x509_encryption_info(data, encstatus, irand,encmessage)) {
-    Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
-     return TCL_OK;
+
+  irand = (random()&0xffff);
+  if ( (strcmp(argv[8],"pgp")==0  && strcmp(argv[6],"")==0) ) {
+
+    writelog(printf("ui_create_session: (a) calling generate_encryption_info\n");)
+    if (!generate_encryption_info(data, encstatus, irand,encmessage )) { 
+      Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+      return TCL_OK;
     } else {
-    Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
-   }
-    if(addata == NULL)
-    {
-    addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
-    addata->sapauth_p=NULL;
+      Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
+    }
+
+/* if not created addata then we have not been in authentication */
+
+    if(addata == NULL) {
+      addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
+      addata->sapauth_p=NULL;
+    }
+
+    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof(struct priv_header));
+
+    strcpy(encstatus, "Encrypted");
+    writelog(printf("ui_create_session: (a) calling store_encryption_in_memory\n");)
+    rc_storenc = store_encryption_in_memory(addata, argv[8], irand);
+    if ( rc_storenc != 1 ) {
+      writelog(printf("ui_create_session: rc_storenc = %d\n",rc_storenc);)
+      return TCL_OK;
+    }
+
+  } else if ( (strcmp(argv[8],"x509")==0  && strcmp(argv[6],"")==0) ) {
+
+    if (!generate_x509_encryption_info(data, encstatus, irand,encmessage)) {
+      Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+      return TCL_OK;
+    } else {
+      Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
+    }
+
+    if(addata == NULL) {
+      addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
+      addata->sapauth_p=NULL;
      }
     addata->sapenc_p=(struct priv_header *)calloc(1,sizeof(struct priv_header));
     strcpy(encstatus, "Encrypted");
     store_x509_encryption_in_memory(addata, argv[8], irand);
+
    } else {
+
      strcpy(encstatus, "noenc");
      strcpy(encmessage, "none");
 /* fix to avoid memory problem as string "none" is longer than argv[8] if */
@@ -356,52 +388,60 @@ int ui_createsession(dummy, interp, argc, argv)
      strcpy(tempptr, "none");
      argv[8] = tempptr;
    }
+
     if (strcmp(argv[6],"")!=0) {
-        if (find_key_by_name(argv[6], key)!=-1)
-        {
+      if (find_key_by_name(argv[6], key)!=-1) {
         strcpy(encstatus, "success");
         strcpy(encmessage,"Des has been successfull");
         strcpy(argv[8], "des");
-        }
+      }
     }  
-  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 )
-   {
+
+/* edmund - quite happy above is okay - 10.56 - sep 8 */
+/* don't know why we are regenerating the auth info here ? */
+
+    if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 ) {
+
       new_len=gen_new_data(data,new_data,argv[6],addata);
       irand = (random()&0xffff);
-     memset(authmessage,400,0);
-     memset(authstatus,14,0);
+      memset(authmessage,400,0);
+      memset(authstatus,14,0);
       free(addata->sapauth_p);
-        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
-       generate_authentication_info(new_data,new_len, authstatus, irand ,authmessage);
-        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
-        store_authentication_in_memory(addata , argv[7], irand);
-  }
-  else { if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 )
-   {
+      addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+      writelog(printf("ui_create_session: (b) calling generate_authentication_info\n");)
+      rc_genauth = generate_authentication_info(new_data,new_len, authstatus, irand ,authmessage);
+      writelog(printf("ui_create_session: rc from generate_authentication_info = %d\n",rc_genauth);)
+      addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+      writelog(printf("ui_create_session: (b) calling store_authentication_in_memory\n");)
+      rc_storauth = store_authentication_in_memory(addata , argv[7], irand);
+      writelog(printf("ui_create_session: rc from store_authentication_in_memory = %d\n",rc_storauth);)
+
+    } else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx50")==0 ) {
+
       new_len=gen_new_data(data,new_data,argv[6],addata);
       irand = (random()&0xffff);
-     memset(authmessage,0,sizeof(authmessage));
-     memset(authstatus,0,sizeof(authstatus));
+      memset(authmessage,0,sizeof(authmessage));
+      memset(authstatus,0,sizeof(authstatus));
       free(addata->sapauth_p);
-     addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
-       generate_x509_authentication_info(new_data,new_len, authstatus, irand,authmessage);
-        store_x509_authentication_in_memory(addata , argv[7], irand);
-     }
-   }
+      addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+      generate_x509_authentication_info(new_data,new_len, authstatus, irand,authmessage);
+      store_x509_authentication_in_memory(addata , argv[7], irand);
+
+    }
  
- parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port,
-                 tv.tv_sec, "trusted", key, argv[7], authstatus,
-                authinfo, argv[9],argv[8],encstatus,encinfo,argv[10],authmessage,encmessage);
+    parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port,
+         tv.tv_sec, "trusted", key, argv[7], authstatus,
+         authinfo, argv[9],argv[8],encstatus,encinfo,argv[10],authmessage,encmessage);
  
-/*  AUTHDEB(printf("++ debug ++ ***!!*** Calling queue_ad_for_sending from ui_crea tesession: key = %s\n",argv[6]);) */
- 
-  queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6], argv[7], authstatus ,argv[8], encstatus,addata);
+    writelog(printf("++ debug ++ queue_ad_for_sending from ui_createsession: key = %s\n",argv[6]);) 
+    queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6], argv[7], authstatus ,argv[8], encstatus,addata);
  
 #else
 
-  parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port, tv.tv_sec, "trusted", key);
-  queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6]);
+    parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port, tv.tv_sec, "trusted", key);
+    queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6]);
 #endif /* AUTH */
+
   free(tempptr);
   return TCL_OK;
 }
