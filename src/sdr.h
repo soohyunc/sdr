@@ -143,19 +143,15 @@ char *strerror(int i);
 #define FALSE (0)
 #define INTERVAL 300000
 #define MAXADSIZE 2048
-#ifdef AUTH
-/*#define AUTHDEB(a) a*/
-#define AUTHDEB(a)
+
+#ifndef WIN32
+/* to debug uncomment the following line */
+/* #define writelog(a) a */
+#define writelog(a)
 #else
-#define AUTHDEB(a)
+#define writelog(a)
 #endif
  
-#ifdef AUTH
-#define SAUTHDEB(a) a
-/*#define SAUTHDEB(a)*/
-#else
-#define SAUTHDEB(a)
-#endif
 #ifdef AUTH
 #define MAXSIGSIZE        152
 #define MAXKEYSIZE        1024
