@@ -81,7 +81,7 @@ proc gettimenow {} {
 }
 
 proc getreadabletime {} {
-    return [clock format [clock seconds] -format {%H:%M, %d/%m/%y}]
+    return [clock format [clock seconds] -format {%H:%M, %d/%m/%Y}]
 }
 
 set sdrversion "v2.6.0"
@@ -2048,6 +2048,25 @@ proc croptz {time} {
 proc cropdate {time} {
     return "[lindex $time 0] [lindex $time 1] [lindex $time 2]"
 }
+proc nicedate {time {s {}} {s2 {}}} {
+    set date [cropdate $time]
+    # must coordinate following "clock format" with sd_listen.c
+    if {$date == [clock format [clock seconds] -format {%d %b %Y}]} {
+	set hour [fixint [lindex [split [croptime $time] ":"] 0]]
+	if {$hour < 8} {
+		return "early this morning$s2"
+	} elseif {$hour < 12} {
+		return "this morning$s2"
+	} elseif {$hour < 18} {
+		return "this afternoon$s2"
+	} elseif {$hour < 22} {
+		return "this evening$s2"
+	} else {
+		return "tonight$s2"
+	}
+    }
+    return "$s$date"
+}
 
 proc contact {win aid} {
     global ldata
@@ -2139,19 +2158,23 @@ proc text_times_english {aid} {
 		      [get_duration_ix_by_time $ldata($aid,time$i,duration$r)]]
 	      set begintime $ldata($aid,starttime,$i)
               set fromdate [cropdate $ldata($aid,tfrom,$i)]
-              set todate [cropdate $ldata($aid,tto,$i)]
+	      if {$ldata($aid,endtime) == 0} {
+		set todate "forever"	;#XXX handle this better
+	      } else {
+                set todate [cropdate $ldata($aid,tto,$i)]
+	      }
 	      for {set rno 0} {$rno<[llength $ldata($aid,time$i,offset$r)]} {incr rno} {
 	      if {$rno!=0} { append timestr "\nand " }
+	      set rtime [clock format \
+		      [expr [todaytime $begintime]+\
+			[lindex $ldata($aid,time$i,offset$r) $rno]] \
+			-format {%H:%M %Z}]
 	      case $ldata($aid,time$i,interval$r) in {
 		  86400 {
-		      set rtime [clock format \
-			      [expr [todaytime $begintime]+\
-			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
-			        -format {%H:%M %Z}]
-		      set timestr "${timestr}daily at $rtime for $durationstr between $fromdate and $todate"
+		      append timestr "daily at $rtime for $durationstr between $fromdate and $todate"
 		  }
 		  604800 {
-		      set dayofweek ""
+		      append timestr "weekly at $rtime on "
 		      set offsets $ldata($aid,time$i,offset$r)
 		      set rno [llength $offsets]
 		      foreach offset $offsets {
@@ -2161,43 +2184,39 @@ proc text_times_english {aid} {
 					      [expr [llength $offsets]-1]]} {
 			      set pad " and "
 			  } else {set pad ", "}
-			  set dayofweek [format "%s%s%s" $dayofweek $pad\
-			      [lindex [gettime \
-			       [expr $ldata($aid,starttime,$i) + $offset]] 8]]
+			  append timestr $pad
+			  set curstart [expr $begintime + $offset]
+			  set currtime [clock format $curstart -format {%H:%M %Z}]
+			  if {[string compare $rtime $currtime] != 0} {
+				append timestr "$currtime on "
+				set rtime $currtime
+			  }
+			  append timestr [lindex [gettime $curstart] 8]
 		      }
-		      set rtime [clock format [todaytime $begintime] -format {%H:%M %Z}]
-		      set timestr "${timestr}weekly at $rtime on $dayofweek for $durationstr\nfrom $fromdate to $todate"
+		      append timestr " for $durationstr\nfrom $fromdate to $todate"
 		  }
 		  1209600 {
 		      set dayofweek [lindex [gettime $ldata($aid,starttime,$i)] 8]
-		      set rtime [clock format \
-			      [expr [todaytime $begintime]+\
-			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
-			        -format {%H:%M %Z}]
-		      set timestr "${timestr}every 2 weeks at $rtime on $dayofweek for $durationstr\nfrom $fromdate to $todate"
+		      append timestr "every 2 weeks at $rtime on $dayofweek for $durationstr\nfrom $fromdate to $todate"
 		  }
 		  default {
 		      set dayofweek [lindex [gettime $ldata($aid,starttime,$i)] 8]
 		      set secs $ldata($aid,time$i,interval$r)
-		      set interval {}
 		      set seperator {}
 		      set int(604800) "weeks"
 		      set int(86400) "days"
 		      set int(3600) "hours"
 		      set int(60) "minutes"
 		      set int(1) "seconds"
+		      append timestr "every "
 		      foreach ix {604800 86400 3600 60 1} {
 			  if {$secs > $ix} {
-			      append interval $seperator "[expr $secs/$ix] $int($ix)"
+			      append timestr $seperator "[expr $secs/$ix] $int($ix)"
 			      set seperator ", "
 			      set secs [expr $secs % $ix]
 			  }
 		      }
-		      set rtime [clock format \
-			      [expr [todaytime $begintime]+\
-			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
-			        -format {%H:%M %Z}]
-		      set timestr "${timestr}every $interval starting at $rtime on $dayofweek $fromdate for $durationstr until $todate"
+		      append timestr " starting at $rtime on $dayofweek $fromdate for $durationstr until $todate"
 		  }
 	      }
 #here	      
@@ -2205,27 +2224,32 @@ proc text_times_english {aid} {
 	      
 	  }
       } else {
-	  if {[sameday $ldata($aid,tfrom,$i) $ldata($aid,tto,$i)]} {
-	      set timestr [format "%sfrom %s to %s %s on %s" $timestr\
+	  if {$ldata($aid,endtime) == 0} {
+	      set timestr [format "%sstarting at %s %s %s" $timestr\
+			[croptime $ldata($aid,tfrom,$i)]\
+			[croptz $ldata($aid,tfrom,$i)]\
+			[nicedate $ldata($aid,tfrom,$i) {on }]]
+	  } elseif {[sameday $ldata($aid,tfrom,$i) $ldata($aid,tto,$i)]} {
+	      set timestr [format "%sfrom %s to %s %s %s" $timestr\
 			   [croptime $ldata($aid,tfrom,$i)]\
 			       [croptime $ldata($aid,tto,$i)]\
 			       [croptz $ldata($aid,tto,$i)]\
-			       [cropdate $ldata($aid,tfrom,$i)]]
+			       [nicedate $ldata($aid,tfrom,$i) {on }]]
 	  } else {
-	      set timestr [format "%sfrom %s %s to %s" $timestr\
-			   [cropdate $ldata($aid,tfrom,$i)]\
+	      set timestr [format "%sfrom %s %s to %s %s %s" $timestr\
+			       [nicedate $ldata($aid,tfrom,$i) {} { at}]\
 			       [croptime $ldata($aid,tfrom,$i)]\
-			       $ldata($aid,tto,$i)]
+			       [nicedate $ldata($aid,tto,$i) {} { at}]\
+			       [croptime $ldata($aid,tto,$i)]\
+			       [croptz $ldata($aid,tto,$i)]]
 	  }
       }
   }
-#  set timestr "$timestr \nfrom [cropdate $ldata($aid,tfrom)] [croptime $ldata($aid,tfrom)] to $ldata($aid,tto)"
   return $timestr
 }
 
 proc show_times_english {win aid} {
     global ldata
-    set timestr [tt "Session will take place\n"]
     pack [message $win.msg -width 400 -justify center -borderwidth 2 -relief groove -font [option get . mediumFont Sdr]] -after $win.hidden1 -side top -fill x -expand true
     $win.msg configure -text [text_times_english $aid]
 }
