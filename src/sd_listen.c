@@ -48,6 +48,7 @@
 #define MULTICAST
 /*#define DEBUG*/
 
+#include <assert.h>
 #include <locale.h>
 #include <signal.h>
 #ifndef WIN32
@@ -1471,23 +1472,22 @@ void recv_packets(ClientData fd)
                         }
 
 			if(addata==NULL)
-				addata=(struct advert_data *)calloc(1,sizeof(
-					struct advert_data));
-				addata->sapenc_p=(struct priv_header *)calloc(1,
-				sizeof( struct priv_header));
-				addata->sapauth_p=NULL;
-				if (strcmp(enctype,"pgp") == 0)
-				store_encryption_in_memory(addata, enctype, 
-								irand);
-				else
-				store_x509_encryption_in_memory(addata, enctype, 								irand);
-			        if (strncmp(addata->sapenc_p->txt_data, "v=", 2)==0)
-			          {
-                                 memcpy(data , addata->sapenc_p->txt_data,addata->sapenc_p->txt_len);
-                                 length = addata->sapenc_p->txt_len;
-				 }
-                                 else
-				   printf (" Something is wrong ");
+				addata=(struct advert_data *)calloc(1,sizeof(struct advert_data));
+			addata->sapenc_p=(struct priv_header *)calloc(1, sizeof( struct priv_header));
+			addata->sapauth_p=NULL;
+			if (strcmp(enctype,"pgp") == 0) {
+				store_encryption_in_memory(addata, enctype, irand);
+			} else {
+				store_x509_encryption_in_memory(addata, enctype, irand);
+			}
+			/* Sometimes the X509 code doesn't set this up correctly??? [csp] */
+			assert(addata->sapenc_p->txt_data != NULL);
+		        if (strncmp(addata->sapenc_p->txt_data, "v=", 2)==0) {
+                              	memcpy(data , addata->sapenc_p->txt_data,addata->sapenc_p->txt_len);
+                               	length = addata->sapenc_p->txt_len;
+			} else {
+			   	printf (" Something is wrong ");
+			}
 			has_encryption=1;
 			has_security=1;
 		}

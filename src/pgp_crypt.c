@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <sys/types.h>
 #include "sdr.h"
 #include "sap_crypt.h"
@@ -564,8 +565,10 @@ char *check_encryption(struct priv_header *enc_p, char *encinfo,
   enc_status = Tcl_GetVar(interp, "recv_encstatus", TCL_GLOBAL_ONLY);
   key_id = Tcl_GetVar(interp, "recv_enc_asym_keyid", TCL_GLOBAL_ONLY);
     AUTHDEB(printf("writing SDP data to file\n\r");)
-  if(key_id != NULL)
-  memcpy(enc_asym_keyid, key_id,8);
+  if(key_id != NULL) {
+	assert(strlen(key_id) < 9);
+  	memcpy(enc_asym_keyid, key_id, strlen(key_id));
+  }
   enc_message = Tcl_GetVar(interp, "recv_encmessage", TCL_GLOBAL_ONLY);
   if(enc_message != NULL) 
   memcpy(encmessage,enc_message,strlen(enc_message));
