@@ -37,7 +37,9 @@
 #include "crypt.h"
 #include "md5.h"
 #include "prototypes.h"
+#ifdef AUTH
 #include "prototypes_crypt.h"
+#endif
 
 static int getseed();
 static int goodkey(char *key, int *seed);
@@ -83,7 +85,7 @@ extern Tcl_Interp *interp;
 extern int _fmode=_O_BINARY;
 #endif
 
-/* #define DEBUG */
+/*#define DEBUG*/
 
 int set_pass_phrase(char *newphrase)
 {
@@ -109,29 +111,30 @@ int encrypt_announcement(char *srcbuf, char **dstbuf, int *length,
 #endif
   return 0;
 }
-
 int parse_privhdr(char *buf, int *len, char *recvkey)
 {
   struct enc_header *enchead;
   struct priv_header *priv_hdr=NULL;
   char *tmpbuf;
   int hdrlen, padlen, rc;
-
+ 
   tmpbuf=(char *)malloc(*len);
   memcpy(tmpbuf,buf,*len);
-
+ 
   enchead=(struct enc_header *)tmpbuf;
 #ifdef DEBUG
   printf("timeout: %d\n", enchead->timeout);
 #endif
-
+ 
 /* deal with the privacy header */
   priv_hdr = (struct priv_header *) (tmpbuf + sizeof(struct enc_header) );
-
+ 
 #ifdef DEBUG
-  printf("Privacy Header received: version = %d, padding = %d, enctype = %d, hdr_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, (u_int)priv_hdr->hdr_len);
+  printf("Privacy Header received: version = %d, padding = %d, enctype = %d, hdr
+_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, (u_int)pri
+v_hdr->hdr_len);
 #endif
-
+ 
 /* check version of privacy header - only deal with it if it is version 1 */
   if (priv_hdr->version != 1) {
 #ifdef DEBUG
@@ -139,35 +142,39 @@ int parse_privhdr(char *buf, int *len, char *recvkey)
 #endif
     return -1;
   }
-
+ 
   hdrlen = ((int)priv_hdr->hdr_len) *4 ;
   padlen = (int)(tmpbuf[sizeof(struct enc_header)+hdrlen-1]);
-
+ 
 #ifdef DEBUG
   printf("privacy header: hdrlen = %d and padlen = %d\n",hdrlen, padlen);
 #endif
-
-  switch (priv_hdr->enctype) {
+ 
+  switch (priv_hdr->enc_type) {
     case DES:
       *len -= sizeof(struct enc_header) + hdrlen;
-      rc =  (decrypt_announcement(tmpbuf+sizeof(struct enc_header)+hdrlen, len, recvkey));
+      rc =  (decrypt_announcement(tmpbuf+sizeof(struct enc_header)+hdrlen, len,
+recvkey));
       memcpy(buf,tmpbuf+sizeof(struct enc_header)+hdrlen,*len);
-      free(tmpbuf); 
+      free(tmpbuf);
       return rc;
-
+ 
     case DES3: case PGP: case PKCS7: default:
 #ifdef DEBUG
-      fprintf(stderr,"Unsupported Privacy Header type %d (1:3DES,2:PGP,3:PKCS#7)\n",priv_hdr->enctype);
+      fprintf(stderr,"Unsupported Privacy Header type %d (1:3DES,2:PGP,3:PKCS#7)
+\n",priv_hdr->enctype);
 #endif
       return -1;
   }
-
+ 
 }
+
 
 int decrypt_announcement(char *buf, int *len, char *recvkey)
 {
   char key[MAXKEYLEN];
   char *dstbuf, *origbuf;
+  struct enc_header *enchead;
   struct keydata *tmpkey=keylist;
   int length=0;
 #ifdef DEBUG
@@ -179,6 +186,11 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 
   origbuf=malloc(*len);
   memcpy(origbuf,buf,*len);          /* decrypt splats buffer so save it */
+  enchead=(struct enc_header *)buf;
+
+#ifdef DEBUG
+  printf("timeout: %d\n", enchead->timeout);
+#endif
 
 /* No longer have key id so loop through all keys trying to decrypt buffer */
 
@@ -198,11 +210,11 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
     dstbuf=malloc(*len);
 
 #ifdef DEBUG
-    printf("pre-decrypt     len: %d\n",*len);
+    printf("pre-decrypt     len: %d\n", *len-4);
 #endif
-    length=Decrypt(buf,dstbuf,*len);
+    length=Decrypt(buf+4, dstbuf, (*len)-4);
 #ifdef DEBUG
-    printf("post-decrypt length: %d\n",length);
+    printf("post-decrypt length: %d\n", length);
     for(i=0;i<16;i++)
       printf("%d,", dstbuf[i]);
     printf("\n");
@@ -227,7 +239,7 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 /* if reach here then decryption has failed */
   return -1;
 }
-
+ 
 int get_sdr_home(char str[])
 {
 #ifdef WIN32
@@ -399,8 +411,14 @@ int save_keys(void)
 #else
   strcat(keyfilename, "/keys");
 #endif
+#ifdef AUTH
+  write_crypted_file(keyfilename, buf,
+                     no_of_keys*(sizeof(struct keyfile)), passphrase,
+                     "none", NULL);
+#else
 
   write_crypted_file(keyfilename, buf, no_of_keys*(sizeof(struct keyfile)), passphrase);
+#endif
   load_keys();
   return 0;
 }
@@ -471,15 +489,28 @@ int load_keys(void)
   free(buf);
   return 0;
 }
+#ifdef AUTH
+unsigned long hostaddr;
 
+int write_crypted_file(char *afilename, char *data, int len, char *key,
+                       char *auth_type, char *advertid)
+#else
 int write_crypted_file(char *afilename, char *data, int len, char *key) 
+#endif
 {
-  char *buf, *encbuf, *p;
+  char *buf=NULL, *encbuf=NULL, *p=NULL;
   FILE *file;
   struct timeval tv;
   char tmpfilename[MAXFILENAMELEN];
   MD5_CTX context;
   u_char hash[16];
+#ifdef AUTH
+  int auth_len=0,bplen,i=0;
+  struct advert_data *addata=NULL;
+  struct  advert_data *get_encryption_info();	
+  struct auth_header *sapauth_p=NULL;
+  struct sap_header *bp=NULL;
+#endif
   char *filename;
 #ifdef WIN32  /* need to sort out the ~ on windows */
   struct stat sbuf;
@@ -494,9 +525,80 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
 #ifdef DEBUG
   printf("passphrase: %s\n", key);
 #endif
+#ifdef AUTH
+  /* If the announcement contains authentication information then write
+     this data to the file, before it is encrypted. */
+ 
+  if (strcmp(auth_type, "none") !=0 )
+  {
+ 
+        /* Obtains the key certificate and signature info for the advert */
+         addata = get_encryption_info(advertid);
+	  if( addata  == NULL)
+                 {
+                 printf( "something is wrong\n");
+                 return 1;
+                 }
+            sapauth_p = addata->sapauth_p;
+ 		bp = addata->sap_p;
+              if( sapauth_p != NULL)
+        	 if(sapauth_p->auth_type  == 3 )
+		{
+                auth_len = sapauth_p->key_len + sapauth_p->sig_len 
+					+sapauth_p->pad_len+2;
+		} else
+                auth_len = sapauth_p->sig_len+sapauth_p->pad_len+2;
+              if( bp == NULL)
+                {
+              bp=malloc(sizeof(struct sap_header));
+              bp->version = 1;
+              bp->authlen = auth_len /4;
+              bp->enc = 1;
+  	      bp->compress = 0;
+              bp->msgid=0;
+              bp->src=htonl(hostaddr);
+	     }
+ 
+        AUTHDEB( printf(" write sapauth_p->auth_type %d",sapauth_p->auth_type);)
+        buf=malloc(len+24+sizeof(struct sap_header)+auth_len+4+addata->length);
+        memcpy(buf+24, data, len);
+        memcpy(buf+24+len, bp,sizeof(struct sap_header));
+        bplen = sizeof(struct sap_header);
+        memcpy(buf+24+len+bplen, (char *)sapauth_p, 2);
+        memcpy(buf+24+len+bplen+2, sapauth_p->signature, sapauth_p->sig_len);
+        if(sapauth_p->auth_type  == 3 )
+        {
+        memcpy(buf+24+len+bplen+2+sapauth_p->sig_len, sapauth_p->keycertificate,
+                sapauth_p->key_len);
+        len+=(bplen+sapauth_p->sig_len+sapauth_p->key_len+2);
+        }
+        else
+        len+=(bplen+sapauth_p->sig_len+2);
+	if (sapauth_p->pad_len != 0)
+        for (i=0; i<(sapauth_p->pad_len-1); ++i)
+                               {
+ 
+                                        buf[len+24+i] = 0;
+                                }
+ 
+                                buf[len+24+i] = sapauth_p->pad_len;
+                                 len+=sapauth_p->pad_len;
+         /**(u_int*)(buf+24+len)=0; */
+        for (i=0; i<4; i++)
+                 buf[len+24+i]=0;
+        memcpy(buf+24+len+4,addata->data,addata->length);
+        len+=addata->length+4;
+  }
+  else
+  {
+    buf=malloc(len+24+8);
+    memcpy(buf+24, data, len);
+  }
+#else
 
   buf=malloc(len+24+8);
   memcpy(buf+24, data, len);
+#endif
   p=(buf+24);
 
   /*We need as much unpredictable information as possible to serve to
@@ -572,7 +674,6 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
 
   return 0;
 }
-
 int load_crypted_file(char *afilename, char *buf, char *key)
 {
   FILE *file;

@@ -7,6 +7,14 @@ proc load_from_cache {} {
 	    }
 	}
      }
+    set dirname "[resource sdrHome]/asymmetric"
+    if {[file isdirectory $dirname]} {
+	foreach file [glob -nocomplain $dirname/*] {
+	    if {[file isfile $file] && [file readable $file]} {
+		load_cache_entry $file symm
+	    }
+	}
+     }
 }
 
 proc load_from_cache_crypt {} {
@@ -72,23 +80,55 @@ proc write_cache {} {
             }
         }
     }
+    if {[file isdirectory $dirname/asymmetric]==0} {
+        catch {file mkdir $dirname/asymmetric}
+        if {[file isdirectory $dirname/asymmetric]==0} {
+            msgpopup "Error" "Could not create sdr cache directory $dirname/asymmetric"
+            return -1
+        }
+    } else {
+        set filelist [glob -nocomplain $dirname/asymmetric/*]
+        foreach file $filelist {
+            set tmpaid [file tail $file]
+            set flag 0
+            catch {
+                set flag $ldata($tmpaid,session)
+            }
+            if {$flag==0} {
+                file delete $file
+            }
+        }
+    }
+
     set ixnames {}
     catch {set ixnames [array names fullix]}
     foreach i $ixnames {
-      if {$ldata($fullix($i),list) == "norm"} {
-        set filename "$dirname/cache/$fullix($i)"
-        write_cache_entry $fullix($i) $filename clear
+      if {$ldata($fullix($i),trust) != "sip"} {
+      		if {$ldata($fullix($i),list) == "norm"} {
+
+           		set filename "$dirname/cache/$fullix($i)"
+            		write_cache_entry $fullix($i) $filename clear
       } else {
-        if {$ldata($fullix($i),key) != ""} {
-          set filename "$dirname/encrypt/$fullix($i)"
-          write_cache_entry $fullix($i) $filename crypt
-        } else {
-          # its a SIP Invitation 
+		if {$ldata($fullix($i),key) != ""} {
+              set filename "$dirname/encrypt/$fullix($i)"
+              write_cache_entry $fullix($i) $filename crypt
+                } else {
+		  if   {($ldata($fullix($i),enctype) == "pgp") || ($ldata($fullix($i),enctype) == "x509" ) } {
+                 set filename "$dirname/asymmetric/$fullix($i)"
+                write_cache_entry $fullix($i) $filename symm
+          	} else {
+
+          	# its a SIP Invitation
+		}
         }
-      }
-    }
+       }
+    } else {
+	 # its a SIP Invitation
+        }
+     }
 
 }
+	
 
 proc write_cache_entry {aid filename security} {
     global ldata rtp_payload
@@ -105,13 +145,52 @@ proc write_cache_entry {aid filename security} {
     set sap_port $ldata($aid,sap_port)
     set trust $ldata($aid,trust)
     set key $ldata($aid,key)
-    set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust\nk=$key\n[make_session $aid]"
-    if {$security=="clear"} {
-	set file [open $filename w+] 
-	puts $file $adstr
-        close $file
+   set key $ldata($aid,key)
+    set auth $ldata($aid,authtype)
+    set enc $ldata($aid,enctype)
+    if {$ldata($aid,asym_keyid) !=""} {
+    set k1  $ldata($aid,asym_keyid) 
     } else {
-         write_crypted_file $filename $adstr [string length $adstr]
+    set k1 "1"
     }
+    if {$ldata($aid,enc_asym_keyid) !=""} {
+    set k2  $ldata($aid,enc_asym_keyid) 
+    } else {
+    set k2 "2"
+    }
+set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust $auth $enc  $ldata($aid,authstatus) $ldata($aid,encstatus) $k1 $k2 \nk=$key\n[make_session $aid]"
+    switch $security {
+        clear {
+              if {$auth!="none"} {
+              append adstr "\nz=\n"
+              write_authentication $filename $adstr [string length $adstr] $aid
+              } else {
+              set file [open $filename w+]
+              puts $file $adstr
+              close $file
+              }
+            }
+       symm   {
+                append adstr "\nz=\n"
+                write_encryption $filename $adstr [string length $adstr] $aid $auth $enc
+              }
+        crypt {
+               if {$auth!="none" } {
+               append adstr "\nz=\n"
+               }
+              write_crypted_file $filename $adstr [string length $adstr] $aid $auth
+              }
+     }
 }
+
+
+#    set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust\nk=$key\n[make_session $aid]"
+    #if {$security=="clear"} {
+	#set file [open $filename w+] 
+	#puts $file $adstr
+        #close $file
+    #} else {
+         #write_crypted_file $filename $adstr [string length $adstr]
+    #}
+##}
 

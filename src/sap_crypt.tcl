@@ -87,7 +87,7 @@ proc select_security_info {win width height} {
     $win.f.l.f.f.b2 configure -state disabled
     if {[get_passphrase]==""} {
 	$win.f.r.l configure -foreground [resource disabledForeground]
-	set keyfile "[resource sdrHome]/keys"
+	set keyfile "[glob -nocomplain [resource sdrHome]]/keys"
 	if {[file exists $keyfile]&&([file size $keyfile]>0)} {
 	    $win.f.r.b configure -state disabled
 	}
@@ -228,7 +228,7 @@ proc register_key {} {
 
     frame .key.f.f.l
     pack .key.f.f.l -side left
-    label .key.f.f.l.l -text "Encryption key:"
+    label .key.f.f.l.l -text "Encryption key (at least 8 characters):"
     pack .key.f.f.l.l -side top -anchor w
     password .key.f.f.l.e -width 30 -variable tmpkey \
 	 -background [option get . entryBackground Sdr]
@@ -339,7 +339,7 @@ proc submit_qpass { qwin createwin msgwin str } {
   $msgwin configure -text "Checking passphrase"
   update
   if {[load_keys]==1} {
-    show_keys $createwin.f.lb
+    show_keys $createwin.enc.keys.lb
     $msgwin configure -text "Loading cached sessions"
     load_from_cache_crypt
     $msgwin configure -text "$str"
@@ -513,86 +513,180 @@ proc install_key {keyname} {
 }
 
 proc new_mk_session_security {win aid} {
-    global ldata security keylist
+    global ldata security keylist user_id key_id 
+    global enc_old_key_sel auth_old_key_sel asympass asympse
     frame $win -relief groove -borderwidth 2
     pack $win -side left -fill both -expand true
-    checkbutton $win.b1 -text "Encryption" -variable security\
-	-highlightthickness 0 -justify l \
-	-relief flat -onvalue private -offvalue public \
-	-command "toggle_security $win"
-    if {([string compare $aid "new"]!=0)&&($ldata($aid,key)!="")} {
-	set security private
+ 
+    # Authentication code [dlh]
+    # Creates a button to select the authentication type and a text box
+    # for selecting the required (PGP)key.
+    frame $win.auth
+    pack $win.auth -side top -fill both -expand true
+    frame $win.auth.sel
+    pack $win.auth.sel -side top -pady 5 -fill both -expand true
+    label $win.auth.sel.lauth -text "Authentication:"
+    menubutton $win.auth.sel.mauth -menu $win.auth.sel.mauth.menu\
+        -width 10 -borderwidth 1 -relief raised
+    pack $win.auth.sel.lauth $win.auth.sel.mauth -anchor nw -side left\
+        -padx 5
+    menu $win.auth.sel.mauth.menu -tearoff 0
+    $win.auth.sel.mauth.menu add command -label "None"\
+        -command "set_auth_type $win none"
+    $win.auth.sel.mauth.menu add command -label "PGP"\
+        -command "set_auth_type $win pgp"
+    $win.auth.sel.mauth.menu add command -label "X509"\
+        -command "set_auth_type $win x509"
+    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
+        -command "set_auth_type $win cpgp"
+    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
+        -command "set_auth_type $win cx509"
+ 
+    frame $win.auth.keys
+    pack $win.auth.keys -side top -pady 2 -fill both -expand true
+    text $win.auth.keys.lb -width 15 -height 5 -relief flat\
+         -relief sunken -borderwidth 1 -yscroll "$win.auth.keys.ysb set"\
+         -highlightthickness 0
+    pack $win.auth.keys.lb -side left -fill both -expand true
+    scrollbar $win.auth.keys.ysb\
+    -command "$win.auth.keys.lb yview" -borderwidth 1 -highlightthickness 0
+    pack $win.auth.keys.ysb -side right -fill y
+ 
+    frame $win.auth.pwd
+    pack $win.auth.pwd -side top -pady 2 -fill both -expand true
+    label $win.auth.pwd.l -text "Password" -font [resource infoFont]
+    password $win.auth.pwd.e -width 30 -relief sunken\
+        -variable asympass -borderwidth 1\
+        -background [option get . entryBackground Sdr]
+    pack $win.auth.pwd.l -side top -anchor w
+    pack $win.auth.pwd.e -side top -anchor w
+     if {$aid=="new"} {
+        set_auth_type $win none
+        set auth_old_key_sel ""
     } else {
-	set security public
+ 
+        # We are modifying an announcement so display old state of
+        # authentication and encryption selection
+ 	set asym $ldata($aid,authtype)
+        set key_id($asym,auth_cur_key_sel) $ldata($aid,asym_keyid)
+        set auth_old_key_sel $ldata($aid,asym_keyid)
+        set_auth_type $win $ldata($aid,authtype)
+#       puts "Advert id: $aid"
+#       puts "Auth Type: $ldata($aid,authtype)"
     }
-
-    tixAddBalloon $win.b1 Button [tt "Select \"Encryption\" to announce your session to a private group of people who share one of your encryption keys."]
-
-    if {$keylist==""} {
-	set security public
-    }
-
-    set keyfile "[resource sdrHome]/keys"
-    if {([file exists $keyfile] == 0)} {
-        $win.b1 configure -state disabled
-    }
-
-    hlfocus $win.b1
-    pack $win.b1 -side top -anchor nw
-
-    frame $win.f
-    pack $win.f -side top -fill both -expand true
-
-    listbox $win.f.lb -width 15 -height 4 -yscroll "$win.f.sb set" \
-        -relief sunken -borderwidth 1 -selectmode single \
-        -selectforeground [resource activeForeground] \
+    frame $win.enc
+    pack $win.enc -side top -fill both -expand true
+    frame $win.enc.sel
+    pack $win.enc.sel -side top -pady 5 -fill both -expand true
+    label $win.enc.sel.lenc -text "Encryption:"
+    menubutton $win.enc.sel.menc -menu $win.enc.sel.menc.menu\
+        -width 10 -borderwidth 1 -relief raised
+    pack $win.enc.sel.lenc $win.enc.sel.menc -anchor nw -side left\
+        -padx 5
+    menu $win.enc.sel.menc.menu -tearoff 0
+    $win.enc.sel.menc.menu add command -label "None"\
+        -command "set_enc_type $win none $aid"
+    $win.enc.sel.menc.menu add command -label "Des"\
+        -command "set_enc_type $win des $aid"
+    $win.enc.sel.menc.menu add command -label "PGP"\
+        -command "set_enc_type $win pgp $aid"
+    $win.enc.sel.menc.menu add command -label "X509"\
+        -command "set_enc_type $win x509 $aid"
+ 
+    frame $win.enc.keys
+    pack $win.enc.keys -side top -pady 2 -fill both -expand true
+    listbox $win.enc.keys.lb -width 15 -height 5 -yscroll\
+    "$win.enc.keys.ysb set" -relief sunken -borderwidth 1 \
+     -selectmode single  -selectforeground [resource activeForeground] \
         -selectbackground [resource activeBackground] \
         -highlightthickness 0
+    #text $win.enc.keys.lb -width 15 -height 5 -relief flat\
+    #     -relief sunken -borderwidth 1 -yscroll "$win.enc.keys.ysb set"\
+    #     -highlightthickness 0
+    pack $win.enc.keys.lb -side left -fill both -expand true
+    scrollbar $win.enc.keys.ysb\
+    -command "$win.enc.keys.lb yview" -borderwidth 1 -highlightthickness 0
+    pack $win.enc.keys.ysb -side right -fill y
 
-    pack $win.f.lb -side left -fill both -expand true
-    scrollbar $win.f.sb -command "$win.f.lb yview" -borderwidth 1 \
-	 -highlightthickness 0
-    pack $win.f.sb -side right -fill y
-    toggle_security $win
+    if {$keylist==""} {
+        #$win.enc.keys.lb configure -state disabled
+        set security public
+    }
+ 
+    if {$aid=="new"} {
+        set_enc_type $win none $aid
+        set enc_old_key_sel ""
+        set $ldata($aid,key) ""
+        set security public
+    } else {
+
     if {([string compare $aid "new"]!=0)&&($ldata($aid,key)!="")} {
-	update
-	global keylist
-	set ctr 0
-	foreach keyname $keylist {
-	    set key [lindex [find_key_by_name $keyname] 0]
-            if {[string compare $key $ldata($aid,key)]==0} {
-		     $win.f.lb selection set $ctr
-		     break
-		 }
-	    incr ctr
-        }
-
+        set security private
+    } else {
+        set security public
+    }
+        # We are modifying an announcement so display old state of
+        # authentication and encryption selection
+	set asym $ldata($aid,enctype)
+        set key_id($asym,enc_cur_key_sel) $ldata($aid,enc_asym_keyid)
+        set enc_old_key_sel $ldata($aid,enc_asym_keyid)
+        set_enc_type $win $ldata($aid,enctype) $aid
+#       puts "Advert id: $aid"
+#       puts "Enc Type: $ldata($aid,enctype)"
     }
 }
 
+proc enc_show_keys {win aid} {
+    global keylist security
+ 
+ 
+
+     set keyfile "[glob -nocomplain [resource sdrHome]]/keys"
+    if {([file exists $keyfile] == 0)} {
+        #$win.enc.keys.lb configure -state disabled
+    }
+
+    toggle_security $win
+    if {([string compare $aid "new"]!=0)&&($ldata($aid,key)!="")} {
+        update
+        global keylist
+        set ctr 0
+        foreach keyname $keylist {
+            set key [lindex [find_key_by_name $keyname] 0]
+            if {[string compare $key $ldata($aid,key)]==0} {
+                     $win.enc.keys.lb selection set $ctr
+                     break
+                 }
+            incr ctr
+        }
+ 
+     }
+}
+
 proc get_new_session_key { } {
-  set selkey [.new.f3.l.f.lb curselection]
+  set selkey [.new.f3.l.enc.keys.lb curselection]
   if {$selkey==""} {
     errorpopup "No Key Selected" "You must select a key for encryption"
     log "user selected no key"
     return 0
   }
-  .new.f3.l.f.lb get [lindex $selkey 0]
+  .new.f3.l.enc.keys.lb get [lindex $selkey 0]
 }
+
+ 
 
 proc toggle_security {win} {
     global security
     if {$security=="public"} {
-      clear_keys $win.f.lb
+	clear_keys $win.enc.keys.lb
     } else {
-      if {[get_passphrase]==""} {
+    if {[get_passphrase]==""} {
         query_passphrase $win
       } else {
-        show_keys $win.f.lb
+        show_keys $win.enc.keys.lb
       }
     }
 }
-
 proc pref_security {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
     global prefs
 

@@ -145,17 +145,27 @@ int xremove_interface(Display *d);
 int sd_listen(char *address, int port, int *rxsock, int *no_of_socks, int fatal);
 void recv_packets();
 int timed_send_advert(ClientData cd);
+#ifdef AUTH
+
+int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, u_int len, u_int auth_len, struct auth_header *sapauth_h,u_int hdr_len, struct priv_header *sapenc_h);
+ 
+ 
+int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, char * address, int port, unsigned char ttl, char * keyname, char *auth_type, char *authstatus, char *enctype, char *encstatus, struct advert_data *addata);
+ 
+unsigned long parse_entry(char *advertid, char *data, int length, unsigned long src, unsigned long hfrom, char *sap_addr, int port, time_t t, char *trust, char * recvkey, char *authtype, char *authstatus, int *authinfo, char *asym_keyid,  char *enctype, char *encstatus,int *encinfo, char *enc_asym_keyid,char *authmessage,char *encmessage);
+#else
 int send_advert(char *adstr, int sock, unsigned char ttl, int encrypt, 
 		u_int len);
 int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, char * address, int port, unsigned char ttl, char * keyname);
+unsigned long parse_entry(char *advertid, char *data, int length,
+            unsigned long src, unsigned long hfrom,
+            char *sd_addr, int port, time_t t, char *trust, char *recvkey);
+#endif
 int stop_session_ad(char *aid);
 void clean_up_and_die();
 void force_numeric(char *str);
 void splat_tcl_special_chars(char *str);
 void warn_tcl_special_chars(char *str);
-unsigned long parse_entry(char *advertid, char *data, int length,
-            unsigned long src, unsigned long hfrom,
-            char *sd_addr, int port, time_t t, char *trust, char *recvkey);
 void read_old_style_cache();
 #ifdef LISTEN_FOR_SD
 void read_sd_cache();

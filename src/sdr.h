@@ -143,6 +143,30 @@ char *strerror(int i);
 #define FALSE (0)
 #define INTERVAL 300000
 #define MAXADSIZE 2048
+#ifdef AUTH
+/*#define AUTHDEB(a) a*/
+#define AUTHDEB(a)
+#else
+#define AUTHDEB(a)
+#endif
+ 
+#ifdef AUTH
+#define SAUTHDEB(a) a
+/*#define SAUTHDEB(a)*/
+#else
+#define SAUTHDEB(a)
+#endif
+#ifdef AUTH
+#define MAXSIGSIZE        152
+#define MAXKEYSIZE        1024
+#define MAXENCSIZE        2048
+#define MAXDECSIZE        8192
+#define authPGP  1
+#define authX509  2
+#define authPGPC 3
+#define authX509C 4
+#endif
+
 
 /*Missing Prototypes*/
 long lrand48();
@@ -159,6 +183,11 @@ struct advert_data {
   char *aid;
   char *data;
   int tx_sock;
+#ifdef AUTH
+  struct auth_header *sapauth_p;
+  struct sap_header *sap_p;
+  struct priv_header *sapenc_p;
+#endif
   unsigned char ttl;
   unsigned int padding;
   unsigned int length;
@@ -185,23 +214,49 @@ struct sap_header {
   u_int src;
 };
 
-struct enc_header {
-  u_int timeout;
-};
 
-struct priv_header {
+#ifdef AUTH
+struct auth_header {
 #ifdef DIFF_BYTE_ORDER
-  u_int enctype:4;
+  u_int auth_type:4;
   u_int padding:1;
   u_int version:3;
 #else
   u_int version:3;
   u_int padding:1;
-  u_int enctype:4;
+  u_int auth_type:4;
+#endif
+  u_int siglen:8;
+  u_int autlen:8;
+  u_int pad_len;
+  u_int sig_len;
+  u_int key_len;
+  char *signature;
+  char *keycertificate;
+};
+struct priv_header {
+#ifdef DIFF_BYTE_ORDER
+  u_int enc_type:4;
+  u_int padding:1;
+  u_int version:3;
+#else
+  u_int version:3;
+  u_int padding:1;
+  u_int enc_type:4;
 #endif
   u_int hdr_len:8;
+  u_int pad_len;
+  u_int txt_len;
+  u_int encd_len;
+ char  *enc_data;
+ char  *txt_data;
 };
- 
+#endif
+
+struct enc_header {
+  u_int timeout;
+};
+
 #define   DES 0
 #define  DES3 1
 #define   PGP 2

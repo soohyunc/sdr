@@ -179,9 +179,9 @@ proc norm_new {aid} {
 
 		set rpts 1
 		for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-		    if {$r>0} {puts "too complicated - tragic!"}
+		    if {$r>0} {putlogfile "too complicated - tragic!"}
 		    if {$ldata($aid,time$t,offset$r)!="0"} {
-			puts "too many offsets! - tragic!"
+			putlogfile "too many offsets! - tragic!"
 		    }
 		    set start $ldata($aid,starttime,$t)
 		    set end $ldata($aid,endtime,$t)
@@ -201,7 +201,7 @@ proc norm_new {aid} {
 			    } elseif {$ofs=="0 86400 172800 259200 345600"} {
 				set rpt_menu_value([expr $t+1]) 6
 			    } else {
-				puts "help - can't handle this weekly offset"
+				putlogfile "help - can't handle this weekly offset"
 			    }
 			}
 			1209600 {set rpt_menu_value([expr $t+1]) 4}
@@ -563,9 +563,9 @@ Specify the smallest scope that will reach the people you want to communicate wi
 	    } else {
 		set rpts 1
 		for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
-		    if {$r>0} {puts "too complicated - tragic!"}
+		    if {$r>0} {putlogfile "too complicated - tragic!"}
 		    if {$ldata($aid,time$t,offset$r)!="0"} {
-			puts "too many offsets! - tragic!"
+			putlogfile "too many offsets! - tragic!"
 		    }
 		    set start $ldata($aid,starttime,$t)
 		    set end $ldata($aid,endtime,$t)
@@ -585,7 +585,7 @@ Specify the smallest scope that will reach the people you want to communicate wi
 			    } elseif {$ofs=="0 86400 172800 259200 345600"} {
 				set rpt_menu_value([expr $t+1]) 6
 			    } else {
-				puts "help - can't handle this weekly offset"
+				putlogfile "help - can't handle this weekly offset"
 			    }
 			}
 			1209600 {set rpt_menu_value([expr $t+1]) 4}
@@ -619,6 +619,9 @@ proc set_sess_type {win type} {
 	meeting {
 	    $win.m configure -text Meeting
 	}
+	#secure {
+	#    $win.m configure -text Secure
+	#}
 	other {
 	    $win.m configure -text Unspecified
 	}
@@ -842,15 +845,14 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	pack $win.l.4 -side left -anchor w 
     }
 
-    label $win.l.7 -text [tt "Encryption"] -anchor w -width 12
-    pack $win.l.7 -side left -anchor w
-
+     label $win.l.7 -text [tt "Encryption"] -anchor w -width 12
+     pack $win.l.7 -side left -anchor w 
 
     foreach attr [array names media_attr] {
 	unset media_attr($attr)
     }
     if {[string compare $aid "new"]!=0} {
-	for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+        for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
 	    set send($ldata($aid,$mnum,media)) 1
 #	    set media_attr($ldata($aid,$mnum,media)) $ldata($aid,$mnum,vars)
 #	    puts "vars: $ldata($aid,$mnum,vars)"
@@ -916,7 +918,7 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	    -bg [option get . entryBackground Sdr] \
 	     -highlightthickness 0
 
-        checkbutton $win.$media.b1 -variable mediaenc($media) \
+          checkbutton $win.$media.b1 -variable mediaenc($media) \
           -highlightthickness 0  \
          -command "toggleenc $media $win"
  
@@ -927,6 +929,7 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
              -highlightthickness 0
  
         tixAddBalloon $win.$media.enc Entry [tt "The $media encryption key is shown here. You can replace the random key by typing your own key in this field."]
+ 
 
 	set media_fmt($media) \
 	    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
@@ -946,6 +949,7 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	} else {
 	    setmediamode $media $win $send($media) 0
 	}
+
 
 	if {$show_details==1} {
 	    pack $win.$media.proto -side left -fill y -padx 2
@@ -1125,13 +1129,13 @@ window, then \"You\"."]
        $win.f0.e insert 0 "$yourname <$youremail>"
     }
 }
-
+#AUTH do_add creatation
 proc new_mk_session_buttons {win aid} {
     frame $win
     if {[string compare $aid "new"]!=0} {
 	button $win.create -text [tt "Modify"] -command \
 	    "if {\[create\]==1} \
-                { ui_stop_session_ad $aid;\
+                { do_ad_creation $aid;\
                   destroy .new}"
 	tixAddBalloon $win.create Button [tt "Click here to advertise the modified session.  
 
@@ -1368,7 +1372,7 @@ proc changetime {widget change} {
 	    }
 	}
     } else {
-	if {$change!=1} {puts "odd change value $change"}
+	if {$change!=1} {putlogfile "odd change value $change"}
 	if {[set [set widget](mins)]==0} {
 	    set [set widget](mins) 30
 	    incr [set widget](timeofday) 1800
@@ -1665,7 +1669,7 @@ proc create_menu {mname mlist defattrlist media mode} {
 	#delete old menus if we're using this to modify a menu
 	if {[$mname index end]!="none"} {
 	    for {set i 0} {$i <= [$mname index end]} {incr i} {
-#		puts "$i [$mname index end]"
+#		putlogfile "$i [$mname index end]"
 		catch {destroy [$mname entrycget $i -menu]}
 	    }
 	    $mname delete 0 end
@@ -1820,6 +1824,17 @@ proc create {} {
     global rtp_payload sdrversion security
     global mediaenc security
 
+#AUTH
+    global auth_type
+    global enc_type
+    global sess_auth_status
+    global sess_enc_status
+    global user_id asympass key_id
+    global validpassword
+    global validauth
+    global validfile
+    global validkey
+
     log "creating a session"
     if {$ttl==0} { set ttl [.new.f3.rr.f.e get] }
     if {($ttl < 0)|($ttl > 255)} {
@@ -1957,7 +1972,64 @@ proc create {} {
 	set keyname ""
 	log "new session was not encrypted"
     }
-    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
+#    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
+
+#AUTH - ensure passphrase entered if auth key selected
+	if { ($auth_type == "pgp" || $auth_type == "cpgp" || $auth_type =="none" ) } {
+     	set aauth "pgp"
+    }
+    if { ($auth_type == "x509" || $auth_type == "cx509" ) } {
+     	set aauth "x509"
+    }
+if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
+      set asym "pgp"
+        }
+  if { $enc_type == "x509" || $enc_type == "none"} {
+      set asym "x509"
+        }
+ 
+    if { ($user_id(pgp,auth_cur_key_sel)!="") &&\
+         $asympass=="" } {
+                errorpopup "No Passphrase!"\
+                "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
+                 entered before authentication information can be \
+                 constructed for this session announcement."
+                log "User did not enter a passphrase for key certificate"
+                return 0
+    }
+ set validpassword 0
+ set validauth 0
+ set validfile 0
+    set validkey 0
+#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $key_id(pgp,auth_cur_key_sel)
+ 
+#authentication and Encryption
+createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aauth,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
+
+    if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
+        errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect passphrase for key certificate"
+        return 0
+    }
+    if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx509"  )} {
+        errorpopup "Secude failed" "The Signed DATA Failed for USER\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect passphrase for key certificate"
+        return 0
+    }
+    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx509" )} {
+        errorpopup "Length" "Authentication Lenght very big for the Sap session\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect ling Cert for key certificate"
+        return 0
+    }
+    if {$validfile==0 && ($enc_type =="pgp" || $enc_type=="x509")} {
+        errorpopup "File not created" "Probably public key is missing\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "Cnnot create file on SDR home directory"
+        return 0
+    }
     update
     after 3000 write_cache
     log "new session announced at [getreadabletime]"
@@ -2266,4 +2338,109 @@ proc generate_address {args} {
 
 proc generate_port {media} {
     ui_generate_port $media
+}
+
+
+# ------------------------------------------------------------
+# start of this part of PGP AUTHentication code (AUTH)
+# ------------------------------------------------------------
+proc set_auth_type {win type} {
+    global auth_type
+    global cert
+    set auth_type $type
+    switch $type {
+	none {
+            $win.auth.sel.mauth configure -text None
+            set cert "0"
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+        }
+        pgp {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text PGP
+            show_pgp_keys $win
+        }
+        x509 {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            set cert "cert"
+            $win.auth.sel.mauth configure -text X509
+            show_pkcs7_keys $win
+        }
+        cpgp {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text PGP+CERT
+            show_pgp_keys $win
+        }
+       cx509 {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text X509+CERT
+            set cert "path"
+            show_pkcs7_keys $win
+        }
+        other {
+            $win.auth.sel.mauth configure -text Unspecified
+
+        }
+    }
+}
+# ------------------------------------------------------------
+# end of this part of PGP AUTHentication code (AUTH)
+# ------------------------------------------------------------
+ 
+proc set_enc_type {win type aid} {
+    global enc_type security
+    set enc_type $type
+    switch $type {
+        none {
+            $win.enc.sel.menc configure -text None
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            set security public
+            clear_keys $win
+        }
+       des {
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            clear_keys $win
+            $win.enc.sel.menc configure -text Des
+            set security private
+            enc_show_keys $win $aid
+ 
+        }
+        pgp {
+            set security public
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            clear_keys $win
+            $win.enc.sel.menc configure -text PGP
+            enc_show_pgp_keys $win $aid
+        }
+        x509 {
+            set security public
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            $win.enc.sel.menc configure -text X509
+            enc_show_x509_keys $win $aid
+        }
+        other {
+            set security public
+            $win.enc.sel.menc configure -text Unspecified
+
+        }
+    }
+proc do_ad_creation {aid} {
+    global auth_old_key_sel key_id
+    global enc_old_key_sel
+    if {[string compare $auth_old_key_sel $key_id(pgp,auth_cur_key_sel)]==0 || [string compare $enc_old_key_sel $key_id(pgp,enc_cur_key_sel)]==0} {
+        ui_stop_session_ad $aid
+        destroy .new
+    } else {
+ 
+        destroy .new
+    }
+}
 }

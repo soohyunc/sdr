@@ -18,7 +18,11 @@ struct keyfile {
 
 int save_keys(void);
 int load_keys(void);
+#ifndef AUTH
 int write_crypted_file(char *filename, char *data, int len, char *key);
+#else
+int find_keyname_by_key(char *key, char *keyname);
+#endif
 int load_crypted_file(char *filename, char *buf, char *key);
 
 /* for random.c */

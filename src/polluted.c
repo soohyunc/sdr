@@ -4,7 +4,6 @@
 #include "ui_fns.h"
 
 int init_security();
-
 extern Tcl_Interp *interp;
 
 extern char hostname[];
@@ -14,14 +13,14 @@ extern int rxsock[];
 extern int no_of_rx_socks;
 extern int doexit;
 
+/* #define DEBUG */
+
 struct keydata* keylist;
 char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
 extern unsigned long hostaddr;
 extern int debug1;
 extern int doexit;
-
-/* #define DEBUG */
 
 int init_security()
 {
@@ -78,7 +77,7 @@ int parse_announcement(int enc, char *data, int length,
 #ifdef DEBUG
     printf("received encrypted announcement...\n");
 #endif
-    if (parse_privhdr(data, &length, recvkey)!=0) {
+    if (decrypt_announcement(data, &length, recvkey)!=0) {
 #ifdef DEBUG
       printf("      ... cannot decrypt announcement!\n");
 #endif
@@ -91,18 +90,29 @@ int parse_announcement(int enc, char *data, int length,
 
   /* if someone else is repeating our announcements, be careful
      not to re-announce their modified version ourselves */
+#ifdef AUTH
+ if (src == hfrom || src != hostaddr) {
+    parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"trusted",recvkey ,
+                NULL, NULL, 0, NULL,NULL, NULL, 0, NULL,NULL,NULL);
+  } else {
+    parse_entry(NULL,data,length,src,hfrom,addr,port,sec,"untrusted",recvkey,
+                NULL, NULL, 0, NULL,NULL, NULL, 0, NULL,NULL,NULL);
+  }
+#else
+ 
   if (src == hfrom || src != hostaddr)
     {
       parse_entry(NULL, data, length, src, hfrom,
-		  addr, port,
-		  sec, "trusted", recvkey);
+                  addr, port,
+                  sec, "trusted", recvkey);
     }
   else
     {
       parse_entry(NULL, data, length, src, hfrom,
-		  addr, port,
-		  sec, "untrusted", recvkey);
+                  addr, port,
+                  sec, "untrusted", recvkey);
     }
+#endif /*AUTH*/
   return 0;
 }
 
@@ -112,7 +122,7 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
   struct sap_header *bp;
   int len_add=0;
   int privlen=0;
-
+ 
   bp=(struct sap_header *)buf;
   bp->compress=0;
   if (encrypt==0) {
@@ -120,16 +130,16 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
     bp->enc=0;
   } else {
     bp->enc=1;
-
+ 
 /* first add the timeout field */
-    *(u_int*)(buf+sizeof(struct sap_header))=0;		/* timeout */
-
+    *(u_int*)(buf+sizeof(struct sap_header))=0;         /* timeout */
+ 
 /* now add the privacy header */
-
-    privlen = add_privacy_header(buf);
-
+ 
+    privlen = add_privacy_header(buf,0);
+ 
 /* add the data after the privacy header */
-
+ 
     memcpy(buf+sizeof(struct sap_header)+4+privlen, adstr, len);
 #ifdef DEBUG
     printf("sending encrypted session\n");
@@ -143,41 +153,40 @@ int build_packet(char *buf, char *adstr, int len, int encrypt)
   bp->authlen=0;
   return len_add;
 }
-
-int add_privacy_header(char *buf)
+ 
+int add_privacy_header(char *buf, int auth_len)
 {
   struct priv_header *priv_hdr;
   int padlen, privlen=0;
   priv_hdr = (struct priv_header *)malloc(sizeof(struct priv_header));
-
+ 
 /* only DES is used at the moment so the header is very simple */
-
+ 
   priv_hdr->version=1;
   priv_hdr->padding=1;
-  priv_hdr->enctype=DES;
+  priv_hdr->enc_type=DES;
   priv_hdr->hdr_len=1;       /* No. of 32 bit words in privacy header       */
   padlen = 2;                /* always 2 padding bytes at end of DES header */
-
+ 
 #ifdef DEBUG
-  printf("Privacy Header built: version = %d, padding = %d, enctype = %d, hdr_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, priv_hdr->hdr_len);
+  printf("Privacy Header built: version = %d, padding = %d, enctype = %d, hdr_len = %d\n",priv_hdr->version, priv_hdr->padding, priv_hdr->enctype, priv_hdr->hdr
+_len);
 #endif
-
 /* copy priv_hdr to buf */
-
-  memcpy(buf+sizeof(struct sap_header)+4, priv_hdr, (priv_hdr->hdr_len*4) );
-
+ 
+  memcpy(buf+sizeof(struct sap_header)+auth_len+4, priv_hdr, (priv_hdr->hdr_len*4) );
+ 
 /* set the padding byte number at end of header */
-  
-  buf[sizeof(struct sap_header)+4+(priv_hdr->hdr_len*4)-1] = (char)padlen;
-
+ 
+  buf[sizeof(struct sap_header)+4+auth_len+(priv_hdr->hdr_len*4)-1] = (char)padlen;
+ 
 /* finished with the privacy header so free it up and return length of header */
-  
+ 
   privlen = priv_hdr->hdr_len*4;
   free(priv_hdr);
-
+ 
   return(privlen);
 }
-
 int store_data_to_announce(struct advert_data *addata, 
 			   char * adstr, char *keyname)
 {
@@ -187,12 +196,14 @@ int store_data_to_announce(struct advert_data *addata,
   if (strcmp(keyname,"")!=0) {
     if (find_key_by_name(keyname, key)!=0)
       return -1;
+    addata->length= strlen(adstr);
     encrypt_announcement(adstr, &encdata, &(addata->length), key);
     addata->data=malloc(addata->length);
     memcpy(addata->data, encdata, addata->length);
     addata->encrypt=1;
     return 0;
   } else {
+    addata->length= strlen(adstr);
     addata->data=malloc(addata->length);
     addata->encrypt=0;
     memcpy(addata->data, adstr, addata->length);
@@ -209,10 +220,36 @@ int ui_createsession(dummy, interp, argc, argv)
   int endtime, interval;
   unsigned char ttl;
   int port;
-  char aid[80];
-  char data[2048];
+  char aid[80]="";
+  char data[2048]="";
+  char new_data[2048]="";
   struct timeval tv;
   char key[MAXKEYLEN]="";
+#ifdef AUTH
+  int i, *authinfo=0;
+  int  *encinfo=0;
+  struct advert_data *addata=NULL;
+  char authstatus[14]="";
+  char encstatus[14]="";
+  char authmessage[400]="";
+  char encmessage[400]="";
+  int irand;
+  int new_len;
+#endif
+#ifdef AUTH
+/* Clear key */
+  for (i=0; i<MAXKEYLEN; ++i) {
+    key[i]=0;
+  }
+     memset(authmessage,400,0);
+     memset(encmessage,400,0);
+     memset(authstatus,14,0);
+     memset(encstatus,14,0);
+     memset(new_data,2048,0);
+     memset(data,2048,0);
+    
+     
+#endif /* AUTH */
 
   gettimeofday(&tv, NULL);
   endtime=atol(argv[2]);
@@ -222,13 +259,146 @@ int ui_createsession(dummy, interp, argc, argv)
   /*need the copy because parse entry splats the data*/
   strncpy(data, argv[1], 2047);
   find_key_by_name(argv[6], key);
+#ifdef AUTH
+   irand = (random()&0xffff);
+/* use PGP to create authentication info for the SAP packet */
+  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 )
+   {
+       if(!generate_authentication_info(data,strlen(data), authstatus, irand ,authmessage)) {
+         Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
+         return TCL_OK;
+      } else {
+        Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
+        addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
+ 
+        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+        addata->sapenc_p=NULL;
+        strcpy(authstatus, "Authenticated");
+        if (store_authentication_in_memory(addata , argv[7], irand) == 2) {
+         Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
+          return TCL_OK;
+       } else  {
+         Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
+       }
+     }
+  }
+  else if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx509")==0 )
+   {
+       if(!generate_x509_authentication_info(data,strlen(data), authstatus, irand,authmessage)) {
+	Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
+         return TCL_OK;
+      } else {
+        Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
+         
+        addata=(struct advert_data *)calloc(1 , sizeof (struct advert_data));
+ 
+        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+        strcpy(authstatus, "Authenticated");
+        if (store_x509_authentication_in_memory(addata , argv[7], irand) == 2 ) {
+         Tcl_SetVar(interp, "validauth", "0", TCL_GLOBAL_ONLY);
+          return TCL_OK;
+        } else {
+        Tcl_SetVar(interp, "validauth", "1", TCL_GLOBAL_ONLY);
+        }
+       }
+     }
+  else {
+     strcpy(authstatus, "noauth");
+     strcpy(authmessage, "none");
+     strcpy(argv[7],"none");
+       }
+   
+
+/* use PGP to create encryption info for the SAP packet  */
+   irand = (random()&0xffff);
+  if ( (strcmp(argv[8],"pgp")==0  && strcmp(argv[6],"")==0) )
+   {
+     if (!generate_encryption_info(data, encstatus, irand,encmessage )) { 
+        Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+         return TCL_OK;
+      } else {
+        Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
+      }
+    if(addata == NULL)
+    {
+    addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
+    addata->sapauth_p=NULL;
+     }
+    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof(struct priv_header));
+    strcpy(encstatus, "Encrypted");
+    store_encryption_in_memory(addata, argv[8], irand);
+    }
+  else if ( (strcmp(argv[8],"x509")==0  && strcmp(argv[6],"")==0) )
+   {
+     if (!generate_x509_encryption_info(data, encstatus, irand,encmessage)) {
+    Tcl_SetVar(interp, "validfile", "0", TCL_GLOBAL_ONLY);
+     return TCL_OK;
+    } else {
+    Tcl_SetVar(interp, "validfile", "1", TCL_GLOBAL_ONLY);
+   }
+    if(addata == NULL)
+    {
+    addata=(struct advert_data *)calloc(1,sizeof (struct advert_data));
+    addata->sapauth_p=NULL;
+     }
+    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof(struct priv_header));
+    strcpy(encstatus, "Encrypted");
+    store_x509_encryption_in_memory(addata, argv[8], irand);
+   } else {
+     strcpy(encstatus, "noenc");
+     strcpy(encmessage, "none");
+     strcpy(argv[8], "none");
+   }
+    if (strcmp(argv[6],"")!=0) {
+        if (find_key_by_name(argv[6], key)!=-1)
+        {
+        strcpy(encstatus, "success");
+        strcpy(encmessage,"Des has been successfull");
+        strcpy(argv[8], "des");
+        }
+    }  
+  if ( strcmp(argv[7],"pgp")==0 || strcmp(argv[7],"cpgp")==0 )
+   {
+      new_len=gen_new_data(data,new_data,argv[6],addata);
+      irand = (random()&0xffff);
+     memset(authmessage,400,0);
+     memset(authstatus,14,0);
+      free(addata->sapauth_p);
+        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+       generate_authentication_info(new_data,new_len, authstatus, irand ,authmessage);
+        addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+        store_authentication_in_memory(addata , argv[7], irand);
+  }
+  else { if ( strcmp(argv[7],"x509")==0 || strcmp(argv[7],"cx509")==0 )
+   {
+      new_len=gen_new_data(data,new_data,argv[6],addata);
+      irand = (random()&0xffff);
+     memset(authmessage,0,sizeof(authmessage));
+     memset(authstatus,0,sizeof(authstatus));
+      free(addata->sapauth_p);
+     addata->sapauth_p=(struct auth_header *)calloc(1,sizeof(struct auth_header));
+       generate_x509_authentication_info(new_data,new_len, authstatus, irand,authmessage);
+        store_x509_authentication_in_memory(addata , argv[7], irand);
+     }
+   }
+ 
+ parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port,
+                 tv.tv_sec, "trusted", key, argv[7], authstatus,
+                authinfo, argv[9],argv[8],encstatus,encinfo,argv[10],authmessage,encmessage);
+ 
+/*  AUTHDEB(printf("++ debug ++ ***!!*** Calling queue_ad_for_sending from ui_crea tesession: key = %s\n",argv[6]);) */
+ 
+  queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6], argv[7], authstatus ,argv[8], encstatus,addata);
+ 
+#else
+
   parse_entry(aid, data, strlen(data), hostaddr, hostaddr, argv[3], port, tv.tv_sec, "trusted", key);
   queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], port, ttl, argv[6]);
+#endif /* AUTH */
+
   return TCL_OK;
 }
  
-
-
 int ui_quit()
 {
   /*Save any encryption keys we gained*/
@@ -263,9 +433,37 @@ int ui_write_crypted_file(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;
 {
+#ifdef AUTH
+write_crypted_file(argv[1], argv[2], atoi(argv[3]), get_pass_phrase(),
+                     argv[5], argv[4]);
+#else
   write_crypted_file(argv[1], argv[2], atoi(argv[3]), get_pass_phrase());
+#endif
   return (TCL_OK);
 }
+#ifdef AUTH
+int ui_write_authentication(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  write_authentication(argv[1], argv[2],atoi(argv[3]),argv[4]);
+  return (TCL_OK);
+}
+int ui_write_encryption(dummy, interp, argc, argv)
+    ClientData dummy;                   /* Not used. */
+    Tcl_Interp *interp;                 /* Current interpreter. */
+    int argc;                           /* Number of arguments. */
+    char **argv;
+{
+  write_encryption(argv[1], argv[2],atoi(argv[3]),
+                        argv[5],argv[6], argv[4]);
+ 
+  return (TCL_OK);
+}
+#endif
+
 
 int ui_add_key(dummy, interp, argc, argv)
     ClientData dummy;                   /* Not used. */
@@ -318,7 +516,7 @@ int ui_find_key_by_name(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;
 {
-  char key[MAXKEYLEN];
+  char key[MAXKEYLEN]="";
   find_key_by_name(argv[1], key);
   sprintf(interp->result, "{%s}", key);
   return TCL_OK;
@@ -329,8 +527,233 @@ int ui_find_keyname_by_key(dummy, interp, argc, argv)
     int argc;                           /* Number of arguments. */
     char **argv;
 {
-  char keyname[MAXKEYLEN];
+  char keyname[MAXKEYLEN]="";
   find_keyname_by_key(argv[1], keyname);
   sprintf(interp->result, "{%s}", keyname);
   return TCL_OK;
 }
+
+int gen_new_data(char *adstr,char *new_data, char *keyname,struct advert_data *addata )
+
+{
+        FILE *file=NULL;
+	char *homedir;
+	char testname[256];
+        char *buf=NULL;
+        int newlen;
+        struct sap_header *bp=NULL;
+        struct auth_header *sapauth_p=NULL;
+        struct priv_header *sapenc_p=NULL;
+        int auth_len=0;
+        int hdr_len=0;
+        int privlen=0;
+ 
+                    sapauth_p = addata->sapauth_p;
+                    if (addata->sapenc_p != NULL)
+                    sapenc_p = addata->sapenc_p;
+        switch  (sapauth_p->auth_type) {
+	case 3:
+        case 4:
+        auth_len = sapauth_p->sig_len+sapauth_p->key_len+2+sapauth_p->pad_len;
+        break;
+	case 1:
+        case 2:
+                auth_len = sapauth_p->sig_len+2+sapauth_p->pad_len;
+        break;
+	default:
+                  auth_len = 0;
+                  sapauth_p = NULL;
+        break;
+          }
+                if (strcmp(keyname,"") != 0){
+                    store_data_to_announce(addata, adstr, keyname);
+                } else if (sapenc_p != NULL) {
+                    if ( sapenc_p->enc_type == 2 ||  sapenc_p->enc_type == 3 ) {
+                       hdr_len = sapenc_p->encd_len+2+sapenc_p->pad_len;
+                       addata->length = sapenc_p->encd_len+sapenc_p->pad_len;
+                       if (addata->data !=NULL)
+                         free (addata->data);
+                       addata->data = malloc(addata->length);
+                       memcpy(addata->data, sapenc_p->enc_data, addata->length);
+ 
+                     }
+                } else 
+                  {
+                  hdr_len = 0;
+                 addata->length = strlen(adstr);
+                       if (addata->data !=NULL)
+                         free (addata->data);
+                 addata->data = malloc(strlen(adstr));
+                 addata->encrypt=0;
+                 memcpy(addata->data, adstr, strlen(adstr));
+		}
+ 
+         if (hdr_len != 0) {
+            newlen=sizeof(struct sap_header)+4+hdr_len;
+          } else if (addata->encrypt !=0) {
+                newlen=sizeof(struct sap_header)+4+addata->length;
+         } else {
+                newlen=sizeof(struct sap_header)+addata->length;
+               }
+ 
+         buf=(char *)malloc(newlen);
+         bp=malloc(sizeof(struct sap_header));
+            bp->compress=0;
+            bp->src=htonl(hostaddr);
+            bp->msgid=0;
+            bp->version=1;
+            bp->type=0;
+            bp->authlen=auth_len/4;
+        if (addata->encrypt==0 && hdr_len==0) {
+                bp->enc=0;
+                memcpy(buf,bp,sizeof(struct sap_header));
+                free(bp);
+                memcpy(buf+sizeof(struct sap_header), addata->data, addata->length);   
+ 
+        } 
+        else 
+        {
+                bp->enc=1;
+                memcpy(buf,bp,sizeof(struct sap_header));
+                free(bp);
+                if (addata->encrypt !=0 ) {
+                        *(u_int*)(buf+sizeof(struct sap_header))=0;
+                        privlen = add_privacy_header(buf,0);
+                        memcpy(buf+sizeof(struct sap_header)+4,
+                                                addata->data, addata->length);
+                }
+                else
+                {
+                     *(u_int*)(buf+sizeof(struct sap_header))=0;
+                     memcpy((buf+sizeof(struct sap_header))+4, sapenc_p, 2);
+                     memcpy(buf+sizeof(struct sap_header)+4+2,
+                                                addata->data, addata->length);
+ 
+                }
+        }
+      free(addata->data);
+      addata->length =0;
+      memcpy(new_data,buf,newlen); 
+      free(buf);
+homedir=(char *)getenv("HOME");
+#ifdef WIN32
+sprintf(testname, "%s\\sdr\\data_snd.txt", homedir);
+#else
+sprintf(testname, "%s/.sdr/data_snd.txt", homedir);
+#endif
+file=fopen(testname, "w");
+fwrite(new_data, 1, newlen, file);
+fclose(file);
+
+
+return newlen;
+}
+int gen_new_auth_data(char *buf, char *new_data,struct sap_header *bp,int auth_len,int len,int enc)
+{
+FILE *file=NULL;
+char *homedir;
+char testname[256];
+int len1;
+int newlen;
+char *newbuf=NULL;
+char *sbuf;
+struct sap_header *bp1=NULL;
+bp1=malloc(sizeof(struct sap_header));
+bp1->version=bp->version;
+bp1->type=bp->type;
+bp1->enc=bp->enc;
+bp1->compress=bp->compress;
+bp1->authlen=bp->authlen;
+bp1->src=bp->src;
+bp1->msgid=0;
+	switch (enc) {
+	case 0:
+         newlen=len-auth_len;
+        newbuf = malloc(newlen);
+        memcpy(newbuf,bp1,sizeof(struct sap_header));
+        sbuf=buf+sizeof(struct sap_header)+auth_len;
+        len1 = newlen-sizeof(struct sap_header);
+        memcpy(newbuf+sizeof(struct sap_header),sbuf,len1);
+        break;
+	case 1:
+	newlen=len-auth_len;
+	newbuf = malloc(newlen);
+        memcpy(newbuf,bp1,sizeof(struct sap_header));
+	sbuf=buf+8+auth_len;
+	len1 = newlen-8;
+        memcpy(newbuf+sizeof(struct sap_header),sbuf,2);
+        sbuf+=2;
+        len1=len1-2;
+	memcpy(newbuf+8+2,sbuf,len1 );
+	break;
+	case 2:
+	newlen=len-auth_len-4;
+	newbuf = malloc(newlen);
+        memcpy(newbuf,bp1,sizeof(struct sap_header));
+	sbuf=buf+8+auth_len;
+	memcpy(newbuf+8,sbuf,4);
+	sbuf=sbuf+4+4;
+	len1=newlen-8-4;
+	memcpy(newbuf+8+4,sbuf,len1);
+	break;
+	}
+memcpy(new_data,newbuf,newlen);
+homedir=(char *)getenv("HOME");
+#ifdef WIN32
+sprintf(testname, "%s\\sdr\\data_rcv.txt", homedir);
+#else
+sprintf(testname, "%s/.sdr/data_rcv.txt", homedir);
+#endif
+file=fopen(testname, "w");
+fwrite(new_data, 1, len, file);
+fclose(file); 
+return newlen;
+}
+int gen_new_cache_data(char *new_data, struct sap_header *bp,char *data,int data_len,int enc)
+{
+FILE *file=NULL;
+char *homedir;
+char testname[256];
+int len;
+char *sbuf;
+struct sap_header *bp1=NULL;
+bp1=malloc(sizeof(struct sap_header));
+bp1->version=bp->version;
+bp1->type=bp->type;
+bp1->enc=bp->enc;
+bp1->compress=bp->compress;
+bp1->authlen=bp->authlen;
+bp1->src=bp->src;
+bp1->msgid=0;
+len =data_len-1+sizeof(struct sap_header);
+memcpy(new_data,bp1,sizeof(struct sap_header));
+free(bp1);
+	
+	switch (enc) {
+	case 1:
+	/**(u_int*)(new_data+sizeof(struct sap_header))=0;*/
+	len+=4;
+	memcpy((new_data+sizeof(struct sap_header))+4,data,data_len);
+	break;
+	case 0:
+	memcpy(new_data+sizeof(struct sap_header),data,data_len);
+        len = len +1;
+	break;
+	case 2:
+	memcpy((new_data+sizeof(struct sap_header)),data,data_len);
+	break;
+	}
+
+homedir=(char *)getenv("HOME");
+#ifdef WIN32
+sprintf(testname, "%s\\sdr\\data_ch.txt", homedir);
+#else
+sprintf(testname, "%s/.sdr/data_ch.txt", homedir);
+#endif
+file=fopen(testname, "w");
+fwrite(new_data, 1, len, file);
+fclose(file);
+
+return len;
+}
+
