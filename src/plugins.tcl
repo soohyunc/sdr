@@ -718,7 +718,7 @@ proc apply_startup_rule {aid mnum proto fmt rule attrlist} {
 
 # replaced next line as it adds {} around elements of cmd line. New one doesn't
 #   set rule [lrange $rule 1 end]
-    set rule [ string range $rule [string wordend $rule 0] end]
+    set rule [ string range $rule [string first " " $rule] end]
 
     foreach noattr \
 	"$noattrlist($tool.$media.$proto) $noattrlist($tool.$media.$proto.$fmt)" {
