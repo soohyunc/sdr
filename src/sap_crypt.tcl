@@ -1019,7 +1019,7 @@ proc set_enc_type {win type aid} {
             enc_clear_asym_keys $win pgp
             clear_keys $win
             $win.enc.sel.menc configure -text PGP
-            enc_show_pgp_keys $win $aid
+            enc_pgp_get_key_list $win $aid
         }
         x509 {
             set security public
