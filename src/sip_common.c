@@ -1354,7 +1354,8 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    extract_field(buf, cseq, 80, "Cseq");
 	    fprintf (stderr,"path: >%s<\n", path);
 	    fprintf (stderr,"cseq: >%s<\n", cseq);
-		Tcl_SetVar(interp, "sip_callid", callid, TCL_GLOBAL_ONLY);
+		sprintf (srcuser,"[toplevel .newtop]");
+		Tcl_SetVar(interp, "sip_id", callid, TCL_GLOBAL_ONLY);
 		Tcl_SetVar(interp, "sip_srcuser", srcuser, TCL_GLOBAL_ONLY);
 		Tcl_SetVar(interp, "sip_dstuser", dstuser, TCL_GLOBAL_ONLY);
 		Tcl_SetVar(interp, "sip_path", path, TCL_GLOBAL_ONLY);
