@@ -527,13 +527,19 @@ int load_cache_entry(
 
       if (strcmp(authtype,"none")==0) {
         strcpy(authstatus, "NOAUTH");
+        strcpy(authmessage, "none");
+      } else {
+        strcpy(authstatus, "unchecked");
+        strcpy(authmessage, "The signature from the cache file has not been checkedfile. It will be checked when it is received as an announcement.");
       }
-      strcpy(authmessage, "none");
 
       if (strcmp(enctype,"none")==0) {
         strcpy(encstatus, "NOENC");
+        strcpy(encmessage, "none");
+      } else {
+        strcpy(encstatus, "unchecked");
+        strcpy(encmessage, "The encryption has not been checked - an unencrypted cache file has been loaded and not updated by a received announcement");
       }
-      strcpy(encmessage, "none");
 
 /* An attempt at keeping unused fields empty! */
 
