@@ -4450,6 +4450,9 @@ proc periodic_save {interval} {
 # default user_hook is a noop - users should redefine it in
 # [sdrHome]/sdr.tcl to modify the tool's behavior.
 proc user_hook {} {
+
+    global argv0 tcl_platform env
+
 # Parse plugins
 
 # find where we are installed
