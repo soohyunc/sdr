@@ -1463,7 +1463,7 @@ proc save_address_book {file} {
     if {[info exists address_book]} {
         foreach user [array names address_book] {
 	    regsub -all " " $user "\\ " tmpuser
-	    #puts $file "set address_book($tmpuser) \"$address_book($user)\""
+	    puts $file "set address_book($tmpuser) \"$address_book($user)\""
 	}
     }
 }
