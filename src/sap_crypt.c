@@ -499,12 +499,8 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 
 /* authPGPC is obsolete and will be removed */
 
-    if( authinfo != NULL) {
-      if(authinfo->auth_type  == authPGPC ) {
-        auth_len = authinfo->key_len+authinfo->sig_len+authinfo->pad_len+AUTH_HEADER_LEN;
-      } else {
-        auth_len = authinfo->sig_len+authinfo->pad_len+AUTH_HEADER_LEN;
-       }
+    if (authinfo != NULL) {
+      auth_len = authinfo->sig_len+authinfo->pad_len+AUTH_HEADER_LEN;
     }
 
 /* set up the sap header */
@@ -560,16 +556,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 /* copy signature to buf */
 
     memcpy(buf+24+len+bplen+AUTH_HEADER_LEN, authinfo->signature, authinfo->sig_len);
-
-/* copy key certificate if needed */
-/* obsolete - will be removed     */
-
-    if (authinfo->auth_type  == authPGPC ) {
-      memcpy(buf+24+len+bplen+AUTH_HEADER_LEN+authinfo->sig_len, authinfo->keycertificate, authinfo->key_len);
-      len+=(bplen+AUTH_HEADER_LEN+authinfo->sig_len+authinfo->key_len);
-    } else {
-      len+=(bplen+AUTH_HEADER_LEN+authinfo->sig_len);
-    }
+    len+=(bplen+AUTH_HEADER_LEN+authinfo->sig_len);
 
 /* add the padding */
 
