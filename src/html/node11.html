@@ -4,7 +4,7 @@
 <BODY>
 <H1><A NAME=SECTION00060000000000000000> Secure Announcements </A></H1>
 <P>
-Although the purpose of sdr is to advertise sessions, not all sessions should be advertised publicly.  However, it is important that even secret sessions use the same announcement mechanism, so that their bandwidth usage can be taken into account, and so that their multicast addresses are not inadvertently re-used.  Thus Sdr permits secure sessions to be advertised, by announcing them twice - once unencrypted with just the bandwidth, contact info and multicast addresses, and once encrypted with all of the information including encryption keys for the media tools.  Secure sessions do not appear in Sdr's listing of sessions unless the correct encryption key has been inserted.
+Although the purpose of Sdr is to advertise sessions, not all sessions should be advertised publicly.  However, it is important that even secret sessions use the same announcement mechanism, so that their bandwidth usage can be taken into account, and so that their multicast addresses are not inadvertently re-used.  Thus Sdr permits secure sessions to be advertised, by announcing them twice - once unencrypted with just the bandwidth, contact info and multicast addresses, and once encrypted with all of the information including encryption keys for the media tools.  Secure sessions do not appear in Sdr's listing of sessions unless the correct encryption key has been inserted.
 <P>
 <H3>Overview of Security in SDR</H3>
 <P>
@@ -28,7 +28,7 @@ If one wishes to encrypt the announcement one should select DES, PGP or X.509 fr
 <P>
 <H3>Receiving Encrypted and/or Authenticated Announcements</H3>
 <P>
-When one receives an encrypted or autheticated session this is indicated by the icon being reverse video. In addition there is an indication after the session name in the main Sdr window which indicates what kind of authentication and encryption has been used. When one opens up the details of the session clicking on the "Encryption Info" box will display details of the encryption used and similarly clicking on the "Authentication Info" box will bring up details of the authentciation used. In order to be able to decrypt the announcement you may be prompted for a passphrase to unlock the relevant secret key.
+When one receives an encrypted or authenticated session this is indicated by the icon being reverse video. In addition there is an indication after the session name in the main Sdr window which indicates what kind of authentication and encryption has been used. When one opens up the details of the session clicking on the "Encryption Info" box will display details of the encryption used and similarly clicking on the "Authentication Info" box will bring up details of the authentication used. In order to be able to decrypt the announcement you may be prompted for a passphrase to unlock the relevant secret key.
 <P>
 <H3>Adding Keys To Your Keyrings</H3>
 <P>
