@@ -35,7 +35,7 @@
  */
 #ifndef lint
 static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.1.1.1 1998-01-20 15:31:42 ucacewh Exp $ (LBL)";
+    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.5 1998-01-27 16:57:52 ucacewh Exp $ (LBL)";
 #endif
 
 #include <assert.h>
