@@ -554,11 +554,13 @@ proc new_mk_session_security {win aid} {
  
     frame $win.auth.pwd
     pack $win.auth.pwd -side top -pady 2 -fill both -expand true
-    label $win.auth.pwd.l -text "Password" -font [resource infoFont]
+    label $win.auth.pwd.l -text "Password For PGP:"
+    pack $win.auth.pwd.l -side top -anchor w
+    label $win.auth.pwd.m -text "Passphrase:"
+    pack $win.auth.pwd.m -side top -anchor w
     password $win.auth.pwd.e -width 30 -relief sunken\
         -variable asympass -borderwidth 1\
         -background [option get . entryBackground Sdr]
-    pack $win.auth.pwd.l -side top -anchor w
     pack $win.auth.pwd.e -side top -anchor w
      if {$aid=="new"} {
         set_auth_type $win none
