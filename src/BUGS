@@ -2,6 +2,10 @@
 
 There are many little things on the to-do list.  The main big things are:
 <PRE><I>
+- on Windows when an announcement is received whilst scrolling the list
+  of sessions this will cause sdr to crash. Also on Win95 (not NT) when
+  quitting from sdr an error message regarding a page fault pops up - 
+  sdr has exited okay and written the cache files but the window pops up.
 - end times of SIP sessions are bogus
 - changing session type should reposition the session in the main window
   but doesn't.
