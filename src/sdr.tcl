@@ -22,9 +22,10 @@ set keylist ""
 set lang C
 catch {set lang $env(LANG)}
 proc debug {str} {
-    global debug1
+    global debug1 tcl_platform
     if {$debug1} {
-	puts $str
+		if {$tcl_platform(platform)=="windows"} {Debug $str}
+		else {puts $str}
     }
 }
 

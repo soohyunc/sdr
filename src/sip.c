@@ -119,9 +119,9 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	    return 0; /* REVIEW: What to do? */
 	}
 	
-	printf("dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
+	fprintf(srderr,"dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
 	       dstname, u_at_h, u_at_a, sipalias);
-	printf("who's the request for?!\n");
+	fprintf(stderr,"who's the request for?!\n");
 	if (((dstname!=NULL)&&(strcmp(u_at_h, dstname)==0)) || 
 	    ((dstname!=NULL)&&(strcmp(u_at_a, dstname)==0)) || 
 	    ((dstname!=NULL)&&(strcmp(sipalias, dstname)==0))) {
@@ -332,7 +332,8 @@ int parse_sip_success(int sipfd, char *msg, char *addr)
 {
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
-    if (Tcl_VarEval(interp, "sip_success ", sipfdstr, " \"", msg, "\" ", 
+	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
+    if (Tcl_VarEval(interp, "sip_success ", 
 		    addr, NULL)!=TCL_OK) {
 	Tcl_AddErrorInfo(interp, "\n");
 	fprintf(stderr, "%s\n", interp->result);
@@ -345,7 +346,8 @@ int parse_sip_fail(int sipfd, char *msg, char *addr)
 {
     char sipfdstr[10];
     sprintf(sipfdstr, "%d", sipfd);
-    if (Tcl_VarEval(interp, "sip_failure ", sipfdstr, " \"", msg, "\" ", 
+	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
+    if (Tcl_VarEval(interp, "sip_failure ", 
 		    addr, NULL)!=TCL_OK) {
 	Tcl_AddErrorInfo(interp, "\n");
 	fprintf(stderr, "%s\n", interp->result);
@@ -359,8 +361,8 @@ int parse_sip_redirect(int sipfd, char *msg, char *addr)
     char sipfdstr[10];
 
     sprintf(sipfdstr, "%d", sipfd);
-
-    if (Tcl_VarEval(interp, "sip_moved ", sipfdstr, " \"", msg, "\" ",
+	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
+    if (Tcl_VarEval(interp, "sip_moved ", sipfdstr,
 		    addr, NULL)!=TCL_OK) {
 	Tcl_AddErrorInfo(interp, "\n");
 	fprintf(stderr, "%s\n", interp->result);
@@ -381,8 +383,8 @@ int parse_sip_progress(int sipfd, char *msg, char *addr)
     sprintf(sipfdstr, "%d", sipfd);
 
    MDEBUG(SIP, ("parse_sip_ringing\n"));
-
-   if (Tcl_VarEval(interp, "sip_status ", sipfdstr, " \"", msg, "\" ",
+	Tcl_SetVar(interp, "sip_reply", msg, TCL_GLOBAL_ONLY);
+   if (Tcl_VarEval(interp, "sip_status ",
 		   addr, NULL)!=TCL_OK) {
        Tcl_AddErrorInfo(interp, "\n");
        fprintf(stderr, "%s\n", interp->result);

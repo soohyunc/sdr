@@ -155,7 +155,7 @@ ui_init(int *argc, char **argv)
 	/*extern int WinPutsCmd(ClientData, Tcl_Interp*, int, char **);
 	Tcl_CreateCommand(interp, "puts", WinPutsCmd, 0, 0);*/
 	extern int Debug(ClientData, Tcl_Interp*, int, char **);
-	Tcl_CreateCommand(interp, "debug", Debug, (ClientData) mainWindow, 0);
+	Tcl_CreateCommand(interp, "Debug", Debug, (ClientData) mainWindow, 0);
     }
 #endif
 

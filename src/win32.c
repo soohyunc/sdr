@@ -237,7 +237,6 @@ fprintf(FILE *f, const char *fmt, ...)
     if (f == stderr) {
 	retval = vsprintf(szTemp, fmt, ap);
 	OutputDebugString(szTemp);
-	ShowMessage(MB_ICONERROR, szTemp);
 	va_end (ap);
     }
     else
