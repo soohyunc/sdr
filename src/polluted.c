@@ -754,6 +754,10 @@ sprintf(testname, "%s\\sdr\\data_rcv.txt", homedir);
 sprintf(testname, "%s/.sdr/data_rcv.txt", homedir);
 #endif
 file=fopen(testname, "w");
+if (file==NULL) {
+  printf("failed to open temp file %s\n", testname);
+  return newlen;
+}
 fwrite(new_data, 1, len, file);
 fclose(file); 
 return newlen;

@@ -162,7 +162,7 @@ char *strerror(int i);
 #endif
 #define TRUE (1)
 #define FALSE (0)
-#define INTERVAL 300000
+#define INTERVAL 200000
 #define MAXADSIZE 2048
 
 #ifndef WIN32

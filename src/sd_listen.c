@@ -73,9 +73,6 @@ static int no_of_ads=0;
 int find_keyname_by_key(char *key, char *keyname);
 #endif
 
-
-
-
 extern Tcl_Interp *interp;
 int gui, cli;
 int logging;
@@ -726,6 +723,8 @@ int load_cache_entry(
 	  addata->sap_hdr=NULL;
           addata->authinfo=\
 	    (struct auth_info *)malloc(sizeof(struct auth_info));
+	  writelog(printf("LCE: addata->authinfo newly malloced: %x\n",
+		 (unsigned int)(addata->authinfo));)
           addata->sapenc_p=NULL;
 
 /* store the authentication in memory */
@@ -904,8 +903,10 @@ int load_cache_entry(
 	      addata=(struct advert_data *)malloc(sizeof(struct advert_data));
 	      addata->sap_hdr=NULL;
               addata->authinfo=NULL; 
-            }
-	    addata->sapenc_p=(struct priv_header *)calloc(1,sizeof( struct priv_header));
+	      writelog(printf("LCE: addata->authinfo set to NULL\n");)
+	      addata->sapenc_p=
+		(struct priv_header *)malloc(sizeof( struct priv_header));
+	    }
 
 /* store encryption in memory */
 
@@ -916,7 +917,7 @@ int load_cache_entry(
               }
 		        
 	      if (strncmp(addata->sapenc_p->txt_data, "v=", 2) ==0) {
-                data = (char *)calloc(1,addata->sapenc_p->txt_len);
+                data = (char *)malloc(addata->sapenc_p->txt_len);
                 memcpy(data,addata->sapenc_p->txt_data,addata->sapenc_p->txt_len);
 	        new_len = addata->sapenc_p->txt_len;
               }
@@ -980,6 +981,8 @@ int load_cache_entry(
                 }
 
                 addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
+		printf("LCE: addata->authinfo newly malloced: %x\n", 
+		       (unsigned int)(addata->authinfo));
                 if (strcmp(authtype,"pgp") == 0 || strcmp(authtype,"cpgp") == 0) {
 	          store_authentication_in_memory(addata, authtype, irand);
 	        } else {
@@ -1178,6 +1181,7 @@ char *argv[];
 	    if (strchr(hostname, '.')!=NULL) break;
 	  }
 	}
+	fclose(dnsconf);
       }
     }
 
@@ -1473,7 +1477,8 @@ void read_sd_cache()
 	sd_parse_entry(NULL, buf, strlen(buf), origsrc, src, 
 		       OLD_SAP_GROUP, OLD_SAP_PORT, t, "untrusted");
       }
-  }
+    fclose(cache);
+}
 #endif
 
 void recv_packets(ClientData fd)
@@ -1637,12 +1642,13 @@ void recv_packets(ClientData fd)
 	  return;
 	}
 
-	if(addata==NULL) {
-	  addata=(struct advert_data *)malloc(sizeof(struct advert_data));
-	  addata->sap_hdr=NULL;
-        }
-	addata->sapenc_p=(struct priv_header *)malloc(sizeof(struct priv_header));
-	addata->authinfo=NULL;
+	addata=(struct advert_data *)malloc(sizeof(struct advert_data));
+	addata->sap_hdr=NULL;
+	addata->sapenc_p=
+	  (struct priv_header *)malloc(sizeof(struct priv_header));
+	addata->authinfo=NULL;	
+	printf("RP: addata->authinfo set to NULL\n");
+
 	if (strcmp(enctype,"pgp") == 0) {
 	  if ( (store_encryption_in_memory(addata, enctype, irand)) == 0) {
             writelog(printf(" recv_packets: problem: store_encryption_in_memory returned 0\n");)
@@ -1671,10 +1677,12 @@ void recv_packets(ClientData fd)
 	  writelog(printf(" data has been decrypted");)
           return;
         } 
-        if (addata==NULL) {
-          addata=(struct advert_data *)malloc(sizeof(struct advert_data));
-	  addata->sap_hdr=NULL;
-        }
+	addata=(struct advert_data *)malloc(sizeof(struct advert_data));
+	addata->sap_hdr=NULL;
+	addata->sapenc_p=
+	  (struct priv_header *)malloc(sizeof(struct priv_header));
+	addata->authinfo=NULL;	
+	printf("RP: addata->authinfo set to NULL\n");
         addata->encrypt=1;
 	has_encryption=2;
 	has_security=1;
@@ -1698,46 +1706,46 @@ void recv_packets(ClientData fd)
            newlength=gen_new_auth_data(debugbuf,new_data,bp,auth_len,orglength,has_encryption);
         }
 
-       } else {
-         memset(recvkey,0,MAXKEYLEN);
-         strncpy(enctype, "none",ENCTYPELEN);
-         strncpy(encstatus, "noenc", ENCSTATUSLEN);
-         strncpy(encmessage, "none", ENCMESSAGELEN);
-      }
+    } else {
+      memset(recvkey,0,MAXKEYLEN);
+      strncpy(enctype, "none",ENCTYPELEN);
+      strncpy(encstatus, "noenc", ENCSTATUSLEN);
+      strncpy(encmessage, "none", ENCMESSAGELEN);
+    }
 
 /* Check for authentication header                                      */
 /* Need to do something about non-conforming (old versions of SDR)      */
 /* packets - otherwise some packets may be interpreted with             */
 /* authentication info when they have none!                             */
 
-      if (bp->authlen !=0) {
-        auth_len=bp->authlen*4;
-        auth_hdr = (struct auth_header *)  ((char *)bp + sizeof(struct sap_header)); 
+    if (bp->authlen !=0) {
+      auth_len=bp->authlen*4;
+      auth_hdr = (struct auth_header *)  ((char *)bp + sizeof(struct sap_header)); 
 
-	if ( (auth_len>0) && (auth_hdr->version==1) && (auth_hdr->auth_type<32) ){
+      if ( (auth_len>0) && (auth_hdr->version==1) && (auth_hdr->auth_type<32) ){
 
-          if (has_encryption == 0) {
-            data+=auth_len;
-            length-=auth_len;
-          }
+	if (has_encryption == 0) {
+	  data+=auth_len;
+	  length-=auth_len;
+	}
 
-	  if ( auth_hdr->auth_type == 1) {
-	    strncpy(authtype, "pgp",AUTHTYPELEN);
-	  } else if ( auth_hdr->auth_type == 2) {
-	    strncpy(authtype,"x509",AUTHTYPELEN);
-	  } else if  ( auth_hdr->auth_type == 3) {
-	    strncpy(authtype, "cpgp",AUTHTYPELEN);
-	  } else if  ( auth_hdr->auth_type == 4) {
-	    strncpy(authtype,"cx50",AUTHTYPELEN);
-	  } else {
-	    printf("authtype is wrong in sap_header");
-          }
+	if ( auth_hdr->auth_type == 1) {
+	  strncpy(authtype, "pgp",AUTHTYPELEN);
+	} else if ( auth_hdr->auth_type == 2) {
+	  strncpy(authtype,"x509",AUTHTYPELEN);
+	} else if  ( auth_hdr->auth_type == 3) {
+	  strncpy(authtype, "cpgp",AUTHTYPELEN);
+	} else if  ( auth_hdr->auth_type == 4) {
+	  strncpy(authtype,"cx50",AUTHTYPELEN);
+	} else {
+	  printf("authtype is wrong in sap_header");
+	}
 
-/* This function extracts the signature from the packet and checks it.         */
-/* We may not want to bother checking the authentication in packets            */
-/* that the host machine has sent??                                            */
+/* This function extracts the signature from the packet and checks it.*/
+/* We may not want to bother checking the authentication in packets*/
+/* that the host machine has sent??*/
 
-          writelog(printf(" calling check_auth from recv_packet with irand = %d\n", irand);)
+	writelog(printf(" calling check_auth from recv_packet with irand = %d\n", irand);)
 
 /* check authentication */
 
@@ -1766,8 +1774,11 @@ void recv_packets(ClientData fd)
 	  if (addata==NULL) {
             addata=(struct advert_data *)malloc(sizeof( struct advert_data));
 	    addata->sap_hdr=NULL;
+	    addata->sapenc_p=NULL;
           }
-          addata->authinfo=(struct auth_info *)malloc(sizeof( struct auth_info));
+          addata->authinfo=(struct auth_info *)malloc(sizeof(struct auth_info));
+	  writelog(printf("RP: addata->authinfo newly malloced: %x\n", 
+		 (unsigned int)(addata->authinfo));)
 
 /* store authentication in memory */
 
@@ -1928,9 +1939,22 @@ void recv_packets(ClientData fd)
 
 /*This is a repeated announcement */
 
-	   free(advert->authinfo);
-	   free(advert->sapenc_p);
-	   advert->authinfo=addata->authinfo;
+	   /*Free up the old copy of the authentication info 
+	     and replace it with the new copy from the packet*/
+	   if (advert->authinfo!=NULL) {
+	     free(advert->authinfo->signature);
+	     free(advert->authinfo->keycertificate);
+	     free(advert->authinfo);
+	   }
+	   writelog(printf("RP: advert->authinfo freed (%x)\n", (unsigned int)(advert->authinfo)); )
+	   advert->authinfo = addata->authinfo;
+	   writelog(printf("RP: advert->authinfo set to addata->authinfo: %x\n",
+		  (unsigned int)addata->authinfo);)
+	   if (advert->sapenc_p!=NULL) {
+	     free(advert->sapenc_p->enc_data);
+	     free(advert->sapenc_p->txt_data);
+	     free(advert->sapenc_p);
+	   }
 	   advert->sapenc_p=addata->sapenc_p;
 	   free(addata);
 	 }
@@ -3281,10 +3305,9 @@ int timed_send_advert(ClientData cd)
   unsigned int interval;
   unsigned int jitter;
 #ifdef AUTH
-        struct auth_info *authinfo;
-        u_int auth_len=0;
-        struct priv_header *sapenc_p;
-        u_int hdr_len=0;
+  u_int auth_len=0;
+  struct priv_header *sapenc_p;
+  u_int hdr_len=0;
  
 #endif
 
@@ -3292,45 +3315,44 @@ int timed_send_advert(ClientData cd)
   gettimeofday(&tv, NULL);
   addata=(struct advert_data *)cd;
 #ifdef AUTH
-        if (addata->authinfo !=NULL ){
-             authinfo=addata->authinfo;
-            /* printf("+++ Version= %d, Padding= %d, Auth Type = %d,
-                        Auth Len = %d\n\r ", authinfo->version,
-                        authinfo->pad_len, authinfo->auth_type,
-                            auth_len); */
- 
-             if (addata->authinfo->auth_type != 0) {
-                   authinfo=addata->authinfo;
-                  if (authinfo->auth_type !=4 )
-                         auth_len = authinfo->sig_len+2+authinfo->pad_len;
-                                else
-                        auth_len = authinfo->sig_len+authinfo->key_len+2
-                                        +authinfo->pad_len;
-                              }
-              } else {
-                 authinfo = NULL;
-                 auth_len = 0;
-                 }
- 
-            if  (addata->sapenc_p !=NULL)
-            {
-                sapenc_p = addata->sapenc_p;
-               if ( addata->sapenc_p->enc_type !=0) {
-                   hdr_len = (sapenc_p->encd_len+2+sapenc_p->pad_len) ;
-                       addata->sapenc_p->hdr_len = hdr_len / 4 ;
+  if (addata->authinfo !=NULL ){
+    if (addata->authinfo->auth_type != 0) {
+      if (addata->authinfo->auth_type !=4 )
+	auth_len = addata->authinfo->sig_len+2+addata->authinfo->pad_len;
+      else
+	auth_len = addata->authinfo->sig_len+addata->authinfo->key_len+2
+	  +addata->authinfo->pad_len;
+      writelog(printf("+++ Version=%d, Padding=%d, Auth Type=%d, Auth Len = %d\n", 
+	     addata->authinfo->version,
+	     addata->authinfo->pad_len, addata->authinfo->auth_type,
+	     auth_len);)
+    }
+  } else {
+    auth_len = 0;
+  }
+  writelog(printf("TSA: addata->authinfo is: %x\n", 
+		  (unsigned int)(addata->authinfo));)
+  if  (addata->sapenc_p !=NULL)
+  {
+    sapenc_p = addata->sapenc_p;
+    if ( addata->sapenc_p->enc_type !=0) {
+      hdr_len = (sapenc_p->encd_len+2+sapenc_p->pad_len) ;
+      addata->sapenc_p->hdr_len = hdr_len / 4 ;
                                         }
-            } else {
-                   sapenc_p =NULL;
-                   hdr_len = 0;
-                   }
+  } else {
+    sapenc_p =NULL;
+    hdr_len = 0;
+  }
  
  
   if(((unsigned long)tv.tv_sec<=addata->end_time)||(addata->end_time==0))
     {
-                send_advert(addata->data, addata->tx_sock, addata->ttl,
-                    addata->encrypt, addata->length,
-                    auth_len, authinfo, hdr_len, sapenc_p,
-		    &(addata->sap_hdr));
+      writelog(printf("TSA: calling send_advert: auth_len: %d auth_info: %x\n",
+	 auth_len, (unsigned int)(addata->authinfo));)
+      send_advert(addata->data, addata->tx_sock, addata->ttl,
+		  addata->encrypt, addata->length,
+		  auth_len, addata->authinfo, hdr_len, sapenc_p,
+		  &(addata->sap_hdr));
 #else
 
 
@@ -3571,7 +3593,6 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
 {
 #ifdef AUTH
   int i, auth_len=0;
-  struct auth_info *authinfo;
   int hdr_len=0;
   struct priv_header *sapenc_p;
   static int no_of_ads=0;
@@ -3585,12 +3606,10 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
   if (addata==NULL) {
     addata=(struct advert_data *)malloc(sizeof(struct advert_data));
     addata->sap_hdr=NULL;
-    authinfo=addata->authinfo=(struct auth_info *)
-      malloc(sizeof (struct auth_info));
-    sapenc_p=addata->sapenc_p=(struct priv_header *)
-      malloc(sizeof(struct priv_header));
+    addata->authinfo=NULL;
+    sapenc_p=addata->sapenc_p=
+      (struct priv_header *)malloc(sizeof(struct priv_header));
   } else {
-    authinfo=addata->authinfo;
     sapenc_p=addata->sapenc_p;
   }
 #else
@@ -3629,23 +3648,28 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
 
   if ( (strcmp(auth_type,"cpgp")==0 ) \
        && (strcmp(auth_status, "failed")!=0) ) {
-    auth_len = authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len;
+    auth_len = addata->authinfo->sig_len+addata->authinfo->key_len+2+addata->authinfo->pad_len;
 
     writelog(printf("++ debug ++ Version= %d, Padding= %d, Auth Type = %d, Auth Len = %d\n\r ", 
-		    authinfo->version, authinfo->pad_len, 
-		    authinfo->auth_type, auth_len);)
+		    addata->authinfo->version, addata->authinfo->pad_len, 
+		    addata->authinfo->auth_type, auth_len);)
   } else if ( ( strcmp(auth_type,"pgp")==0 )  \
 	      && (strcmp(auth_status, "failed")!=0) ) {
-    auth_len = authinfo->sig_len+2+authinfo->pad_len;
+    auth_len = addata->authinfo->sig_len+2+addata->authinfo->pad_len;
   } else if ( ( strcmp(auth_type,"cx50")==0 )  && \
 	      (strcmp(auth_status, "failed")!=0) ) {
-    auth_len = authinfo->sig_len+2+authinfo->pad_len;
+    auth_len = addata->authinfo->sig_len+2+addata->authinfo->pad_len;
   } else if ( ( strcmp(auth_type,"x509")==0 )  && \
 	      (strcmp(auth_status, "failed")!=0) ) {
-    auth_len = authinfo->sig_len+2+authinfo->pad_len;
+    auth_len = addata->authinfo->sig_len+2+addata->authinfo->pad_len;
   } else {
     auth_len = 0;
-    authinfo = NULL;
+    if (addata->authinfo!=NULL) {
+      free(addata->authinfo->signature);
+      free(addata->authinfo->keycertificate);
+      free(addata->authinfo);
+    }
+    addata->authinfo = NULL;
   }
   if (strcmp(keyname,"") != 0){
     addata->length=strlen(adstr);
@@ -3699,9 +3723,9 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
       no_of_ads++;
     }
 #ifdef AUTH
-        send_advert(addata->data, addata->tx_sock, ttl, addata->encrypt,
-		    addata->length, auth_len, authinfo,hdr_len, 
-		    sapenc_p, &(addata->sap_hdr));
+  send_advert(addata->data, addata->tx_sock, ttl, addata->encrypt,
+	      addata->length, auth_len, addata->authinfo,hdr_len, 
+	      sapenc_p, &(addata->sap_hdr));
 #else
 
   send_advert(addata->data, addata->tx_sock, ttl, addata->encrypt, 
