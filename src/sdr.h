@@ -201,20 +201,20 @@ struct advert_data {
 };
   
 struct sap_header {
-#ifdef DIFF_BYTE_ORDER
-  u_int compress:1;
-  u_int enc:1;
-  u_int type:1;
-  u_int resv:1;
-  u_int addr:1;
+#ifdef WORDS_BIGENDIAN
   u_int version:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
+  u_int enc:1;
+  u_int compress:1;
 #else
-  u_int version:3;
-  u_int addr:1;
-  u_int resv:1;
-  u_int type:1;
-  u_int enc:1;
   u_int compress:1;
+  u_int enc:1;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
+  u_int version:3;
 #endif
   u_int authlen:8;
   u_int msgid:16;
@@ -224,20 +224,20 @@ struct sap_header {
 
 /* These repitious sap headers are UGLY... */
 struct sapv4_header {
-#ifdef DIFF_BYTE_ORDER
-  u_int compress:1;
-  u_int enc:1;
-  u_int type:1;
-  u_int resv:1;
-  u_int addr:1;
+#ifdef WORDS_BIGENDIAN
   u_int version:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
+  u_int enc:1;
+  u_int compress:1;
 #else
-  u_int version:3;
-  u_int addr:1;
-  u_int resv:1;
-  u_int type:1;
-  u_int enc:1;
   u_int compress:1;
+  u_int enc:1;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
+  u_int version:3;
 #endif
   u_int authlen:8;
   u_int msgid:16;
@@ -245,20 +245,20 @@ struct sapv4_header {
 };
 
 struct sapv6_header {
-#ifdef DIFF_BYTE_ORDER
-  u_int compress:1;
-  u_int enc:1;
-  u_int type:1;
-  u_int resv:1;
-  u_int addr:1;
+#ifdef WORDS_BIGENDIAN
   u_int version:3;
+  u_int addr:1;
+  u_int resv:1;
+  u_int type:1;
+  u_int enc:1;
+  u_int compress:1;
 #else
-  u_int version:3;
-  u_int addr:1;
-  u_int resv:1;
-  u_int type:1;
-  u_int enc:1;
   u_int compress:1;
+  u_int enc:1;
+  u_int type:1;
+  u_int resv:1;
+  u_int addr:1;
+  u_int version:3;
 #endif
   u_int authlen:8;
   u_int msgid:16;
@@ -284,14 +284,14 @@ struct auth_info {
 
 /*this is the actual header that goes in the packets*/
 struct auth_header {
-#ifdef DIFF_BYTE_ORDER
-  u_int auth_type:4;
-  u_int padding:1;
+#ifdef WORDS_BIGENDIAN
   u_int version:3;
+  u_int padding:1;
+  u_int auth_type:4;
 #else
-  u_int version:3;
-  u_int padding:1;
   u_int auth_type:4;
+  u_int padding:1;
+  u_int version:3;
 #endif
   u_int siglen:8;
 };
@@ -300,14 +300,14 @@ struct auth_header {
 #define ENC_HEADER_LEN  2
 
 struct priv_header {
-#ifdef DIFF_BYTE_ORDER
-  u_int enc_type:4;
-  u_int padding:1;
+#ifdef WORDS_BIGENDIAN
   u_int version:3;
+  u_int padding:1;
+  u_int enc_type:4;
 #else
-  u_int version:3;
-  u_int padding:1;
   u_int enc_type:4;
+  u_int padding:1;
+  u_int version:3;
 #endif
   u_int hdr_len:8;
   u_int pad_len;
