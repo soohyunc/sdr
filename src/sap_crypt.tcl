@@ -340,9 +340,26 @@ proc enter_long_passphrase {mode} {
     button .pass.f.f2.ok -text "OK" \
 	-command "submit_pass .pass $mode .pass.f.msg \"\""
     pack .pass.f.f2.ok -side left -fill x -expand true
-    button .pass.f.f2.cancel -text "Cancel" -command {destroy .pass}
+    button .pass.f.f2.cancel -text "Cancel" -command "destroy_pass .pass"
     pack .pass.f.f2.cancel -side left -fill x -expand true
 }
+
+proc destroy_pass {win} {
+    global tmpkey2
+
+# destroy key which has been created and saved even though no passphrase
+# entered and now cancelled from passphrase screen
+
+    set tmpdel [find_keyname_by_key $tmpkey2]
+    set delkey [lindex $tmpdel 0]
+    clear_prefs_keys
+    delete_key $delkey
+    unset tmpkey2
+ 
+# destroy passphrase window
+    catch {destroy $win}
+}
+
 
 proc enter_short_passphrase {win after} {
     frame $win -relief groove -borderwidth 2
@@ -372,7 +389,7 @@ proc submit_pass {win mode msgwin str} {
     if {([string length $tmppass]<8)&&($mode == "save")} {
 	bell
 	$msgwin configure -text "Please choose a longer pass phrase"
-	after 5000 catch {$win.f.msg configure -text $str}
+	after 5000 "catch {$win.f.msg configure -text $str}"
 	return
     }
 
