@@ -1155,7 +1155,6 @@ proc new_mk_session_media {win aid scope show_details} {
 	}
     
 	foreach media $medialist {
-
 	    if {[string compare $aid "new"]!=0} {
  
 		for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
@@ -1177,6 +1176,9 @@ proc new_mk_session_media {win aid scope show_details} {
 	    frame $win.$media
 
 	    button $win.$media.cb -command "togglemedia $win $media"
+	    if {[is_creatable $media]==0} {
+		$win.$media.cb configure -state disabled
+	    }
 	    iconbutton $win.$media.mb -text $media -bitmap [get_icon $media] -width 10 -relief raised\
 		    -menu $win.$media.mb.menu 
 	    create_menu $win.$media.mb.menu "" "" $media "create"
@@ -1213,13 +1215,21 @@ proc new_mk_session_media {win aid scope show_details} {
 		    -highlightthickness 0
  
 	    tixAddBalloon $win.$media.enc Entry [tt "The $media encryption key is shown here. You can replace the random key by typing your own key in this field."]
- 
+
+	    #not all media are creatable 
+	    #if we don't have the tools installed, don't let the 
+	    #media be configured because we won't be able to join
+	    #our own session
+	    if {[is_creatable $media]==0} {
+		setmediamode $media $win $send($media) 0		
+		continue
+	    }
 
 	    set media_fmt($media) \
 		    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
 	    set media_proto($media) [lindex [get_media_protos $media] 0]
 	    set media_layers($media) \
-		    [get_max_layers $media $media_proto($media) $media_fmt($media)]
+			[get_max_layers $media $media_proto($media) $media_fmt($media)]
 	    if {([string compare $aid "new"]==0)&&($send($media)==1)} {
 		if {$scope=="admin"} {
 		    $win.$media.addr insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
@@ -1297,7 +1307,6 @@ proc new_mk_session_media {win aid scope show_details} {
     }
 
     foreach media $medialist {
-
 	if {[info exists tmpdata($media)]} {
 	    $win.$media.addr delete 0 end
 	    $win.$media.addr insert 0 [retrieve_new_session_addr $media]
@@ -2218,8 +2227,10 @@ proc setmediamode {media mediabase state realloc} {
 	    -relief groove -state disabled
 
 	$base.mb.workaround configure -relief groove -state disabled
-	set media_fmt($media) [lindex [get_media_fmts $media $media_proto($media)] 0]
-	set media_proto($media) [lindex [get_media_protos $media] 0]
+	if {[is_creatable $media]==1} {
+	    set media_fmt($media) [lindex [get_media_fmts $media $media_proto($media)] 0]
+	    set media_proto($media) [lindex [get_media_protos $media] 0]
+	}
     } else {
 	if {[string compare $media_proto($media) ""]==0} {
 	    msgpopup "No tool installed" "You have no tool installed that could participate in a session with this media"

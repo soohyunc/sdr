@@ -937,6 +937,16 @@ proc select_tool_for_media {aid media proto fmt rulelist attrlist} {
     pack $win.f.f2.cancel -side left -fill x -expand true
 }
 
+proc is_creatable {media} {
+    global createrules protos
+    foreach rule $createrules {
+        if {[string first $media $rule]==0} {
+	    return 1
+        }
+    }
+    return 0
+}
+
 proc get_media_protos {media} {
     global createrules protos
     set protolist {}
