@@ -655,7 +655,7 @@ int load_cache_entry(
         origsrc_v4 = atol(origsrc);
         if (origsrc_v4 == hostaddr) {
 #else
-        in.s_addr = hostaddr;
+        in.s_addr = htonl(hostaddr);
         strcpy(tmp_hostaddr, inet_ntoa(in));
         if (strcmp(origsrc,tmp_hostaddr)==0) {
 #endif
