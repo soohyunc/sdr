@@ -410,79 +410,12 @@ all this lot is obsolete...
 }
 
 proc quit {} {
-#AUTH
-  global log env
-  global logfile
+  global log
   give_status_msg "Writing cache files..."
   update idletasks
   write_cache
   log "Sdr exiting (Quit button pressed) at [getreadabletime]"
   savelog
-  if [info exists env(X509STATE)] {
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else {
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-  if { [file exists $env(PGPPATH)/secring.enc] } {
-  if {[ info exists env(SMARTLOC)]} {
-  set env(USERPIN) $env(SMARTPIN)
-  set tclcmd [ list exec secude pkcs7enc ENVELOPED-DATA -p $env(SMARTLOC) -i $env(PGPPATH)/secring.pgp -o $env(PGPPATH)/secring.enc ]
-  set result [ catch $tclcmd output]
-  file delete $env(PGPPATH)/secring.pgp
-  }
-  } else {
-  if { [pgp_smart "SMARTCARD" "Would you like to use smart card to encrypt   your PGP secring file" "YES" ] != 0 } {
-     if { [pgp_smart "SMARTCARD" " Place your smartcard" "OK"] != 0 } {
-         if { [enter_smart_pse_details] != 0 } {  
-            set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC)]
-            set i 0
-            while {$i == 0 } {
-           if { $result == 1} {
-            set env(USERPIN) $env(SMARTPIN)
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else {
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-            set tclcmd [ list exec secude pkcs7enc ENVELOPED-DATA -p $env(SMARTLOC) -i $env(PGPPATH)/secring.pgp -o $env(PGPPATH)/secring.enc ]
-  set result [ catch $tclcmd output]
-               file delete $env(PGPPATH)/secring.pgp
-               set i 1
-               } else {
-                                catch {unset env(SMARTLOC)}
-                                catch {unset env(SMARTPIN)}
-                                if {[enter_smart_pse_details ] == 0} {	
-                                 set i 1
-                                } else {
-                                set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC) ]
-                                }
-                        }
-                  }
-         }
-     }
-    } 
-  }
-} 
-  if { [file exists $logfile] } {
-#  file delete $logfile
-  }
   ui_quit
   destroy .
 }
