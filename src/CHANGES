@@ -1,5 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.9 E.Whelan 25 Oct 1999
+  - fixed window problems caused by adding directories
+  - eg geometry option and key passphrase window at startup
+  - FAQ has also been updated 
+  - Fixed problem which quit from SDR when closed directory windows
+
 2.8 K.Hasler 9 Sep 1999
   - fixdaysinmonth proc fixes daysinmonth variable for leap years.  Used 
     when creating a new session and in calendar.
