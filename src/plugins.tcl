@@ -65,7 +65,7 @@ proc parse_plugin {file needtool} {
     global createrules
     global fmts fmtnames protos protonames
     global attrs attrnames attrvaluenames attrflags noattrflags noattrlist
-    global defattrlist withattrs
+    global defattrlist withattrs fmtlayers
     global medialist macros macrokeys
     set fmtlist {}
     set stack {}
@@ -160,8 +160,20 @@ proc parse_plugin {file needtool} {
 		catch {set tmp $noattrlist($tool.$media.$proto)}
 		catch {set noattrlist($tool.$media.$proto) $tmp}
 	    }
+	    layers {
+		if {[info exists fmtlayers($media.$proto.$curfmt)]} {
+		    if {$fmtlayers($media.$proto.$curfmt)< $value} {
+			set fmtlayers($media.$proto.$curfmt) $value
+		    }
+		} else {
+		    set fmtlayers($media.$proto.$curfmt) $value
+		}
+	    }
 	    fmt {
 		set curfmt [string trim $value " "]
+		if {[info exists fmtlayers($media.$proto.$curfmt)]==0} {
+		    set fmtlayers($media.$proto.$curfmt) 1
+		}
 		set tmpfmts($media.$proto.$curfmt) $value
 		set tmpfmtnames($media.$proto.$curfmt) $value
 		set tmp {}
@@ -949,6 +961,11 @@ proc get_attrvalue_name {attr value} {
     set rtn $value
     catch {set rtn $attrvaluenames($attr:$value)}
     return $rtn
+}
+
+proc get_max_layers {media proto fmt} {
+    global fmtlayers
+    return $fmtlayers($media.$proto.$fmt)
 }
 
 

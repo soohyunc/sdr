@@ -176,6 +176,7 @@ proc norm_new {aid} {
 		set rpt_menu_value([expr $t+1]) 1
 		configure_rpt_menu [expr $t+1] .new.f2.act.fb[expr $t+1]
 	    } else {
+
 		set rpts 1
 		for {set r 0} {$r < $ldata($aid,time$t,no_of_rpts)} {incr r} {
 		    if {$r>0} {puts "too complicated - tragic!"}
@@ -794,7 +795,7 @@ range of the session.  People outside this area will not be able to receive it."
 
 proc new_mk_session_media {win aid scope show_details} {
     global ldata zone medialist sd_menu send 
-    global media_fmt media_proto media_attr
+    global media_fmt media_proto media_attr media_layers
     #multicast address and ttl
     frame $win -relief groove -borderwidth 2
     frame $win.f0
@@ -827,12 +828,14 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
     if {$show_details==1} {
 	pack $win.l.5 -side left -anchor w
     }
-    label $win.l.2 -text [tt "Format"] -anchor w -width 10
+    label $win.l.2 -text [tt "Format"] -anchor w -width 9
     pack $win.l.2 -side left -anchor w
-    label $win.l.3 -text [tt "Address"] -anchor w -width 14
+    label $win.l.3 -text [tt "Address"] -anchor w -width 13
     if {($show_details==1)} {
 	pack $win.l.3 -side left -anchor w
     }
+    label $win.l.6 -text [tt "Layers"] -anchor w -width 6
+    pack $win.l.6 -side left -anchor w
     label $win.l.4 -text [tt "Port"] -anchor w -width 6
     if {$show_details==1} {
 	pack $win.l.4 -side left -anchor w 
@@ -871,23 +874,29 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 
 	menubutton $win.$media.fmt -width 8  -relief raised\
 	    -menu $win.$media.fmt.menu
-	create_fmt_menu $win $win.$media.fmt \
+	create_fmt_menu $win $win.$media.fmt $win.$media.layers \
+            [lindex [get_media_protos $media] 0] \
 	    [get_media_fmts $media [lindex [get_media_protos $media] 0]] $media
 
 	menubutton $win.$media.proto -width 6 -relief raised\
 	    -menu $win.$media.proto.menu
-	create_proto_menu $win $win.$media.proto $win.$media.fmt \
-	    [get_media_protos $media] $media
+	create_proto_menu $win $win.$media.proto $win.$media.layers \
+		$win.$media.fmt [get_media_protos $media] $media
 
 	entry $win.$media.addr -width 14 -relief sunken\
 	    -bg [option get . entryBackground Sdr] \
 	     -highlightthickness 0
+	menubutton $win.$media.layers -width 3 -relief raised\
+	     -menu $win.$media.layers.menu
+        create_layers_menu $win $win.$media.layers $media
 	entry $win.$media.port -width 6 -relief sunken\
 	    -bg [option get . entryBackground Sdr] \
 	     -highlightthickness 0
 	set media_fmt($media) \
 	    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
 	set media_proto($media) [lindex [get_media_protos $media] 0]
+	set media_layers($media) \
+		[get_max_layers $media $media_proto($media) $media_fmt($media)]
 	if {([string compare $aid "new"]==0)&&($send($media)==1)} {
 	    if {$scope=="admin"} {
 		$win.$media.addr insert 0 [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
@@ -908,6 +917,9 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	pack $win.$media.fmt -side left -fill y -padx 2
 	if {$show_details==1} {
 	    pack $win.$media.addr -side left -padx 2
+	}
+	pack $win.$media.layers -side left -padx 2
+	if {$show_details==1} {
 	    pack $win.$media.port -side left -padx 2
 	}
     }
@@ -1637,7 +1649,7 @@ proc create_menu {mname mlist defattrlist media mode} {
 	}
     }
 }
-proc create_fmt_menu {win mname fmtlist media} {
+proc create_fmt_menu {win mname layersmname proto fmtlist media} {
     menu $mname.menu -tearoff 0
     foreach item $fmtlist {
 	$mname.menu add radiobutton -label [get_fmt_name $item] \
@@ -1645,11 +1657,13 @@ proc create_fmt_menu {win mname fmtlist media} {
 	    -value $item \
 	    -command "reset_media_attrs;\
                       $mname configure -text \[get_fmt_name $item\];\
+		      set_layers_menu $win $layersmname $media \
+		          [get_max_layers $media $proto $item];\
                       setmediamode $media $win 1 0"
     }
 }
 
-proc set_fmt_menu {win mname fmtlist media} {
+proc set_fmt_menu {win mname layersmname proto fmtlist media} {
     global media_fmt
     $mname.menu delete 0 end
     foreach item $fmtlist {
@@ -1658,12 +1672,14 @@ proc set_fmt_menu {win mname fmtlist media} {
 	    -value $item \
 	    -command "reset_media_attrs;\
                       $mname configure -text \[get_fmt_name $item\];\
+		      set_layers_menu $win $layersmname $media \
+		          [get_max_layers $media $proto $item];\
                       setmediamode $media $win 1 0"
     }
     set media_fmt($media) [lindex $fmtlist 0]
 }
 
-proc create_proto_menu {win mname fmtmname fmtlist media} {
+proc create_proto_menu {win mname layersmname fmtmname fmtlist media} {
     menu $mname.menu -tearoff 0
     foreach item $fmtlist {
 	$mname.menu add radiobutton -label [get_proto_name $item] \
@@ -1671,10 +1687,33 @@ proc create_proto_menu {win mname fmtmname fmtlist media} {
 	    -value $item \
 	    -command "reset_media_attrs;\
                       $mname configure -text \[get_proto_name $item\];\
-                      set_fmt_menu $win $fmtmname \
+                      set_fmt_menu $win $layersmname $item $fmtmname \
                          \[get_media_fmts $media $item\] $media;\
                       setmediamode $media $win 1 0"
     }
+}
+
+proc create_layers_menu {win mname media} {
+    menu $mname.menu -tearoff 0
+    foreach item {1 2 3 4} {
+	$mname.menu add radiobutton -label $item \
+	    -variable media_layers\($media\) \
+	    -value $item \
+	    -command "$mname configure -text $item"
+    }
+}
+
+proc set_layers_menu {win mname media layers} {
+    global media_layers
+    $mname.menu delete 0 end
+    for {set item 1} {$item <= $layers} {incr item} {
+	$mname.menu add radiobutton -label $item \
+            -variable media_layers\($media\) \
+            -value $item \
+            -command "$mname configure -text $item"
+    }
+    $mname configure -text $layers
+    set media_layers($media) $layers
 }
 
 proc reset_media_attrs {} {
@@ -1694,7 +1733,7 @@ proc reset_media_attrs {} {
 proc create {} {
     global ttl dayix durationix send zone
     global timeofday minoffset hroffset media_attr media_fmt media_proto
-    global medialist new_createtime sess_type
+    global media_layers medialist new_createtime sess_type
     global rtp_payload sdrversion security
     log "creating a session"
     if {$ttl==0} { set ttl [.new.f3.rr.f.e get] }
@@ -1770,6 +1809,9 @@ proc create {} {
 		set sess "$sess\nm=$media [get_new_session_port $media] $media_proto($media) $media_fmt($media)"
 	    }
 	    set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
+	    if {$media_layers($media)>1} {
+		set sess "$sess/$media_layers($media)"
+	    }
 	    foreach attr [array names media_attr] {
 		set m [lindex [split $attr ","] 0]
 		set a [lindex [split $attr ","] 1]
@@ -1818,7 +1860,8 @@ proc togglemedia {win media} {
 #$mediabase is the base of the media frame.
 #############
 proc setmediamode {media mediabase state realloc} {
-    global send media_fmt media_proto media_attr zone scope defattrlist
+    global send media_fmt media_proto media_attr media_layers
+    global zone scope defattrlist
     set base $mediabase.$media
     set send($media) $state
     if {$state==0} {
@@ -1834,6 +1877,8 @@ proc setmediamode {media mediabase state realloc} {
 	$base.addr  delete 0 end
 	$base.addr configure -bg [option get . background Sdr] \
 	    -relief groove -state disabled
+
+	$base.layers configure -text " " -state disabled -relief groove
 
 	$base.port  delete 0 end
 	$base.port configure -bg [option get . background Sdr] \
@@ -1857,6 +1902,14 @@ proc setmediamode {media mediabase state realloc} {
 	$base.proto configure -text [get_proto_name $media_proto($media)] \
 	    -state normal -relief raised
 	bind $base.proto <ButtonRelease> "tkMbButtonUp $base.proto"
+
+	if {$media_layers($media)==1} {
+	    $base.layers configure -text $media_layers($media) \
+		    -state disabled -relief groove
+	} else {
+	    $base.layers configure -text $media_layers($media) \
+		    -state normal -relief raised
+	}
 
 	$base.addr configure -bg [option get . entryBackground Sdr] \
 	     -state normal -relief sunken
@@ -1918,7 +1971,7 @@ proc fix_up_attr_list {origattrlist} {
 }
 
 proc setmediaflags {media win aid} {
-    global ldata media_fmt media_proto
+    global ldata media_fmt media_proto media_layers
     set base $win.$media
     for {set mnum 0} {$mnum<$ldata($aid,medianum)} {incr mnum} {
 	if {$ldata($aid,$mnum,media)==$media} {
@@ -1927,6 +1980,7 @@ proc setmediaflags {media win aid} {
 	    set media_proto($media) $ldata($aid,$mnum,proto)
 	    $base.fmt configure -text [get_fmt_name $ldata($aid,$mnum,fmt)]
 	    set media_fmt($media) $ldata($aid,$mnum,fmt)
+	    set media_layers($media) $ldata($aid,$mnum,layers)
 	    $base.port delete 0 end
 	    $base.port insert 0 $ldata($aid,$mnum,port)
 	    $base.addr delete 0 end

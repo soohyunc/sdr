@@ -5,6 +5,7 @@ tool:vic
 fmt:21
 {
   fmtname:PVH
+  layers:4
   macro:DOLAYERS
   {
     value:/pvh/$(TTL)/$(LAYERS)
