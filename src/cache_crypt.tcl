@@ -7,6 +7,9 @@ proc load_from_cache {} {
 	    }
 	}
      }
+}
+
+proc load_from_cache_crypt {} {
       set dirname "[resource sdrHome]/encrypt"
           if {[file isdirectory $dirname]} {
           foreach file [glob -nocomplain $dirname/*] {
