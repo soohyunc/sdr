@@ -3618,27 +3618,27 @@ struct advert_data *get_advert_info(char *advertid)
 #define MAX_PARAM_SIZE 255
 /* parse tcl variables in command line */
 void convert_vars(char *ptr1, char *dest) {
-	char *ptr2;
-	char cpy[MAX_PARAM_SIZE];
-	int pos, len=0;
+    char *ptr2;
+    char cpy[MAX_PARAM_SIZE];
+    int pos, len=0;
 
     if (*ptr1=='$') {
-		while (*ptr1=='$') {
-			pos=strcspn(ptr1," /");
-			strcpy (cpy,ptr1);
-			ptr2=cpy;
-			ptr2+=pos;
-			if (ptr2!=NULL) *ptr2='\0';
-			strcpy(dest+len,Tcl_GetVar(interp, cpy+1, 0));
-			len= strlen(dest);
-			ptr1+=pos;
-			/* append extra text/variables */
-			while(*ptr1 !='\0' && *ptr1!='$') {
-				strncpy (dest+len, ptr1, 1);
-				len++;
-				ptr1++;
-			}
-		}
+        while (*ptr1=='$') {
+            pos=strcspn(ptr1," /");
+            strcpy (cpy,ptr1);
+            ptr2=cpy;
+            ptr2+=pos;
+            if (ptr2!=NULL) *ptr2='\0';
+            strcpy(dest+len,Tcl_GetVar(interp, cpy+1, 0));
+            len= strlen(dest);
+            ptr1+=pos;
+            /* append extra text/variables */
+            while(*ptr1 !='\0' && *ptr1!='$') {
+                strncpy (dest+len, ptr1, 1);
+                len++;
+                ptr1++;
+            }
+        }
     } else strcpy (dest, ptr1);
 }
 
@@ -3674,24 +3674,23 @@ int run_program(char *args) {
   i=0;
   ptr1=args;
   while(ptr1!=NULL) {
-    while(*ptr1==' ')
-      *ptr1++='\0';
+    while(*ptr1==' ') *ptr1++='\0';
     if (*ptr1=='\0') break;
     ptr2=strchr(ptr1, ' ');
-    /* cope with quoted strings - strip off quotes as execvp() later */
-    /* stops tools removing them */
     if (ptr2!=NULL) *ptr2++='\0';
     nargv[i]=malloc(MAX_PARAM_SIZE);
     convert_vars(ptr1, nargv[i]);
+
+    /* cope with quoted strings - strip off quotes as execvp() later */
+    /* stops tools removing them */
     if (*nargv[i]=='"') {
       nargv[i]+=1;
-      ptr2=strchr(nargv[i++],'"');
-      if (ptr2!=NULL) {
-        *ptr2++='\0';
+      nargv[i]=strchr(nargv[i],'"');
+      if (nargv[i]!=NULL) {
+        *nargv[i]++='\0';
       }
-    } else {
-      i++;
-    }
+    } 
+    i++;
     ptr1=ptr2;
     if (i==38) {
       /*XXX*/
@@ -3730,10 +3729,10 @@ int run_program(char *args) {
     while(*ptr1==' ') *ptr1++='\0';
     if (*ptr1=='\0') break;
     ptr2=strchr(ptr1, ' ');
-	if (ptr2!=NULL) *ptr2++='\0';
-	nargv[i]=malloc(MAX_PARAM_SIZE);
-	convert_vars(ptr1, nargv[i++]);
-	ptr1=ptr2;
+    if (ptr2!=NULL) *ptr2++='\0';
+    nargv[i]=malloc(MAX_PARAM_SIZE);
+    convert_vars(ptr1, nargv[i++]);
+    ptr1=ptr2;
     if (i==38) {
       /*XXX*/
       fprintf(stderr, "too many args to command to be run!\n");
