@@ -10,7 +10,7 @@ February 1993
 #if !defined(_qfDES_memory_c_)
 #define      _qfDES_memory_c_
 
-#ifdef FreeBSD
+#ifdef FREEBSD
 #include <stdlib.h>
 #else
 #include <malloc.h>
@@ -21,7 +21,7 @@ February 1993
 #include "config.h"
 #include "qfDES.h"
 
-#if !defined(DEFINED_ERRLIST) && !defined(FreeBSD)
+#if !defined(DEFINED_ERRLIST) && !defined(FREEBSD)
  extern int sys_nerr;
  extern char *sys_errlist[];
 #endif
