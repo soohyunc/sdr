@@ -31,6 +31,10 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#ifdef __linux__
+#include <iovec.h>
+#endif
+
 #include "sdr.h"
 #include "sip.h"
 #ifndef WIN32

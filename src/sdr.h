@@ -38,7 +38,7 @@
 #include <sys/uio.h>
 #endif
 
-#ifdef SYSV
+#if defined(SYSV) || defined(__linux__)
 #include <unistd.h>
 #endif
 

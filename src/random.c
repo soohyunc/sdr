@@ -104,8 +104,12 @@ asm("\
 	retl					;\
 	 st	%o0, [%g1 + %lo(" RANDSEED ")] ");
 #else
+#ifdef __linux__	/* yeuch :-( */
+int
+#else
 long
-random()
+#endif
+random(void)
 {
 	register int x = randseed;
 	register int hi, lo;

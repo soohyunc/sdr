@@ -27,8 +27,11 @@ int load_crypted_file(char *filename, char *buf, char *key);
 
 /* for random.c */
 
+#ifndef NORANDPROTO
 void srandom(unsigned int seed);
 long random(void);
+#endif
+
 int sec_randomkey(char *key, int *seed);
 int sec_seed(void);
 long sec_longrand(void);
