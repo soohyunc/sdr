@@ -1585,6 +1585,8 @@ proc configure_day_widget {widget flag value} {
 
 proc changeday {widget change} {
     global $widget daysinmonth
+
+	set year [clock format [clock seconds] -format %Y]
     if {($change < 0)&&([set [set widget](dayix)] >= [expr 0 - $change])} {
 	set [set widget](dayix) [expr [set [set widget](dayix)] + $change]
 	set [set widget](dayofmonth) [expr [set [set widget](dayofmonth)] +  $change]
@@ -1597,15 +1599,23 @@ proc changeday {widget change} {
     
     set thismonthlen [lindex $daysinmonth [expr [set [set widget](monthix)] - 1]]
     if {[set [set widget](dayofmonth)] > $thismonthlen} {
-	set [set widget](dayofmonth) [expr [set [set widget](dayofmonth)] - $thismonthlen]
-	incr [set widget](monthix)
-	if {[set [set widget](monthix)]==13} {set [set widget](monthix) 1}
+		set [set widget](dayofmonth) [expr [set [set widget](dayofmonth)] - $thismonthlen]
+		incr [set widget](monthix)
+		if {[set [set widget](monthix)]==13} {
+			set [set widget](monthix) 1
+			incr year
+			fixdaysinmonth $year
+		}
     } 
     if {[set [set widget](dayofmonth)]==0} {
-	incr [set widget](monthix) -1
-	if {[set [set widget](monthix)]==0} {set [set widget](monthix) 12}
+		incr [set widget](monthix) -1
+		if {[set [set widget](monthix)]==0} {
+			set [set widget](monthix) 12
+			incr year -1
+			fixdaysinmonth $year
+		}
         set thismonthlen [lindex $daysinmonth [expr [set [set widget](monthix)] - 1]]
-	set [set widget](dayofmonth) $thismonthlen
+		set [set widget](dayofmonth) $thismonthlen
     }
     set tmpday [expr ([set [set widget](dayix)] + [set [set widget](startdayofweek)]) % 7]
     $widget.bx configure -text \

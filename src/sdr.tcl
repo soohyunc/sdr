@@ -89,6 +89,24 @@ proc getreadabletime {} {
     return [clock format [clock seconds] -format {%H:%M, %d/%m/%Y}]
 }
 
+# fix daysinmonth for leap years.
+proc fixdaysinmonth {year} {
+	global daysinmonth
+	if {[string match ??00 $year] == 1} {
+		if {[expr $year%400] == 0} {
+			set daysinmonth "31 29 31 30 31 30 31 31 30 31 30 31"
+		} else {
+			set daysinmonth "31 28 31 30 31 30 31 31 30 31 30 31"
+		}
+	} else {
+		if {[expr $year%4] == 0} {
+			set daysinmonth "31 29 31 30 31 30 31 31 30 31 30 31"
+		} else {
+			set daysinmonth "31 28 31 30 31 30 31 31 30 31 30 31"
+		}
+	}
+}
+
 set sdrversion "v2.7e"
 set titlestr "Multicast Session Directory $sdrversion"
 
@@ -3731,6 +3749,7 @@ day."]
 	    set first($mon) [clock format $next -format {%w}]
 	    set mname [clock format $next -format {%B}]
 	}
+	fixdaysinmonth $year
 	for {set d 1} {$d <= [lindex $daysinmonth [expr $mon - 1]]} {incr d} {
             highlight_day $d $mon $year $first($mon) $monnow grey $fg "" 0 -1 -1
 	}
@@ -4254,7 +4273,7 @@ set realdurations "30\n60\n120\n180\n240\n300\n360\n420\n480\n540\n600\n\
 1440\n2880\n4320\n5760\n7200\n8640\n10080\n11520\n12960\n14400\n\
 15840\n17280\n18720\n20160\n30240\n40320"
 set months "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec"
-set daysinmonth "31 28 31 30 31 30 31 31 30 31 30 31"
+fixdaysinmonth [clock format [clock seconds] -format %Y]
 
 set langstrs(fr,minutes) minutes
 set langstrs(fr,hour) heur
