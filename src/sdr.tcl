@@ -528,7 +528,7 @@ proc set_media {} {
 proc add_to_list {} {
     global session multicast recvttl recvsap_addr recvsap_port desc 
     global advertid creator tfrom tto
-    global ldata fullnumitems fullix medianum source 
+    global ldata fullnumitems fullix medianum source items
     global heardfrom timeheard 
     global starttime endtime showwhich phone email uri rctr repeat 
     global createtime modtime createaddr sessvars trust recvkey
@@ -549,7 +549,7 @@ proc add_to_list {} {
       set ldata($aid,trust) $trust
       #probably the session will also need to change listboxes...
       if {$ldata($aid,list)!=""} {
-	  incr $items($ldata($aid,list)) -1
+	  incr items($ldata($aid,list)) -1
 	  set ldata($aid,list) ""
 	  resort_sessions
 	  set code 0
