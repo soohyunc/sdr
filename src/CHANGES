@@ -3,7 +3,6 @@
 
 2.10 K.Hasler 6 Dec 1999
   - changed use of option get to use the resource procs in generic.tcl
-  - display_sessions proc returns if there's no gui
   - store_address now returns if it already has the address.
 
 2.10 C.Perkins 16 Nov 1999

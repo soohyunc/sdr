@@ -895,8 +895,7 @@ proc clear_session_state {aid} {
 }
 
 proc display_session {aid code} {
-    global ldata session gui
-    if {$gui=="NO_GUI"} { return }
+    global ldata session
 
     debug "display_session $aid $code"
     if {$code == 0} {
