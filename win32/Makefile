@@ -1,6 +1,9 @@
-LIB_DIR = /usr/local/lib
-LIBRARY_TCL = $(LIB_DIR)/tcl7.6
-LIBRARY_TK = $(LIB_DIR)/tk4.2
+LIB_DIR = /cd/research/mice/starship/common/sunos/lib
+LIBRARY_TCL = $(LIB_DIR)/tcl8.0
+LIBRARY_TK = $(LIB_DIR)/tk8.0
+
+clean:
+	rm -f ../winsdr.tar *.[ch] *.tcl *.xbm *.ehtml tcl2c makefile.mak
 
 all:	../winsdr.tar
 
