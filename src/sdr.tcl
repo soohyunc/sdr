@@ -4497,8 +4497,34 @@ if {$tcl_platform(platform) == "windows"} {
 }
 
 initialise_resources
-parse_plugins "/usr/local/etc/sdr/plugins" yes
-parse_plugins "[resource sdrHome]/plugins" yes
+
+# Parse plugins
+
+# find where we are installed
+set app_name $argv0
+while {[file type $app_name] == "link"} {
+    # don't worry about recursion since we know app must exist.
+    set app_name [file readlink $app_name]
+}
+set app_home [file dirname $app_name]
+
+# Specify plugin dirs.  First of these are possible places 
+# about where sdr is installed.
+#
+set plugin_dirs [list \
+	$app_home/sdr/plugins \
+	$app_home/plugins \
+	$app_home/../plugins \
+	/usr/local/etc/sdr/plugins \
+	[resource sdrHome]/plugins \
+]
+
+foreach plugin_dir $plugin_dirs {
+    if {[file isdirectory $plugin_dir]} {
+	parse_plugins $plugin_dir yes
+    }
+}
+unset plugin_dir plugin_dirs
 
 #fix up pre-sdr2.2a5 cache files into the proper location
 sdr2.2_fix_cache
