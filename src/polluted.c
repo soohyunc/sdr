@@ -243,7 +243,7 @@ int add_privacy_header(char *buf, int auth_len, struct priv_header *sapenc_p)
 
   writelog(printf(" -- entered add_privacy_header --\n");)
 
-  priv_hdr = (struct priv_header *)((char *)buf+sizeof(struct sap_header)+auth_len+TIMEOUT);
+  priv_hdr = (struct priv_header *)((char *)buf+sizeof(struct sapv4_header)+auth_len+TIMEOUT);
 
 /* the only symmetric encryption at the moment is DES */
 
