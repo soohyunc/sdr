@@ -1,7 +1,14 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.9 K.Hasler 26 Oct 1999
+  - created a directory type for the directory icon, so that the directory icon 
+    is displayed for directory sessions in the main SDR window.
+  - Fix reshow_sessions to delete sessbox when they exist - fixes problem when
+    using the Apply button ffrom the preferences window.
+
 2.9 E.Whelan 25 Oct 1999
-  - fixed window problems caused by adding directories
+  - fixed window problems caused by adding directories - fixes problems
+    with passphrase window.
   - eg geometry option and key passphrase window at startup
   - FAQ has also been updated 
   - Fixed problem which quit from SDR when closed directory windows
