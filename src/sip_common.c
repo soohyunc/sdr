@@ -758,13 +758,8 @@ int parse_sip_url(char *url, char* user, char *passwd, char *host,
     tag[0]='\0';
   if (transport!=NULL)
     *transport=SIP_NO_TRANSPORT;
-#ifdef WIN32
   while (ptr1!=NULL)
   {
-#else
-  while (*ptr1 != (NULL+1))
-  {
-#endif
     ptr2=strchr(ptr1, ';');
     if (ptr2!=NULL) *ptr2='\0';
     if ((strncmp(ptr1, "ttl=", 4)==0)&&(ttl!=NULL)) {
@@ -781,12 +776,10 @@ int parse_sip_url(char *url, char* user, char *passwd, char *host,
       strcat(others, ptr1);
       strcat(others, ";");
     } 
-#ifdef WIN32
     if (ptr2==NULL)
       ptr1=NULL;
-#else
-    ptr1=ptr2+1;
-#endif
+    else
+      ptr1=ptr2+1;
   }
   return 0;
     

@@ -79,6 +79,7 @@ proc new_wiz_init {aid iftype} {
 }
 
 proc new_wiz_change_panels {} {
+    .new.f.t configure -state normal
     .new.f.t delete 1.0 end
     set children [winfo children .new.f.f]
     foreach child $children {
@@ -92,6 +93,7 @@ proc new_wiz_panel_info {panelnum panels aid} {
     .new.f.l configure -text "Step $panelnum: Information About the Session"
     .new.f.t insert 1.0 "You need to give a title to your session and provide information about it.  The information should be a paragraph or so describing the purpose of the session.  If you need to refer people to more information, add a URL below.  The URL can be left blank, but the title and information must be given.  When you've filled in this information, click on Next."
     set next_panel [expr $panelnum + 1]
+    .new.f.t configure -state disabled
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
     .new.f.b.back configure -state disabled
     .new.f.b.accept configure -state disabled
@@ -104,6 +106,7 @@ proc new_wiz_panel_type {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: What Type of Session is this?"
     .new.f.t insert 1.0 "You need to specify the type of session.  Use \"broadcast\" for sessions that are largely non-interactive, \"meeting\" for interactive sessions and private meetings, and \"test\" for anything that isn't intended for real listeners."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -116,6 +119,7 @@ proc new_wiz_panel_timing_norm {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: When will the session be active?"
     .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -240,6 +244,7 @@ proc new_wiz_panel_timing_tech {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: When will the session be active?"
     .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -347,6 +352,7 @@ proc new_wiz_panel_scope_norm {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
     .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -359,6 +365,7 @@ proc new_wiz_panel_scope_tech {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
     .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -372,6 +379,7 @@ proc new_wiz_panel_media_norm {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: Choose and configure the media?"
     .new.f.t insert 1.0 "You need to decide which media the session will use.  For each medium, you need to choose the protocol and format.  Some formats also let you choose the number of layers in the encoding."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -385,6 +393,7 @@ proc new_wiz_panel_media_tech {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: Choose and configure the media?"
     .new.f.t insert 1.0 "You need to decide which media the session will use.  For each medium, you need to choose the protocol and format.  Some formats also let you choose the number of layers in the encoding."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -398,6 +407,7 @@ proc new_wiz_panel_contact {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: Provide Contact Details"
     .new.f.t insert 1.0 "You need to provide contact details for the session so that people can get in touch if there is a problem."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
@@ -411,6 +421,7 @@ proc new_wiz_panel_accept {panelnum panels aid} {
     new_wiz_change_panels
     .new.f.l configure -text "Review session details"
     .new.f.t insert 1.0 "Check the details below are correct.  If they are correct, press \"Accept\".  If they're incorrect, go back and amend the information.  \"Cancel\" will abort and lose any information you've entered."
+    .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
     set back_panel [expr $panelnum - 1]
     .new.f.b.next configure -state disabled
@@ -418,6 +429,198 @@ proc new_wiz_panel_accept {panelnum panels aid} {
 	"if {\[create\]==1} \
 	  {destroy .new}"
     .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    new_mk_session_accept .new.f.f.accept .new.f.f $aid
+}
+
+proc new_mk_session_accept {win base aid} {
+    global ldata
+    if {[winfo exists $win]==0} {
+	frame $win
+
+	frame $win.r1
+	pack $win.r1 -side top -anchor w
+	label $win.r1.l1 -text "Title:"
+	pack $win.r1.l1 -side left
+	label $win.r1.l2
+	pack $win.r1.l2 -side left
+	label $win.r1.l3 -text "Type:"
+	pack $win.r1.l3 -side left
+	label $win.r1.l4
+	pack $win.r1.l4 -side left
+
+	frame $win.r2
+	pack $win.r2 -side top -anchor w
+	label $win.r2.l1 -text "Description:"
+	pack $win.r2.l1 -side left -anchor nw
+	text $win.r2.m -width 65 -height 1 -relief flat -borderwidth 1 \
+		-highlightthickness 0 
+	pack $win.r2.m -side left
+
+	frame $win.r3 
+	pack $win.r3 -side top -anchor w
+	label $win.r3.l1 -text "URL for more info:"
+	pack $win.r3.l1 -side left
+	label $win.r3.l2
+	pack $win.r3.l2 -side left
+	
+	frame $win.r4 
+	pack $win.r4 -side top -anchor w
+	text $win.r4.m -width 80 -height 1 -relief flat -borderwidth 1 \
+		-highlightthickness 0
+	pack $win.r4.m -side left
+
+	frame $win.r5
+	pack $win.r5 -side top -anchor w
+        label $win.r5.l1 -text "Email:"
+        pack $win.r5.l1 -side left
+        label $win.r5.l2
+        pack $win.r5.l2 -side left
+        label $win.r5.l3 -text "Phone:"
+        pack $win.r5.l3 -side left
+        label $win.r5.l4
+        pack $win.r5.l4 -side left
+
+	frame $win.r6 
+	pack $win.r6 -side top -anchor w
+	label $win.r6.l1 -text "Session Scope:"
+	pack $win.r6.l1 -side left
+	label $win.r6.l2
+	pack $win.r6.l2 -side left
+	
+	frame $win.r7 
+	pack $win.r7 -side top -anchor w
+	text $win.r7.m -width 80 -height 1 -relief flat -borderwidth 1 \
+		-highlightthickness 0 -wrap none
+	pack $win.r7.m -side left
+
+    }
+    pack $win -side top -fill x
+    set title [get_new_session_name $base]
+    if {$title!=""} {
+            $win.r1.l2 configure -text $title \
+		    -foreground [option get . foreground Sdr]
+    } else {
+            $win.r1.l2 configure -text "TITLE MISSING" -foreground red
+    }
+    global sess_type
+    $win.r1.l4 configure -text $sess_type
+    set desc [get_new_session_desc]
+    if {$desc!=""} {
+	set lines [expr 1+[string length $desc]/65]
+	$win.r2.m configure -foreground [option get . foreground Sdr] \
+		-state normal -height $lines
+	$win.r2.m delete 1.0 end
+	$win.r2.m insert 1.0 $desc
+	$win.r2.m configure -state disabled
+    } else {
+	$win.r2.m configure -foreground red -state normal
+	$win.r2.m delete 1.0 end
+	$win.r2.m insert 1.0 "DESCRIPTION MISSING"
+	$win.r2.m configure -state disabled
+    }
+    set url [get_new_session_uri]
+    if {$url!=""} {
+            $win.r3.l2 configure -text $url
+    } else {
+            $win.r3.l2 configure -text "no url given"
+    }
+    set email [.new.f.f.you.f0.e get]
+    $win.r5.l2 configure -text $email
+    set phone [.new.f.f.you.f1.e get]
+    $win.r5.l4 configure -text $phone
+    set no_of_times 0
+    set ldata(new,starttime) 0
+    set ldata(new,stoptime) 0
+    foreach i {1 2 3} {
+	#the catch is here because the simple i/f only has one time entry
+	catch {
+	    set tmp [get_expiry_time .new.f.f.f2.act.fb$i $i .new.f.f.f2.act.fd.duration]
+	    if {[lindex $tmp 0]!=0} {
+		set starttime [ntp_to_unix [lindex $tmp 0]]
+		set stoptime [ntp_to_unix [lindex $tmp 1]]
+		set ldata(new,starttime,$no_of_times) $starttime
+		set ldata(new,tfrom,$no_of_times) \
+			[clock format $starttime -format {%d %b %y %H:%M %Z}]
+		set ldata(new,stoptime,$no_of_times) $stoptime
+		set ldata(new,tto,$no_of_times) \
+			[clock format $stoptime -format {%d %b %y %H:%M %Z}]
+		if {($starttime < $ldata(new,starttime)) || \
+			($ldata(new,starttime)==0)} {
+		    set ldata(new,starttime) $starttime
+		    set ldata(new,tfrom) test1
+		}
+		if {($stoptime > $ldata(new,stoptime)) } {
+		    set ldata(new,stoptime) $stoptime
+		    set ldata(new,tto) test2
+		}
+		
+		if {[lindex $tmp 2]!=0} {
+		    set ldata(new,time$no_of_times,no_of_rpts) 1
+		    set ldata(new,time$no_of_times,interval0) \
+			    [lindex $tmp 2]
+		    set ldata(new,time$no_of_times,duration0) \
+			    [lindex $tmp 3]
+		    set ldata(new,time$no_of_times,offset0) \
+			    [lindex $tmp 4]
+#		    set sess "$sess\nr=[lrange $tmp 2 end]"
+		} else {
+		    set ldata(new,time$no_of_times,no_of_rpts) 0
+		}
+		incr no_of_times
+	    }
+	}
+    }
+    set ldata(new,no_of_times) $no_of_times
+    set timing [text_times_english new]
+    regsub "\n" $timing " " timing
+    set lines [expr 1+[string length $timing]/80]
+    $win.r4.m configure -state normal -height $lines
+    $win.r4.m delete 1.0 end
+    $win.r4.m insert 1.0 $timing
+    $win.r4.m configure -state disabled
+    global zone scope
+    if {$scope=="admin"} {
+	$win.r6.l2 configure -text $zone(name,$zone(cur_zone))
+    } else {
+	$win.r6.l2 configure -text "TTL [get_ttl_scope] scoped"
+    }
+    set ms "Media:"
+    global medialist send media_proto media_fmt media_layers media_attr
+    set ctr 1
+    foreach media $medialist {
+	if {$send($media)==1} {
+	    incr ctr
+	    set ms "$ms\n  $media:"
+	    set ms "$ms proto [get_proto_name $media_proto($media)]"
+	    set ms "$ms, fmt [get_fmt_name $media_fmt($media)]"
+	    if {$media_layers($media)>1} {
+		set ms "$ms, $media_layers($media) layers"
+	    }
+	    set ms "$ms, [get_new_session_addr $media]/[get_new_session_port $media]"
+	    set attrs ""
+	    foreach attr [array names media_attr] {
+                set m [lindex [split $attr ","] 0]
+                set a [lindex [split $attr ","] 1]
+                if {$m==$media} {
+                    if {$media_attr($attr)==1} {
+                        set attrs "$attrs $a"
+                    } elseif {($media_attr($attr)!=0)&&\
+			    ($media_attr($attr)!="")} {
+                            set attrs "$attrs $a:$media_attr($attr)"
+		    }
+                }
+            }
+	    set attrs [string trimleft $attrs]
+	    if {$attrs!=""} {
+		set ms "$ms, $attrs"
+	    }
+	}
+    }
+
+    $win.r7.m configure -state normal -height $ctr
+    $win.r7.m delete 1.0 end
+    $win.r7.m insert 1.0 $ms
+    $win.r7.m configure -state disabled
 }
 
 proc set_sess_type {win type} {
@@ -476,26 +679,24 @@ proc new_mk_session_norm_scope {win aid} {
 }
 
 proc new_mk_session_tech_scope {win aid} {
-    global zone scope
-    if {[string compare $aid "new"]!=0} {
-        set sap_addr $ldata($aid,sap_addr)
-        set ttl $ldata($aid,ttl)
-        set scope ttl
-        set zone(cur_zone) $zone(ttl_scope)
-        for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
-#           puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
-            if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
-#               puts "setting zone(cur_zone) $i"
-                set scope admin
-                set zone(cur_zone) $i
-            }
-        }
-    } else {
-        set scope admin
-        set zone(cur_zone) 0
-        set ttl $zone(ttl,$zone(cur_zone))
-    }
+    global zone scope new_ttl
     if {[winfo exists $win.f3]==0} {
+	if {[string compare $aid "new"]!=0} {
+	    set sap_addr $ldata($aid,sap_addr)
+	    set ttl $ldata($aid,ttl)
+	    set scope ttl
+	    set zone(cur_zone) $zone(ttl_scope)
+	    for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
+		if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
+		    set scope admin
+		    set zone(cur_zone) $i
+		}
+	    }
+	} else {
+	    set scope admin
+	    set zone(cur_zone) 0
+	    set ttl $zone(ttl,$zone(cur_zone))
+	}
 	frame $win.f3
 	frame $win.f3.r
 	label $win.f3.r.l2 -text "Scope Mechanism:"
@@ -518,11 +719,11 @@ proc new_mk_session_tech_scope {win aid} {
 		}
 		set zone(cur_zone) $zone(ttl_scope)
 		set scope ttl
-		set_ttl_scope $ttl
+		set_ttl_scope %s $ttl
 	    } else {
 		set scope admin
 	    }
-	} $aid $win $win $win]
+	} $aid $win $win $win $win]
 	    radiobutton $win.f3.r.b4 -text "Admin Scope" \
 		    -highlightthickness 0 \
 		    -variable scope -value admin -relief flat -command \
@@ -651,30 +852,33 @@ Specify the smallest scope that will reach the people you want to communicate wi
 		-bg [option get . entryBackground Sdr] \
 		-highlightthickness 0
 	$win.f3.rr.f.e insert 0 $ttl
-	proc disable_scope_entry {value} {
-	    $win.f3.rr.f.e configure -state normal
-	    $win.f3.rr.f.e delete 0 end
-	    $win.f3.rr.f.e insert 0 $value
-	    $win.f3.rr.f.e configure -state disabled \
+	proc disable_scope_entry {value} [format {
+	    %s.f3.rr.f.e configure -state normal
+	    %s.f3.rr.f.e delete 0 end
+	    %s.f3.rr.f.e insert 0 $value
+	    %s.f3.rr.f.e configure -state disabled \
 		    -background [option get . background Sdr]\
 		    -relief groove
-	}
-	proc enable_scope_entry {ttl} {
-	    $win.f3.rr.f.e configure -state normal \
+	} $win $win $win $win ]
+	proc enable_scope_entry {ttl} [format {
+	    %s.f3.rr.f.e configure -state normal \
 		    -background [option get . entryBackground Sdr]\
 		    -relief sunken
-	    $win.f3.rr.f.e delete 0 end
-	    $win.f3.rr.f.e insert 0 $ttl
-	}
-	bind $win.f3.rr.f.e <1> {
-	    $win.f3.rr.f.r4 invoke
-	    $win.f3.rr.f.e icursor end
-	    focus $win.f3.rr.f.e
-	}
+	    %s.f3.rr.f.e delete 0 end
+	    %s.f3.rr.f.e insert 0 $ttl
+	} $win $win $win ]
+	proc get_ttl_scope {} [format {
+	    return [%s.f3.rr.f.e get]
+	} $win ]
+	bind $win.f3.rr.f.e <1> [format {
+	    %s.f3.rr.f.r4 invoke
+	    %s.f3.rr.f.e icursor end
+	    focus %s.f3.rr.f.e
+	} $win $win $win ]
 	if {[string compare $aid "new"]!=0} {
 	    set ttl $ldata($aid,ttl)
 	    if {$scope=="ttl"} {
-		set_ttl_scope $ttl
+		set_ttl_scope $win $ttl
 	    }
 	} else {
 	    if {$scope=="ttl"} {
@@ -698,8 +902,14 @@ Specify the smallest scope that will reach the people you want to communicate wi
     pack $win.f3.rr.r2 -side top -anchor w
     pack $win.f3.rr.r3 -side top -anchor w
     pack $win.f3.rr.f -side top -anchor w
-if {$scope=="admin"} {pack $win.f3.admin -side left -fill both -expand true}
-    if {$scope=="ttl"} {pack $win.f3.rr -side left -fill both -expand true}
+    if {$scope=="admin"} {
+	pack unpack $win.f3.rr
+	pack $win.f3.admin -side left -fill both -expand true
+    }
+    if {$scope=="ttl"} {
+	pack unpack $win.f3.rr
+	pack $win.f3.rr -side left -fill both -expand true
+    }
 
 }
 
@@ -1260,14 +1470,14 @@ Changing the session name may result in some sites seeing duplicate announcement
     pack $win -fill x
 }
 
-proc set_ttl_scope {ttl} {
+proc set_ttl_scope {win ttl} {
     case $ttl {
-	15 { .new.f3.rr.r1 invoke;return}
-	63 { .new.f3.rr.r2 invoke;return}
-	127 {.new.f3.rr.r3 invoke;return}
+	15 { $win.f3.rr.r1 invoke;return}
+	63 { $win.f3.rr.r2 invoke;return}
+	127 {$win.f3.rr.r3 invoke;return}
 	default {
 #	    puts $ttl
-	    .new.f3.rr.f.r4 invoke
+	    $win.f3.rr.f.r4 invoke
 	}
     }
 }

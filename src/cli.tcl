@@ -13,7 +13,7 @@ proc cli_say_sessions {which} {
     foreach el [array names cli_ixmap] {
 	unset cli_ixmap($el)
     }
-    putlogfile "Listing of $which sessions:"
+    puts "Listing of $which sessions:"
     set ix 0
     for {set i 0} {$i < $fullnumitems} {incr i} {
 	set aid $fullix($i)
@@ -29,7 +29,7 @@ proc cli_say_sessions {which} {
 	if {$show} {
 	    incr ix
 	    set cli_ixmap($ix) $aid
-	    putlogfile "$ix: $ldata($aid,session)"
+	    puts "$ix: $ldata($aid,session)"
 	}
     }
 }
@@ -39,22 +39,28 @@ proc cli_map_ix_to_aid {ix} {
     if {[info exists cli_ixmap($ix)]} {
 	set aid $cli_ixmap($ix)
     } else {
-	putlogfile "Invalid session number.  Valid session numbers are 1 to [llength [array names cli_ixmap]]."
+	puts "Invalid session number.  Valid session numbers are 1 to [llength [array names cli_ixmap]]."
     }
 }
 
 proc cli_describe_session {ix} {
     global ldata 
     set aid [cli_map_ix_to_aid $ix]
+    set desc [cli_describe_session_by_aid $aid]
+}
+
+proc cli_describe_session_by_aid {aid} {
+    global ldata 
     if {$aid==0} return
-    putlogfile "$ldata($aid,session)."
-    putlogfile "Description: [string trimright $ldata($aid,desc) "."]."
-    putlogfile "Created by $ldata($aid,creator) at $ldata($aid,createaddr)."
+    set desc ""
+    set desc "$desc\n$ldata($aid,session)."
+    set desc "$desc\nDescription: [string trimright $ldata($aid,desc) "."]."
+    set desc "$desc\nCreated by $ldata($aid,creator) at $ldata($aid,createaddr)."
     if {$ldata($aid,tfrom)!=0} {
 	regsub "\n" "[text_times_english $aid]." " " time
-	putlogfile $time
+	set desc "$desc\n$time"
     } else {
-	putlogfile "This session is not time-bounded."
+	set desc "$desc\nThis session is not time-bounded."
     }
     for {set i 0} {$i < $ldata($aid,medianum)} {incr i} {
 	set media $ldata($aid,$i,media)
@@ -67,10 +73,11 @@ proc cli_describe_session {ix} {
 	}
     }
     if {$ldata($aid,medianum)==1} {
-	putlogfile "The session medium is $medialist."
+	set desc "$desc\nThe session medium is $medialist."
     } else {
-	putlogfile "Session media are $medialist."
+	set desc "$desc\nSession media are $medialist."
     }
+    return $desc
 }
 
 proc cli_detail_session {ix} {
@@ -80,15 +87,15 @@ proc cli_detail_session {ix} {
     cli_describe_session $ix
     for {set i 0} {$i < $ldata($aid,medianum)} {incr i} {
 	set media $ldata($aid,$i,media)
-	putlogfile "The $media protocol is $ldata($aid,$i,proto), format is [get_fmt_name $ldata($aid,$i,fmt)], address is $ldata($aid,$i,addr) on port $ldata($aid,$i,port) with TTL $ldata($aid,$i,ttl)."
+	puts "The $media protocol is $ldata($aid,$i,proto), format is [get_fmt_name $ldata($aid,$i,fmt)], address is $ldata($aid,$i,addr) on port $ldata($aid,$i,port) with TTL $ldata($aid,$i,ttl)."
     }
 }
 
 proc cli_new_session {aid} {
     global cli_mode cli_prompt cli_explain cli_exec cli_variable
-    putlogfile "To abort session creation, enter \"cancel\" at any prompt."
+    puts "To abort session creation, enter \"cancel\" at any prompt."
     set cli_mode text
-    putlogfile "Enter session name and hit Enter:"
+    puts "Enter session name and hit Enter:"
     set cli_variable cli_session
     set cli_exec "cli_new_description $aid"
 }
@@ -96,7 +103,7 @@ proc cli_new_session {aid} {
 proc cli_new_description {aid} {
     global cli_mode cli_prompt cli_explain cli_exec cli_variable
     set cli_mode text
-    putlogfile "Enter session description and hit Enter:"
+    puts "Enter session description and hit Enter:"
     set cli_variable cli_desc
     set cli_exec "cli_new_scope $aid"
 }
@@ -104,7 +111,7 @@ proc cli_new_description {aid} {
 proc cli_new_scope {aid} {
     global cli_mode cli_prompt cli_explain cli_exec cli_variable
     set cli_mode choose
-    putlogfile "Possible scopes for the session are:"
+    puts "Possible scopes for the session are:"
     global cli_scopemap
     set cli_variable cli_scopemap
     set cli_prompt "Enter a scope number:"
@@ -113,7 +120,7 @@ proc cli_new_scope {aid} {
 
 
 proc cli_prefs {} {
-    putlogfile "Sorry - this feature is not yet implemented."
+    puts "Sorry - this feature is not yet implemented."
 }
 
 
@@ -122,7 +129,7 @@ set cli_prompt $cli_normal_prompt
 
 proc cli_prompt {} {
     global cli_prompt
-    putlogfile "\n$cli_prompt"
+    puts "\n$cli_prompt"
 }
 
 proc cli_normal {} {
@@ -132,58 +139,58 @@ proc cli_normal {} {
 }
 
 proc cli_usage {} {
-    putlogfile "Type \"help\" for a full command summary.  SDR commands are:"
-    putlogfile "scan"
-    putlogfile "scan broadcast"
-    putlogfile "scan meeting"
-    putlogfile "scan test"
-    putlogfile "scan unknown"
-    putlogfile "scan active"
-    putlogfile "scan future"
-    putlogfile "show <session number>"
-    putlogfile "detail <session number>"
-    putlogfile "join <session number>"
-    putlogfile "audio <session number>"
-    putlogfile "video <session number>"
-    putlogfile "whiteboard <session number>"
-    putlogfile "create"
-    putlogfile "preferences"
+    puts "Type \"help\" for a full command summary.  SDR commands are:"
+    puts "scan"
+    puts "scan broadcast"
+    puts "scan meeting"
+    puts "scan test"
+    puts "scan unknown"
+    puts "scan active"
+    puts "scan future"
+    puts "show <session number>"
+    puts "detail <session number>"
+    puts "join <session number>"
+    puts "audio <session number>"
+    puts "video <session number>"
+    puts "whiteboard <session number>"
+    puts "create"
+    puts "preferences"
 }
 
 proc cli_help {} {
-    putlogfile "SDR command usage:"
-    putlogfile "help"
-    putlogfile "   gives this output."
-    putlogfile "scan"
-    putlogfile "   gives a listing of all sessions."
-    putlogfile "scan broadcast"
-    putlogfile "   gives a listing of all broadcast type sessions."
-    putlogfile "scan meeting"
-    putlogfile "   gives a listing of all meeting type sessions."
-    putlogfile "scan test"
-    putlogfile "   gives a listing of all test type sessions."
-    putlogfile "scan unknown"
-    putlogfile "   gives a listing of all unknown type sessions."
-    putlogfile "scan active"
-    putlogfile "   gives a listing of all sessions scheduled to currently be active."
-    putlogfile "scan future"
-    putlogfile "   gives a listing of all future sessions."
-    putlogfile "show <session number>"
-    putlogfile "   gives a description of the specified session."
-    putlogfile "detail <session number>"
-    putlogfile "   gives a more detailed description of the specified session."
-    putlogfile "join <session number>"
-    putlogfile "   starts all the media tools for the specified session."
-    putlogfile "audio <session number>"
-    putlogfile "   starts only the audio tool for the specified session."
-    putlogfile "video <session number>"
-    putlogfile "   starts only the audio tool for the specified session."
-    putlogfile "whiteboard <session number>"
-    putlogfile "   starts only the whiteboard tool for the specified session."
-    putlogfile "create"
-    putlogfile "   creates a new session and announces it."
-    putlogfile "preferences"
-    putlogfile "   sets various preferences for how SDR behaves."
+    puts "SDR command usage:"
+    puts "help"
+    puts "   gives this output."
+    puts "scan"
+    puts "   gives a listing of all sessions."
+    puts "scan broadcast"
+    puts "   gives a listing of all broadcast type sessions."
+    puts "scan meeting"
+    puts "   gives a listing of all meeting type sessions."
+    puts "scan test"
+    puts "   gives a listing of all test type sessions."
+    puts "scan unknown"
+    puts "   gives a listing of all unknown type sessions."
+    puts "scan active"
+    puts "   gives a listing of all sessions scheduled to currently be active."
+    puts "scan future"
+    puts "   gives a listing of all future sessions."
+    puts "show <session number>"
+    puts "   gives a description of the specified session."
+    puts "detail <session number>"
+    puts "   gives a more detailed description of the specified session."
+    puts "join <session number>"
+    puts "   starts all the media tools for the specified session."
+    puts "audio <session number>"
+    puts "   starts only the audio tool for the specified session."
+    puts "video <session number>"
+    puts "   starts only the audio tool for the specified session."
+    puts "whiteboard <session number>"
+    puts "   starts only the whiteboard tool for the specified session."
+    puts "create"
+    puts "   creates a new session and announces it."
+    puts "preferences"
+    puts "   sets various preferences for how SDR behaves."
 }
 
 proc cli_join_session {media ix} {
@@ -206,7 +213,7 @@ proc cli_join_session {media ix} {
 	    }
 	}
 	if {$done==0} {
-	    putlogfile "Error: Session $ix does not have media $media"
+	    puts "Error: Session $ix does not have media $media"
 	}
     }
 }
@@ -258,14 +265,14 @@ proc cli_start_media {aid mnum mode} {
       if {[is_known_media $media]!=-1} {
           return [cli_start_media_tool $aid $media $ldata($aid,$mnum,proto) $ldata($aid,$mnum,fmt) [split $ldata($aid,$mnum,vars) "\n"]]
       } else {
-	  putlogfile "Media $media unknown." 
-	  putlogfile "The session you tried to join contains a media \"$media\" that I do not know about.  To join this session you need the \"$media\" sdr plug-in module and a media tool capable of joining this session."
+	  puts "Media $media unknown." 
+	  puts "The session you tried to join contains a media \"$media\" that I do not know about.  To join this session you need the \"$media\" sdr plug-in module and a media tool capable of joining this session."
 	  return 0
       }
   } elseif {$mode=="record"} {
       return [record_$media]
   } else {
-      putlogfile stderr "unknown mode to start_media: $mode"
+      puts stderr "unknown mode to start_media: $mode"
       return 0
   }
 }
@@ -288,7 +295,7 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
     
     if {([lsearch $rules "$media.$proto.$fmt"]==-1) && \
         ([wcsearch $rules "$media.$proto"]=="")} {
-	putlogfile "The session you tried to join contains a media \"$media\" with protocol \"$proto\" and format \"$fmt\".  I have no plug-in module that defines a $media tool for this.  To join this session you need a plug-in module for this combination of media, protocol and format and a media tool capable of receiving the data."
+	puts "The session you tried to join contains a media \"$media\" with protocol \"$proto\" and format \"$fmt\".  I have no plug-in module that defines a $media tool for this.  To join this session you need a plug-in module for this combination of media, protocol and format and a media tool capable of receiving the data."
 	return 0
     } else {
 	if {[lsearch $rules "$media.$proto.$fmt"]==-1} {
@@ -296,8 +303,8 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
             #match was possible (typically an RTP dynamic payload type)
 	    set wclist [wcsearch $rules "$media.$proto"]
 	    set match 0
-#	    putlogfile $wclist
-#	    putlogfile "got a wildcard match"
+#	    puts $wclist
+#	    puts "got a wildcard match"
 	    foreach wc $wclist {
 		set needattr ""
 		catch {set needattr $withattrs($media.$proto.*$wc)}
@@ -305,13 +312,13 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 		foreach wa $needattr {
 		    set withattr [expand_var $wa $wc $fmt]
 		    set tmp $withattr
-#		    putlogfile $withattr
+#		    puts $withattr
 		    while {[string first "*(" $tmp]!=-1} {
 			set tmp [remove_wc_vars $tmp]
 		    }
-#		    putlogfile $tmp
+#		    puts $tmp
 		    foreach attr $attrlist {
-#			putlogfile "string match >$tmp< >$attr<"
+#			puts "string match >$tmp< >$attr<"
 			if {[string match $tmp $attr]==1} {
 			    set match 1
 			    break
@@ -326,17 +333,17 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 		#wa holds the relevant "withattr" line from the plugin
 		#now we need to match against the actual attributes..
 		#(this is really ugly)
-#		putlogfile "SUCCESS\nwc:$wc\nwa:$wa"
-#		putlogfile "tmp:$tmp"
+#		puts "SUCCESS\nwc:$wc\nwa:$wa"
+#		puts "tmp:$tmp"
 		foreach attrflag [array names attrflags] {
-#		    putlogfile "attrflag:$attrflag"
-#		    putlogfile "match: *.$media.$proto.*$wc.$wa"
+#		    puts "attrflag:$attrflag"
+#		    puts "match: *.$media.$proto.*$wc.$wa"
 		    if {[string match "*.$media.$proto.\*$wc.$wa" $attrflag]==1} {
-#			putlogfile "flags index: $attrflag"
-#			putlogfile "flags: $attrflags($attrflag)"
+#			puts "flags index: $attrflag"
+#			puts "flags: $attrflags($attrflag)"
 			set tool [find_tool [lindex [split $attrflag "."] 0]]
 			if {$tool==""} { continue }
-#			putlogfile "tool: $tool"
+#			puts "tool: $tool"
 			set macrovalues([string trim $wc "()"]) $fmt
 			set fmt "*$wc"
 			lappend attrlist $wa
@@ -345,7 +352,7 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 		    }
 		}
 	    } else {
-		putlogfile "The session you tried to join contains a media \"$media\" with protocol \"$proto\" and format \"$fmt\".  I have no plug-in module that defines a $media tool for this.  To join this session you need a plug-in module for this combination of media, protocol and format and a media tool capable of receiving the data."
+		puts "The session you tried to join contains a media \"$media\" with protocol \"$proto\" and format \"$fmt\".  I have no plug-in module that defines a $media tool for this.  To join this session you need a plug-in module for this combination of media, protocol and format and a media tool capable of receiving the data."
 		return 0
 	    }
 	} else {
@@ -358,10 +365,10 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 	foreach subrule $rule {
 	    set tool [find_tool [lindex $subrule 0]]
 	    if {$tool==""} {
-#		catch {putlogfile "the tool [lindex $subrule 0] is not installed"}
+#		catch {puts "the tool [lindex $subrule 0] is not installed"}
 	    } else {
 		set tmp enabled
-#		catch {putlogfile "$media.$proto.$fmt.[lindex $subrule 0]"}
+#		catch {puts "$media.$proto.$fmt.[lindex $subrule 0]"}
 		catch {set tmp $tool_state($media.$proto.$fmt.[lindex $subrule 0])}
 		if {$tmp=="enabled"} {
 		    lappend rulelist $subrule
@@ -373,8 +380,8 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 	    foreach subrule $rule {
 		lappend toollist [lindex $subrule 0]
 	    }
-	    putlogfile "The session you tried to join contains a media \"$media\" for which I can find no suitable tool installed.  Suitable tools that I know about would include:\n$toollist\nNone of these is in your command path."
-#	    putlogfile "no tools are installed for $media"
+	    puts "The session you tried to join contains a media \"$media\" for which I can find no suitable tool installed.  Suitable tools that I know about would include:\n$toollist\nNone of these is in your command path."
+#	    puts "no tools are installed for $media"
 	    return 0;
 	} elseif {[llength $rulelist]>1} {
 #	    set toollist {}
@@ -408,13 +415,13 @@ proc cli_start_media_tool {aid media proto fmt attrlist} {
 
 proc cli_select_tool_for_media {aid media proto fmt rulelist attrlist} {
     global cli_toolmap cli_mode cli_exec cli_explain cli_variable cli_prompt
-    putlogfile "Select the $media tool to use:"
+    puts "Select the $media tool to use:"
     set bnum 1
     global startrule
     set startrule($media) [lindex $rulelist 0]
     foreach rule $rulelist {
 	set cli_toolmap($bnum) $rule
-	putlogfile  "$bnum: [lindex $rule 0]"
+	puts  "$bnum: [lindex $rule 0]"
 #	    -variable startrule($media) -value $rule -highlightthickness 0
 	incr bnum
     }
@@ -483,7 +490,7 @@ proc cli_parse_command {} {
 		cli_prefs
 	    }
 	    "quit" {
-		putlogfile "Goodbye!"
+		puts "Goodbye!"
 		exit 0
 	    }
 	    default {
@@ -496,10 +503,10 @@ proc cli_parse_command {} {
 	    set var [set [set cli_variable]($cli_cmd)]
 	    regsub "\%" $cli_exec $var cmd
 	    eval $cmd
-	    putlogfile "OK."
+	    puts "OK."
 	    cli_normal
 	} else {
-	    putlogfile "Invalid $cli_explain number.  Valid $cli_explain numbers are 1 to [llength [array names [set cli_variable]]]."
+	    puts "Invalid $cli_explain number.  Valid $cli_explain numbers are 1 to [llength [array names [set cli_variable]]]."
 	}
     }
     cli_prompt
