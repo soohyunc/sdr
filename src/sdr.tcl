@@ -210,7 +210,7 @@ proc build_interface {first} {
 
         set tmpfile [clock format [clock seconds]  -format {%H%M%S}]
         set logfile "[glob -nocomplain [resource sdrHome]]/log$tmpfile"
-        puts "debug - logfile will be $logfile"
+#       puts "debug - logfile will be $logfile"
         set startlogtime "[clock format [clock seconds]]"
         putlogfile "logfile started at $startlogtime"
 
