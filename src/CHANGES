@@ -1,5 +1,9 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.4a8 E.Whelan 4th Feb 98
+
+- changed code to remove the symmetric encryption keyid
+
 2.4a8 mjh 28th Jan 98
 
 - changed address field in announcements to be FQDN as per new SDP spec.
