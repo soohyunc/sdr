@@ -1,5 +1,13 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.7.0 K.Hasler 15 July 1999
+  - Removed calls to splat_tcl_characters, since we're not eval'ing the 
+    parameters anymore.
+  - Fixed sip code, so we don't eval the packet buffer.
+  - Fixed run_program to work on Windows
+  - Removed eval $rule in plugins and replaced with convert_vars in 
+    sd_listen (called from run_program).
+
 2.6.3 K.Hasler 25 June 1999
   - removed []$ characters in sip_recv_udp and recv_packets 
 
