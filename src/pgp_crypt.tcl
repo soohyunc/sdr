@@ -75,12 +75,12 @@ proc enc_pgp_get_key_list {win aid} {
                   set user_id(pgp,$i) $userid
                   set key_id(pgp,$i) $keyid
                   set sig_id(pgp,$i) $sigid
-                  if { [string length $userid] > 26 } {
+                  if { [string length $userid] > 60 } {
                         set dotdot "..."
                   } else {
                         set dotdot ""
                   }
-		  set keyn [string range $userid 0 26]$dotdot
+		  set keyn [string range $userid 0 60]$dotdot
 		  #$win.enc.keys.lb delete $i end
 		  $win.enc.keys.lb insert $i "$keyn"
  
@@ -105,7 +105,7 @@ proc enc_pgp_get_key_list {win aid} {
 			set pgpkey [lindex $selkey 0]
 	   	set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$pgpkey)
 	   	set key_id(pgp,enc_cur_key_sel) $key_id(pgp,$pgpkey)
- 			if { [string length $user_id(pgp,enc_cur_key_sel)] > 18} {
+ 			if { [string length $user_id(pgp,enc_cur_key_sel)] > 60} {
                               set dotdot "..."
                             } else {
                                 set dotdot ""
@@ -466,14 +466,14 @@ t card configration" 10000
                   set key_id(pgp,$i) $keyid
                   set sig_id(pgp,$i) $sigid
  
-                  if { [string length $userid] > 26 } {
+                  if { [string length $userid] > 60 } {
                         set dotdot "..."
                   } else {
                         set dotdot ""
                   }
  
                   $win.auth.keys.lb insert [expr $i+1].0 \
-                                [string range $userid 0 26]$dotdot
+                                [string range $userid 0 60]$dotdot
                   $win.auth.keys.lb insert end " \n"
                   $win.auth.keys.lb tag add line$i [expr $i+1].0 \
                                 [expr $i+1].end
@@ -494,14 +494,14 @@ t card configration" 10000
                             %s.auth.keys.lb configure -state disabled
                             set user_id(pgp,auth_cur_key_sel) $user_id(pgp,%s)
                             set key_id(pgp,auth_cur_key_sel) $key_id(pgp,%s)
-                            if { [string length $user_id(pgp,auth_cur_key_sel)] > 18} {
+                            if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
                                 set dotdot "..."
                             } else {
                                 set dotdot ""
                             }
  
                             %s.auth.pwd.l configure -text "Enter passphrase\
- for [string range $user_id(pgp,auth_cur_key_sel) 0 18]$dotdot" \
+ for [string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" \
                                 -font [resource infoFont]
                         } $win $win $i $win $i $i $win]
                   incr i
@@ -527,14 +527,14 @@ t card configration" 10000
         }
  
         # Restrict how much we display of the user id of each key
-        if { [string length $user_id(pgp,auth_cur_key_sel)] > 18} {
+        if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
              set dotdot "..."
         } else {
              set dotdot ""
         }
  
         $win.auth.pwd.l configure -text "Enter passphrase for\
-[string range $user_id(pgp,auth_cur_key_sel) 0 18]$dotdot" -font [resource infoFont]
+[string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" -font [resource infoFont]
     }
   return
 }
