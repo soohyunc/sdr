@@ -4,7 +4,7 @@ LIB_DIR     = /cs/research/mice/starship/common/irix/lib
 LIBS        = $(LIB_DIR)/libtk8.0.a $(LIB_DIR)/libtcl8.0.a -lX11 -lm
 LIBRARY_TCL = $(LIB_DIR)/tcl8.0
 LIBRARY_TK  = $(LIB_DIR)/tk8.0
-CFLAGS      = $(INCLUDES) -g -O -DSYSV -DSGI -DCANT_MCAST_BIND -DNORANDPROTO
+CFLAGS      = $(INCLUDES) -g -O -DSYSV -DSGI -DCANT_MCAST_BIND -DNORANDPROTO -DAUTH
 
 all:sdr
 
