@@ -515,127 +515,124 @@ proc install_key {keyname} {
 proc new_mk_session_security {win aid} {
     global ldata security keylist user_id key_id 
     global enc_old_key_sel auth_old_key_sel asympass asympse
-    frame $win -relief groove -borderwidth 2
-    pack $win -side left -fill both -expand true
- 
-    # Authentication code [dlh]
-    # Creates a button to select the authentication type and a text box
-    # for selecting the required (PGP)key.
-    frame $win.auth
-    pack $win.auth -side top -fill both -expand true
-    frame $win.auth.sel
-    pack $win.auth.sel -side top -pady 5 -fill both -expand true
-    label $win.auth.sel.lauth -text "Authentication:"
-    menubutton $win.auth.sel.mauth -menu $win.auth.sel.mauth.menu\
-        -width 10 -borderwidth 1 -relief raised
-    pack $win.auth.sel.lauth $win.auth.sel.mauth -anchor nw -side left\
-        -padx 5
-    menu $win.auth.sel.mauth.menu -tearoff 0
-    $win.auth.sel.mauth.menu add command -label "None"\
-        -command "set_auth_type $win none"
-    $win.auth.sel.mauth.menu add command -label "PGP"\
-        -command "set_auth_type $win pgp"
-    $win.auth.sel.mauth.menu add command -label "X509"\
-        -command "set_auth_type $win x509"
-    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
-        -command "set_auth_type $win cpgp"
-    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
-        -command "set_auth_type $win cx50"
- 
-    frame $win.auth.keys
-    pack $win.auth.keys -side top -pady 2 -fill both -expand true
-    text $win.auth.keys.lb -width 15 -height 5 -relief flat\
-         -relief sunken -borderwidth 1 -yscroll "$win.auth.keys.ysb set"\
-         -highlightthickness 0
-    pack $win.auth.keys.lb -side left -fill both -expand true
-    scrollbar $win.auth.keys.ysb\
-    -command "$win.auth.keys.lb yview" -borderwidth 1 -highlightthickness 0
-    pack $win.auth.keys.ysb -side right -fill y
- 
-    frame $win.auth.pwd
-    pack $win.auth.pwd -side top -pady 2 -fill both -expand true
-    label $win.auth.pwd.l -text "Password For PGP:"
-    pack $win.auth.pwd.l -side top -anchor w
-    label $win.auth.pwd.m -text "Passphrase:"
-    pack $win.auth.pwd.m -side top -anchor w
-    password $win.auth.pwd.e -width 30 -relief sunken\
-        -variable asympass -borderwidth 1\
-        -background [option get . entryBackground Sdr]
-    pack $win.auth.pwd.e -side top -anchor w
-     if {$aid=="new"} {
-        set_auth_type $win none
-        set auth_old_key_sel ""
-    } else {
- 
-        # We are modifying an announcement so display old state of
-        # authentication and encryption selection
- 	set asym $ldata($aid,authtype)
-        set key_id($asym,auth_cur_key_sel) $ldata($aid,asym_keyid)
-        set auth_old_key_sel $ldata($aid,asym_keyid)
-        set_auth_type $win $ldata($aid,authtype)
-#       puts "Advert id: $aid"
-#       puts "Auth Type: $ldata($aid,authtype)"
-    }
-    frame $win.enc
-    pack $win.enc -side top -fill both -expand true
-    frame $win.enc.sel
-    pack $win.enc.sel -side top -pady 5 -fill both -expand true
-    label $win.enc.sel.lenc -text "Encryption:"
-    menubutton $win.enc.sel.menc -menu $win.enc.sel.menc.menu\
-        -width 10 -borderwidth 1 -relief raised
-    pack $win.enc.sel.lenc $win.enc.sel.menc -anchor nw -side left\
-        -padx 5
-    menu $win.enc.sel.menc.menu -tearoff 0
-    $win.enc.sel.menc.menu add command -label "None"\
-        -command "set_enc_type $win none $aid"
-    $win.enc.sel.menc.menu add command -label "Des"\
-        -command "set_enc_type $win des $aid"
-    $win.enc.sel.menc.menu add command -label "PGP"\
-        -command "set_enc_type $win pgp $aid"
-    $win.enc.sel.menc.menu add command -label "X509"\
-        -command "set_enc_type $win x509 $aid"
- 
-    frame $win.enc.keys
-    pack $win.enc.keys -side top -pady 2 -fill both -expand true
-    listbox $win.enc.keys.lb -width 15 -height 5 -yscroll\
-    "$win.enc.keys.ysb set" -relief sunken -borderwidth 1 \
-     -selectmode single  -selectforeground [resource activeForeground] \
-        -selectbackground [resource activeBackground] \
-        -highlightthickness 0
-    #text $win.enc.keys.lb -width 15 -height 5 -relief flat\
-    #     -relief sunken -borderwidth 1 -yscroll "$win.enc.keys.ysb set"\
-    #     -highlightthickness 0
-    pack $win.enc.keys.lb -side left -fill both -expand true
-    scrollbar $win.enc.keys.ysb\
-    -command "$win.enc.keys.lb yview" -borderwidth 1 -highlightthickness 0
-    pack $win.enc.keys.ysb -side right -fill y
+    if {[winfo exists $win]==0} {
+	    frame $win -relief groove -borderwidth 2
+	 
+	    # Authentication code [dlh]
+	    # Creates a button to select the authentication type and a text box
+	    # for selecting the required (PGP)key.
+	    frame $win.auth
+	    frame $win.auth.sel
+	    label $win.auth.sel.lauth -text "Authentication:"
+	    menubutton $win.auth.sel.mauth -menu $win.auth.sel.mauth.menu -width 10 -borderwidth 1 -relief raised
+	    menu $win.auth.sel.mauth.menu -tearoff 0
+	    $win.auth.sel.mauth.menu add command -label "None"\
+		-command "set_auth_type $win none"
+	    $win.auth.sel.mauth.menu add command -label "PGP"\
+		-command "set_auth_type $win pgp"
+	    $win.auth.sel.mauth.menu add command -label "X509"\
+		-command "set_auth_type $win x509"
+	    $win.auth.sel.mauth.menu add command -label "PGP+CERT"\
+		-command "set_auth_type $win cpgp"
+	    $win.auth.sel.mauth.menu add command -label "X509+CERT"\
+		-command "set_auth_type $win cx50"
+	 
+	    frame $win.auth.keys
+	    text $win.auth.keys.lb -width 15 -height 5 -relief flat\
+		 -relief sunken -borderwidth 1 -yscroll "$win.auth.keys.ysb set"\
+		 -highlightthickness 0
+	    scrollbar $win.auth.keys.ysb -command "$win.auth.keys.lb yview" -borderwidth 1 -highlightthickness 0
+	 
+	    frame $win.auth.pwd
+	    label $win.auth.pwd.l -text "Password For PGP:"
+	    label $win.auth.pwd.m -text "Passphrase:"
+	    password $win.auth.pwd.e -width 30 -relief sunken\
+		-variable asympass -borderwidth 1\
+		-background [option get . entryBackground Sdr]
+	     if {$aid=="new"} {
+		set_auth_type $win none
+		set auth_old_key_sel ""
+	    } else {
+	 
+		# We are modifying an announcement so display old state of
+		# authentication and encryption selection
+		set asym $ldata($aid,authtype)
+		set key_id($asym,auth_cur_key_sel) $ldata($aid,asym_keyid)
+		set auth_old_key_sel $ldata($aid,asym_keyid)
+		set_auth_type $win $ldata($aid,authtype)
+	#       puts "Advert id: $aid"
+	#       puts "Auth Type: $ldata($aid,authtype)"
+	    }
+	    frame $win.enc
+	    frame $win.enc.sel
+	    label $win.enc.sel.lenc -text "Encryption:"
+	    menubutton $win.enc.sel.menc -menu $win.enc.sel.menc.menu -width 10 -borderwidth 1 -relief raised
+	    menu $win.enc.sel.menc.menu -tearoff 0
+	    $win.enc.sel.menc.menu add command -label "None"\
+		-command "set_enc_type $win none $aid"
+	    $win.enc.sel.menc.menu add command -label "Des"\
+		-command "set_enc_type $win des $aid"
+	    $win.enc.sel.menc.menu add command -label "PGP"\
+		-command "set_enc_type $win pgp $aid"
+	    $win.enc.sel.menc.menu add command -label "X509"\
+		-command "set_enc_type $win x509 $aid"
+	 
+	    frame $win.enc.keys
+	    listbox $win.enc.keys.lb -width 15 -height 5 -yscroll\
+	    "$win.enc.keys.ysb set" -relief sunken -borderwidth 1 \
+	     -selectmode single  -selectforeground [resource activeForeground] \
+		-selectbackground [resource activeBackground] \
+		-highlightthickness 0
+	    #text $win.enc.keys.lb -width 15 -height 5 -relief flat\
+	    #     -relief sunken -borderwidth 1 -yscroll "$win.enc.keys.ysb set"\
+	    #     -highlightthickness 0
+	    scrollbar $win.enc.keys.ysb\
+	    -command "$win.enc.keys.lb yview" -borderwidth 1 -highlightthickness 0
 
-    if {$keylist==""} {
-        #$win.enc.keys.lb configure -state disabled
-        set security public
-    }
- 
-    if {$aid=="new"} {
-        set_enc_type $win none $aid
-        set enc_old_key_sel ""
-        set $ldata($aid,key) ""
-        set security public
-    } else {
+	    if {$keylist==""} {
+		#$win.enc.keys.lb configure -state disabled
+		set security public
+	    }
+	 
+	    if {$aid=="new"} {
+		set_enc_type $win none $aid
+		set enc_old_key_sel ""
+		set ldata($aid,key) ""
+		set security public
+	    } else {
 
-    if {([string compare $aid "new"]!=0)&&($ldata($aid,key)!="")} {
-        set security private
-    } else {
-        set security public
-    }
-        # We are modifying an announcement so display old state of
-        # authentication and encryption selection
-	set asym $ldata($aid,enctype)
-        set key_id($asym,enc_cur_key_sel) $ldata($aid,enc_asym_keyid)
-        set enc_old_key_sel $ldata($aid,enc_asym_keyid)
-        set_enc_type $win $ldata($aid,enctype) $aid
-#       puts "Advert id: $aid"
-#       puts "Enc Type: $ldata($aid,enctype)"
-    }
+	    if {([string compare $aid "new"]!=0)&&($ldata($aid,key)!="")} {
+		set security private
+	    } else {
+		set security public
+	    }
+		# We are modifying an announcement so display old state of
+		# authentication and encryption selection
+		set asym $ldata($aid,enctype)
+		set key_id($asym,enc_cur_key_sel) $ldata($aid,enc_asym_keyid)
+		set enc_old_key_sel $ldata($aid,enc_asym_keyid)
+		set_enc_type $win $ldata($aid,enctype) $aid
+	#       puts "Advert id: $aid"
+	#       puts "Enc Type: $ldata($aid,enctype)"
+	    }
+    	}
+	pack $win -side left -fill both -expand true
+	pack $win.auth -side top -fill both -expand true
+	pack $win.auth.sel -side top -pady 5 -fill both -expand true
+	pack $win.auth.sel.lauth $win.auth.sel.mauth -anchor nw -side left -padx 5
+	pack $win.auth.keys -side top -pady 2 -fill both -expand true
+	pack $win.auth.keys.lb -side left -fill both -expand true
+	pack $win.auth.keys.ysb -side right -fill y
+	pack $win.auth.pwd -side top -pady 2 -fill both -expand true
+	pack $win.auth.pwd.l -side top -anchor w
+	pack $win.auth.pwd.m -side top -anchor w
+	pack $win.auth.pwd.e -side top -anchor w
+	pack $win.enc -side top -fill both -expand true
+	pack $win.enc.sel -side top -pady 5 -fill both -expand true
+	pack $win.enc.sel.lenc $win.enc.sel.menc -anchor nw -side left -padx 5
+	pack $win.enc.keys -side top -pady 2 -fill both -expand true
+	pack $win.enc.keys.lb -side left -fill both -expand true
+	pack $win.enc.keys.ysb -side right -fill y
 }
 
 proc enc_show_keys {win aid} {
@@ -714,5 +711,350 @@ proc pref_security {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
 	save		{
 			}
     }
+}
+
+#If you need to add more panels, create a function called 
+#new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
+#called.
+set new_wiz_norm_panels \
+	"info type timing_norm scope_norm media_norm contact security accept"
+set new_wiz_tech_panels \
+	"info type timing_tech scope_tech media_tech contact security accept"
+
+proc create {} {
+    global ttl dayix durationix send zone
+    global timeofday minoffset hroffset media_attr media_fmt media_proto
+    global media_layers medialist new_createtime sess_type
+    global rtp_payload sdrversion security
+    global mediaenc security
+
+#AUTH
+    global auth_type
+    global enc_type
+    global sess_auth_status
+    global sess_enc_status
+    global user_id asympass key_id
+    global validpassword
+    global validauth
+    global validfile
+    global validkey
+
+    log "creating a session"
+    if {$ttl==0} { set ttl [.new.f.f.f3.rr.f.e get] }
+    if {($ttl < 0)|($ttl > 255)} {
+        errorpopup "Illegal Scope Value" "Scope value must be between 0 and 255"
+        log "user had entered an illegal scope value"
+        return
+    }
+    set sess "v=0"
+    set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
+    set sess "$sess\ns=[get_new_session_name .new.f.f]"
+    if {[get_new_session_name .new.f.f]==""} {
+        errorpopup "No Session Name" "You must give the session a name"
+        log "user had entered no session name"
+        return 0
+    }
+
+    if {[get_new_session_desc]==""} {
+        errorpopup "No Session Description" "You must give some description of your session"
+        log "user had entered no session description"
+        return 0
+    }
+
+    set desc [get_new_session_desc]
+    regsub -all "\n" $desc " " desc
+    set sess "$sess\ni=$desc"
+    set uri [get_new_session_uri]
+    if {$uri!=""} {
+        set sess "$sess\nu=$uri"
+    }
+    set email [.new.f.f.you.f0.e get]
+    set phone [.new.f.f.you.f1.e get]
+    if {$email!=""} {
+        set sess "$sess\ne=$email"
+    }
+    if {$phone!=""} {
+        set sess "$sess\np=$phone"
+    }
+
+    foreach i {1 2 3} {
+      #the catch is here because the simple i/f only has one time entry
+      catch {
+        set tmp [get_expiry_time .new.f.f.f2.act.fb$i $i .new.f.f.f2.act.fd.duration]
+            if {[lindex $tmp 0]!=0} {
+            set starttime [lindex $tmp 0]
+            set stoptime [lindex $tmp 1]
+            set sess "$sess\nt=[format %u $starttime] [format %u $stoptime]"
+            if {[lindex $tmp 2]!=0} {
+                set sess "$sess\nr=[lrange $tmp 2 end]"
+            }
+        }
+      }
+    }
+    if {[valid_mcast_address [get_new_session_addr conference]]==0} {
+        errorpopup "Invalid Multicast Address" \
+            "The multicast address specified in not a valid IP Class D address"
+        log "user had entered an invalid multicast address"
+        return 0
+    }
+    set sess "$sess\na=tool:sdr $sdrversion"
+    set sess "$sess\na=type:$sess_type"
+    foreach media $medialist {
+        if {$send($media)==1} {
+            if {([get_new_session_port $media]<1024)|([get_new_session_port $media]>65535)} {
+                errorpopup "Bad $media port number" \
+                    [tt "Port numbers should be between 1024 and 65535"]
+                log "user had entered a bad port number"
+                return 0
+            }
+
+            if { $mediaenc($media) == 1 } {
+
+# check length of media key
+
+              if { [ string length [get_new_media_key $media] ] < 8 } {
+                  errorpopup "$media key too short" \
+                      [tt "Encryption keys must be at least 8 characters"]
+                  log "user had entered short key for $media"
+                  return 0
+              }
+
+# the following cause problems inside sdr: \ / "
+# the following cause problems from command line outside sdr: $ `
+# the following (as well as $) are tcl special characters: [ ]
+# disallow all so that people can join sessions using sdr and via command line
+
+              if { [string first "\\" "[get_new_media_key $media]" ] != -1 ||
+                   [string first "/"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\"" "[get_new_media_key $media]" ] != -1 ||
+                   [string first "`"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "$"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\["  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\]"  "[get_new_media_key $media]" ] != -1 } {
+                   errorpopup "$media key has forbidden characters" \
+                      [tt "Encryption keys should not contain \\, /, \", \`, $, \[ or \] as these may cause problems when starting the tools "]
+                  log "user had entered forbidden characters in key for $media, key was [get_new_media_key $media] ] "
+                  return 0
+
+              }
+            }
+
+            if {$media_proto($media)=="rtp"} {
+                set sess "$sess\nm=$media [get_new_session_port $media] RTP/AVP $rtp_payload(pt:$media_fmt($media))"
+            } else {
+                set sess "$sess\nm=$media [get_new_session_port $media] $media_proto($media) $media_fmt($media)"
+            }
+            set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
+            if {$media_layers($media)>1} {
+                set sess "$sess/$media_layers($media)"
+            }
+
+            if { $mediaenc($media) == 1 } {
+              set sess "$sess\nk=clear:[get_new_media_key $media]"
+            }
+
+            foreach attr [array names media_attr] {
+                set m [lindex [split $attr ","] 0]
+                set a [lindex [split $attr ","] 1]
+                if {$m==$media} {
+                    if {$media_attr($attr)==1} {
+                        set sess "$sess\na=$a"
+                    } elseif {($media_attr($attr)!=0)&&\
+                        ($media_attr($attr)!="")} {
+                            set sess "$sess\na=$a:$media_attr($attr)"
+                        }
+                }
+            }
+        }
+    }
+#    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
+    if {[info exists security]&&($security == "private")} {
+        set keyname [string trim [get_new_session_key] "\n"]
+        if {$keyname==0} {return 0};
+        log "new session was encrypted"
+    } else {
+        set keyname ""
+        log "new session was not encrypted"
+    }
+#    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
+
+#AUTH - ensure passphrase entered if auth key selected
+        if { ($auth_type == "pgp" || $auth_type == "cpgp" || $auth_type =="none") } {
+        set aauth "pgp"
+    }
+    if { ($auth_type == "x509" || $auth_type == "cx50" ) } {
+        set aauth "x509"
+    }
+if { $enc_type == "pgp" || $enc_type == "none" || $enc_type=="des"} {
+      set asym "pgp"
+        }
+  if { $enc_type == "x509" || $enc_type == "none"} {
+      set asym "x509"
+        }
+
+    if { ($user_id(pgp,auth_cur_key_sel)!="") &&\
+         $asympass=="" } {
+                errorpopup "No Passphrase!"\
+                "The passphrase for $user_id(pgp,auth_cur_key_sel) must be\
+                 entered before authentication information can be \
+                 constructed for this session announcement."
+                log "User did not enter a passphrase for key certificate"
+                return 0
+    }
+ set validpassword 0
+ set validauth 0
+ set validfile 0
+    set validkey 0
+#authentication only    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type
+ $key_id(pgp,auth_cur_key_sel)
+
+#authentication and Encryption
+createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname $auth_type $enc_type $key_id($aaut h,auth_cur_key_sel) $key_id($asym,enc_cur_key_sel)
+
+    if {$validpassword==0 && ($auth_type =="pgp" || $auth_type =="cpgp"  )} {
+        errorpopup "Bad Passphrase" "You entered the wrong passphrase for\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect passphrase for key certificate"
+        return 0
+    }
+    if {$validpassword==0 && ($auth_type =="x509" || $auth_type =="cx50"  )} {
+        errorpopup "Secude failed" "The Signed DATA Failed for USER\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect passphrase for key certificate"
+        return 0
+    }
+    if {$validauth==0 && ($auth_type =="pgp" || $auth_type=="x509" || $auth_type =="cpgp" || $auth_type =="cx50" )} {
+        errorpopup "Length" "Authentication Lenght very big for the Sap session\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "User entered an incorrect ling Cert for key certificate"
+        return 0
+    }
+    if {$validfile==0 && ($enc_type =="pgp" || $enc_type=="x509")} {
+        errorpopup "File not created" "Probably public key is missing\
+                                     $user_id($aauth,auth_cur_key_sel).  Try again."
+        log "Cnnot create file on SDR home directory"
+        return 0
+    }
+    update
+    after 3000 write_cache
+    log "new session announced at [getreadabletime]"
+    return 1
+}
+
+# ------------------------------------------------------------
+# start of this part of PGP AUTHentication code (AUTH)
+# ------------------------------------------------------------
+proc set_auth_type {win type} {
+    global auth_type
+    global cert
+    set auth_type $type
+    switch $type {
+        none {
+            $win.auth.sel.mauth configure -text None
+            set cert "0"
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+        }
+        pgp {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text PGP
+            show_pgp_keys $win
+        }
+        x509 {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            set cert "cert"
+            $win.auth.sel.mauth configure -text X509
+            show_pkcs7_keys $win
+        }
+        cpgp {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text PGP+CERT
+            show_pgp_keys $win
+        }
+       cx50 {
+            clear_asym_keys $win x509
+            clear_asym_keys $win pgp
+            $win.auth.sel.mauth configure -text X509+CERT
+            set cert "path"
+            show_pkcs7_keys $win
+        }
+        other {
+            $win.auth.sel.mauth configure -text Unspecified
+
+        }
+    }
+}
+# ------------------------------------------------------------
+# end of this part of PGP AUTHentication code (AUTH)
+# ------------------------------------------------------------
+
+proc set_enc_type {win type aid} {
+    global enc_type security
+    set enc_type $type
+    switch $type {
+        none {
+            $win.enc.sel.menc configure -text None
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            set security public
+            clear_keys $win
+        }
+       des {
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            clear_keys $win
+            $win.enc.sel.menc configure -text Des
+            set security private
+            enc_show_keys $win $aid
+
+        }
+        pgp {
+            set security public
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            clear_keys $win
+            $win.enc.sel.menc configure -text PGP
+            enc_show_pgp_keys $win $aid
+        }
+        x509 {
+            set security public
+            enc_clear_asym_keys $win x509
+            enc_clear_asym_keys $win pgp
+            $win.enc.sel.menc configure -text X509
+            enc_show_x509_keys $win $aid
+        }
+        other {
+            set security public
+            $win.enc.sel.menc configure -text Unspecified
+
+        }
+    }
+proc do_ad_creation {aid} {
+    global auth_old_key_sel key_id
+    global enc_old_key_sel
+    if {[string compare $auth_old_key_sel $key_id(pgp,auth_cur_key_sel)]==0 || [string compare $enc_old_key_sel $key_id(pgp,enc_cur_key_sel)]==0} {
+        ui_stop_session_ad $aid
+        destroy .new
+    } else {
+
+        destroy .new
+    }
+}
+}
+
+proc new_wiz_panel_security {panelnum panels aid} {
+    new_wiz_change_panels
+    .new.f.l configure -text "Step $panelnum: Select security parameters for this session"
+    .new.f.t insert 1.0 "You need to specify the security of session."
+    set next_panel [expr $panelnum + 1]
+    set back_panel [expr $panelnum - 1]
+
+    .new.f.b.next configure -state normal -command "new_wiz_panel_[lindex $panels $next_panel] $next_panel \"$panels\" $aid"
+    .new.f.b.back configure -state normal -command "new_wiz_panel_[lindex $panels $back_panel] $back_panel \"$panels\" $aid"
+    .new.f.b.accept configure -state disabled    
+    new_mk_session_security .new.f.f.security $aid
 }
 

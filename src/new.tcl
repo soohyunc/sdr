@@ -1,8 +1,14 @@
-
-
 #new.tcl Copyright (c) 1995 University College London
 #see ui_fns.c for information on usage and redistribution of this file
 #and for a DISCLAIMER OF ALL WARRANTIES.
+
+#If you need to add more panels, create a function called 
+#new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
+#called.
+set new_wiz_norm_panels \
+	"info type timing_norm scope_norm media_norm contact accept"
+set new_wiz_tech_panels \
+	"info type timing_tech scope_tech media_tech contact accept"
 
 proc new {aid} {
     global ifstyle ldata
@@ -14,14 +20,6 @@ proc new {aid} {
     new_wiz_init $aid $ifstyle(create)
 }
 
-
-#If you need to add more panels, create a function called 
-#new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
-#called.
-set new_wiz_norm_panels \
-	"info type timing_norm scope_norm media_norm contact accept"
-set new_wiz_tech_panels \
-	"info type timing_tech scope_tech media_tech contact accept"
 
 proc new_wiz_init {aid iftype} {
     global new_wiz_norm_panels new_wiz_tech_panels 
@@ -1915,151 +1913,6 @@ proc reset_media_attrs {} {
 #    $w delete 1.0 end
 #    $w insert 1.0 [text_wrap $str 40]
 #}
-
-proc create {} {
-    global ttl dayix durationix send zone
-    global timeofday minoffset hroffset media_attr media_fmt media_proto
-    global media_layers medialist new_createtime sess_type
-    global rtp_payload sdrversion
-    global mediaenc
-
-
-    log "creating a session"
-    if {$ttl==0} { set ttl [.new.f.f.f3.rr.f.e get] }
-    if {($ttl < 0)|($ttl > 255)} {
-	errorpopup "Illegal Scope Value" "Scope value must be between 0 and 255"
-	log "user had entered an illegal scope value"
-	return
-    }
-    set sess "v=0"
-    set sess "$sess\no=[getusername] $new_createtime [unix_to_ntp [gettimeofday]] IN IP4 [gethostname]"
-    set sess "$sess\ns=[get_new_session_name .new.f.f]"
-    if {[get_new_session_name .new.f.f]==""} {
-	errorpopup "No Session Name" "You must give the session a name"
-	log "user had entered no session name"
-	return 0
-    }
-
-    if {[get_new_session_desc]==""} {
-	errorpopup "No Session Description" "You must give some description of your session"
-	log "user had entered no session description"
-	return 0
-    }
-
-    set desc [get_new_session_desc]
-    regsub -all "\n" $desc " " desc
-    set sess "$sess\ni=$desc"
-    set uri [get_new_session_uri]
-    if {$uri!=""} {
-	set sess "$sess\nu=$uri"
-    }
-    set email [.new.f.f.you.f0.e get]
-    set phone [.new.f.f.you.f1.e get]
-    if {$email!=""} {
-	set sess "$sess\ne=$email"
-    }
-    if {$phone!=""} {
-	set sess "$sess\np=$phone"
-    }
-
-    foreach i {1 2 3} {
-      #the catch is here because the simple i/f only has one time entry
-      catch {
-	set tmp [get_expiry_time .new.f.f.f2.act.fb$i $i .new.f.f.f2.act.fd.duration]
-	    if {[lindex $tmp 0]!=0} {
-	    set starttime [lindex $tmp 0]
-	    set stoptime [lindex $tmp 1]
-	    set sess "$sess\nt=[format %u $starttime] [format %u $stoptime]"
-            if {[lindex $tmp 2]!=0} {
-		set sess "$sess\nr=[lrange $tmp 2 end]"
-	    }
-	}
-      }
-    }
-    if {[valid_mcast_address [get_new_session_addr conference]]==0} {
-	errorpopup "Invalid Multicast Address" \
-	    "The multicast address specified in not a valid IP Class D address"
-	log "user had entered an invalid multicast address"
-	return 0
-    }
-    set sess "$sess\na=tool:sdr $sdrversion"
-    set sess "$sess\na=type:$sess_type"
-    foreach media $medialist {
-	if {$send($media)==1} {
-	    if {([get_new_session_port $media]<1024)|([get_new_session_port $media]>65535)} {
-		errorpopup "Bad $media port number" \
-		    [tt "Port numbers should be between 1024 and 65535"]
-		log "user had entered a bad port number"
-		return 0
-	    }
-
-            if { $mediaenc($media) == 1 } {
-
-# check length of media key
-
-              if { [ string length [get_new_media_key $media] ] < 8 } {
-                  errorpopup "$media key too short" \
-                      [tt "Encryption keys must be at least 8 characters"]
-                  log "user had entered short key for $media"
-                  return 0
-              }
- 
-# the following cause problems inside sdr: \ / "
-# the following cause problems from command line outside sdr: $ `
-# the following (as well as $) are tcl special characters: [ ]
-# disallow all so that people can join sessions using sdr and via command line
- 
-              if { [string first "\\" "[get_new_media_key $media]" ] != -1 ||
-                   [string first "/"  "[get_new_media_key $media]" ] != -1 ||
-                   [string first "\"" "[get_new_media_key $media]" ] != -1 ||
-                   [string first "`"  "[get_new_media_key $media]" ] != -1 ||
-                   [string first "$"  "[get_new_media_key $media]" ] != -1 ||
-                   [string first "\["  "[get_new_media_key $media]" ] != -1 ||
-                   [string first "\]"  "[get_new_media_key $media]" ] != -1 } {
-                   errorpopup "$media key has forbidden characters" \
-                      [tt "Encryption keys should not contain \\, /, \", \`, $, \[ or \] as these may cause problems when starting the tools "]
-                  log "user had entered forbidden characters in key for $media, key was [get_new_media_key $media] ] "
-                  return 0
- 
-              }
-            }
-
-	    if {$media_proto($media)=="rtp"} {
-		set sess "$sess\nm=$media [get_new_session_port $media] RTP/AVP $rtp_payload(pt:$media_fmt($media))"
-	    } else {
-		set sess "$sess\nm=$media [get_new_session_port $media] $media_proto($media) $media_fmt($media)"
-	    }
-	    set sess "$sess\nc=IN IP4 [get_new_session_addr $media]/$ttl"
-	    if {$media_layers($media)>1} {
-		set sess "$sess/$media_layers($media)"
-	    }
-
-            if { $mediaenc($media) == 1 } {
-              set sess "$sess\nk=clear:[get_new_media_key $media]"
-            }
-
-	    foreach attr [array names media_attr] {
-		set m [lindex [split $attr ","] 0]
-		set a [lindex [split $attr ","] 1]
-		if {$m==$media} {
-		    if {$media_attr($attr)==1} {
-			set sess "$sess\na=$a"
-		    } elseif {($media_attr($attr)!=0)&&\
-			($media_attr($attr)!="")} {
-			    set sess "$sess\na=$a:$media_attr($attr)"
-			}
-		}
-	    }
-	} 
-    }
-#    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
-    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl
-
-    update
-    after 3000 write_cache
-    log "new session announced at [getreadabletime]"
-    return 1
-}
 
 proc togglemedia {win media} {
     global send
