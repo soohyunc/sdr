@@ -593,10 +593,6 @@ proc toggle_security {win} {
     }
 }
 
-
-# Set up the order of items in the preferences window
-set prefprocs "show ifstyle tools web pers security"
-
 proc pref_security {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
     global prefs
 
