@@ -63,7 +63,18 @@ static struct addr_list *last_addr=NULL;
 
 int store_address(struct in_addr *addr, unsigned long endtime)
 {
-  struct addr_list *new_address;
+  struct addr_list *new_address, *test;
+  test=first_addr;
+
+  while (test!=NULL) {
+    if (addr->s_addr == test->addr.s_addr) {
+        if (endtime == test->endtime) return 0;
+        delete_address(test);
+        break;
+    }
+    test=test->next;
+  }
+
   new_address=(struct addr_list *)malloc(sizeof(struct addr_list));
   new_address->addr.s_addr= addr->s_addr;
   new_address->next=NULL;
