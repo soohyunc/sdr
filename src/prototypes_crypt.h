@@ -1,5 +1,7 @@
 /*sap_crypt.c*/
 int encrypt_announcement(char *srcbuf, char **dstbuf, int *length, char *key);
+int add_privacy_header(char *buf);
+int parse_privhdr(char *buf, int *len, char *recvkey);
 int decrypt_announcement(char *buf, int *len, char *recvkey);
 int load_crypted_file(char *filename, char *buf, char *key);
 int write_crypted_file(char *filename, char *data, int len, char *key);
