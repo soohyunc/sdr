@@ -53,6 +53,8 @@ extern int webblocks;
 extern int webdatalen;
 #define DEBUG
 
+#define MAXURLLEN 256
+
 int send_sip_register(char *uridata, char *proxyuri, char *user_data);
 
 int sip_register()
@@ -60,7 +62,9 @@ int sip_register()
   /*We use HTTP to register to a SIP server so people can call us
     without knowing which host we're on*/
   #define MAXEMAILLEN 80
+#ifdef NEVER
   #define MAXURLLEN 256
+#endif
   #define MSGLEN 2048
   char emailaddr[MAXEMAILLEN];
   char *serverurl;  
@@ -102,7 +106,11 @@ int send_sip_register(char *uridata, char *proxyuri, char *user_data)
 #endif
   if (is_a_sip_url(uridata)==1) {
     int port=0, transport=SIP_NO_TRANSPORT, ttl=0;
+#ifdef NEVER
     char host[strlen(uridata)], maddr[strlen(uridata)], url[strlen(uridata)];
+#else
+    char host[MAXURLLEN], maddr[MAXURLLEN], url[MAXURLLEN];
+#endif
     strcpy(url, uridata);
     parse_sip_url(url, NULL, NULL, host, &port, &transport, &ttl, maddr, 
 		  NULL, NULL);
