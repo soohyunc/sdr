@@ -63,8 +63,8 @@
 #define ENCTYPELEN 6
 #define AUTHSTATUSLEN 14
 #define ENCSTATUSLEN 14
-#define AUTHMESSAGELEN 400
-#define ENCMESSAGELEN 400
+#define AUTHMESSAGELEN 800
+#define ENCMESSAGELEN 800
 #define NRANDSTRLEN 10
 #define TRUSTLEN 20
 
@@ -173,17 +173,21 @@ char *strerror(int i);
 #define writelog(a)
 #endif
  
-#ifdef AUTH
+#define TIMEOUT           4
 #define MAXSIGSIZE        152
 #define MAXKEYSIZE        1024
 #define MAXENCSIZE        2048
 #define MAXDECSIZE        8192
-#define authPGP  1
-#define authX509  2
-#define authPGPC 3
-#define authX509C 4
-#endif
 
+#define authPGP   1
+#define authX509  2
+#define authPGPC  3
+#define authX509C 4
+
+#define   DES 0
+#define  DES3 1
+#define   PGP 2
+#define PKCS7 3
 
 /*Missing Prototypes*/
 long lrand48();
@@ -231,8 +235,6 @@ struct sap_header {
   u_int src;
 };
 
-
-#ifdef AUTH
 /*we use this to store info about authentication*/
 struct auth_info {
   u_int auth_type;
@@ -262,6 +264,7 @@ struct auth_header {
 };
 /*beware sizeof(struct auth_header) doesn't return 2!!!*/
 #define AUTH_HEADER_LEN 2
+#define ENC_HEADER_LEN  2
 
 struct priv_header {
 #ifdef DIFF_BYTE_ORDER
@@ -280,16 +283,10 @@ struct priv_header {
  char  *enc_data;
  char  *txt_data;
 };
-#endif
 
 struct enc_header {
   u_int timeout;
 };
-
-#define   DES 0
-#define  DES3 1
-#define   PGP 2
-#define PKCS7 3
 
 typedef unsigned int hash_t;
 
