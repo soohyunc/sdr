@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 #ifdef SYSV
+#ifdef NEVER
 void bzero(str, len)
      char *str;
      int len;
@@ -61,6 +62,7 @@ int bcmp(s1, s2, len)
     }
   return total;
 }
+#endif
 #endif
 
 #ifdef NEEDSTRERROR
