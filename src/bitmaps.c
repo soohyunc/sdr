@@ -63,7 +63,7 @@ extern Tcl_Interp *interp;
 #include "image_smeeting.xbm"
 #include "image_stest.xbm"
 #include "image_sdr.xbm"
-#include "directory.xbm"
+#include "image_directory.xbm"
 
 void init_bitmaps()
 {
