@@ -321,13 +321,14 @@ proc query_passphrase { win } {
   button .qpass.f.f2.ok     -text "OK" \
         -command "submit_qpass .qpass $win .qpass.f.msg \"\""
   pack   .qpass.f.f2.ok     -side left -fill x -expand true
-  button .qpass.f.f2.cancel -text "Cancel" -command "destroy_query .qpass"
+  button .qpass.f.f2.cancel -text "Cancel" -command "destroy_query .qpass $win"
   pack   .qpass.f.f2.cancel -side left -fill x -expand true
 }
 
-proc destroy_query { win } {
+proc destroy_query { win wintop } {
   global security
   set security public
+  $wintop.enc.sel.menc configure -text None
   catch {destroy $win}
 }
 
@@ -517,10 +518,12 @@ proc install_key {keyname} {
 proc new_mk_session_security {win aid} {
     global ldata security keylist user_id key_id 
     global enc_old_key_sel auth_old_key_sel asympass asympse
+    global pgpdisable x509disable
 
     if {[winfo exists $win]==0} {
 	    frame $win -relief groove -borderwidth 2
 	 
+       if {($pgpdisable==0)} {
 	    # Authentication code [dlh]
 	    # Creates a button to select the authentication type and a text box
 	    # for selecting the required (PGP)key.
@@ -564,6 +567,7 @@ proc new_mk_session_security {win aid} {
 	#       puts "Advert id: $aid"
 	#       puts "Auth Type: $ldata($aid,authtype)"
 	    }
+        }
 	    frame $win.enc
 	    frame $win.enc.sel
 	    label $win.enc.sel.lenc -text "Encryption:"
@@ -573,22 +577,33 @@ proc new_mk_session_security {win aid} {
 		-command "set_enc_type $win none $aid"
 	    $win.enc.sel.menc.menu add command -label "Des"\
 		-command "set_enc_type $win des $aid"
-	    $win.enc.sel.menc.menu add command -label "PGP"\
-		-command "set_enc_type $win pgp $aid"
+            if {($pgpdisable==0)} {
+	      $win.enc.sel.menc.menu add command -label "PGP"\
+		  -command "set_enc_type $win pgp $aid"
+            }
 
 # comment out X.509 until it is added properly
 #	    $win.enc.sel.menc.menu add command -label "X509"\
 #		-command "set_enc_type $win x509 $aid"
 	 
 	    frame $win.enc.keys
+
+# resize encryption key box if authentication is disabled (pgp/x509)
+
+          if {($pgpdisable==0)} {
 	    listbox $win.enc.keys.lb -width 15 -height 5 -yscroll\
 	    "$win.enc.keys.ysb set" -relief sunken -borderwidth 1 \
 	     -selectmode single  -selectforeground [resource activeForeground] \
 		-selectbackground [resource activeBackground] \
 		-highlightthickness 0
-	    #text $win.enc.keys.lb -width 15 -height 5 -relief flat\
-	    #     -relief sunken -borderwidth 1 -yscroll "$win.enc.keys.ysb set"\
-	    #     -highlightthickness 0
+          } else {
+	    listbox $win.enc.keys.lb -width 15 -height 8 -yscroll\
+	    "$win.enc.keys.ysb set" -relief sunken -borderwidth 1 \
+	     -selectmode single  -selectforeground [resource activeForeground] \
+		-selectbackground [resource activeBackground] \
+		-highlightthickness 0
+          }
+
 	    scrollbar $win.enc.keys.ysb\
 	    -command "$win.enc.keys.lb yview" -borderwidth 1 -highlightthickness 0
 
@@ -620,16 +635,18 @@ proc new_mk_session_security {win aid} {
 	    }
     	}
 	pack $win -side left -fill both -expand true
-	pack $win.auth -side top -fill both -expand true
-	pack $win.auth.sel -side top -pady 5 -fill both -expand true
-	pack $win.auth.sel.lauth $win.auth.sel.mauth -anchor nw -side left -padx 5
-	pack $win.auth.keys -side top -pady 2 -fill both -expand true
-	pack $win.auth.keys.lb -side left -fill both -expand true
-	pack $win.auth.keys.ysb -side right -fill y
-	pack $win.auth.pwd -side top -pady 2 -fill both -expand true
-	pack $win.auth.pwd.l -side top -anchor w
-	pack $win.auth.pwd.m -side top -anchor w
-	pack $win.auth.pwd.e -side top -anchor w
+        if {($pgpdisable==0) || ($x509disable==0)} {
+	  pack $win.auth -side top -fill both -expand true
+	  pack $win.auth.sel -side top -pady 5 -fill both -expand true
+	  pack $win.auth.sel.lauth $win.auth.sel.mauth -anchor nw -side left -padx 5
+	  pack $win.auth.keys -side top -pady 2 -fill both -expand true
+	  pack $win.auth.keys.lb -side left -fill both -expand true
+	  pack $win.auth.keys.ysb -side right -fill y
+	  pack $win.auth.pwd -side top -pady 2 -fill both -expand true
+	  pack $win.auth.pwd.l -side top -anchor w
+	  pack $win.auth.pwd.m -side top -anchor w
+	  pack $win.auth.pwd.e -side top -anchor w
+        }
 	pack $win.enc -side top -fill both -expand true
 	pack $win.enc.sel -side top -pady 5 -fill both -expand true
 	pack $win.enc.sel.lenc $win.enc.sel.menc -anchor nw -side left -padx 5
@@ -717,17 +734,10 @@ proc pref_security {cmd {arg1 {}} {arg2 {}} {arg3 {}}} {
 #If you need to add more panels, create a function called 
 #new_wiz_panel_XYZ, and add XYZ to these lists in the order you want it
 #called.
-if { ($pgpdisable==1) && ($x509disable==1) } {
-  set new_wiz_norm_panels \
-	"info type timing_norm scope_norm media_norm contact accept"
-  set new_wiz_tech_panels \
-	"info type timing_tech scope_tech media_tech contact accept"
-} else {
   set new_wiz_norm_panels \
 	"info type timing_norm scope_norm media_norm contact security accept"
   set new_wiz_tech_panels \
 	"info type timing_tech scope_tech media_tech contact security accept"
-}
 
 proc create {} {
     global ttl dayix durationix send zone
@@ -1042,7 +1052,6 @@ proc set_enc_type {win type aid} {
             $win.enc.sel.menc configure -text Des
             set security private
             enc_show_keys $win $aid
-
         }
         pgp {
             if {[pgpstate]==1} {
