@@ -39,6 +39,41 @@
 #include "prototypes.h"
 #include "prototypes_crypt.h"
 
+static int getseed();
+static int goodkey(char *key, int *seed);
+static int isgoodkey(char key[8]);
+
+static struct {
+        u_char key[8];
+}       keytable[] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+ 
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE,
+ 
+        0x1F, 0x1F, 0x1F, 0x1F, 0x0E, 0x0E, 0x0E, 0x0E,
+        0xE0, 0xE0, 0xE0, 0xE0, 0xF1, 0xF1, 0xF1, 0xF1,
+ 
+        0x01, 0xFE, 0x01, 0xFE, 0x01, 0xFE, 0x01, 0xFE,
+        0xFE, 0x01, 0xFE, 0x01, 0xFE, 0x01, 0xFE, 0x01,
+ 
+        0x1F, 0xE0, 0x1F, 0xE0, 0x0E, 0xF1, 0x0E, 0xF1,
+        0xE0, 0x1F, 0xE0, 0x1F, 0xF1, 0x0E, 0xF1, 0x0E,
+ 
+        0x01, 0xE0, 0x01, 0xE0, 0x01, 0xF1, 0x01, 0xF1,
+        0xE0, 0x01, 0xE0, 0x01, 0xF1, 0x01, 0xF1, 0x01,
+  
+        0x1F, 0xFE, 0x1F, 0xFE, 0x0E, 0xFE, 0x0E, 0xFE,
+        0xFE, 0x1F, 0xFE, 0x1F, 0xFE, 0x0E, 0xFE, 0x0E,
+ 
+        0x01, 0x1F, 0x01, 0x1F, 0x01, 0x0E, 0x01, 0x0E,
+        0x1F, 0x01, 0x1F, 0x01, 0x0E, 0x01, 0x0E, 0x01,
+ 
+        0xE0, 0xFE, 0xE0, 0xFE, 0xF1, 0xFE, 0xF1, 0xFE,
+        0xFE, 0xE0, 0xFE, 0xE0, 0xFE, 0xF1, 0xFE, 0xF1
+};
+
 struct keydata* keylist;
 char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
@@ -99,7 +134,9 @@ int parse_privhdr(char *buf, int *len, char *recvkey)
 
 /* check version of privacy header - only deal with it if it is version 1 */
   if (priv_hdr->version != 1) {
+#ifdef DEBUG
     fprintf(stderr, "Privacy Header version should be 1. It is %d.\n",priv_hdr->version);
+#endif
     return -1;
   }
 
@@ -544,7 +581,7 @@ int load_crypted_file(char *afilename, char *buf, char *key)
   u_char hash[16];
   u_char *encbuf;
   u_char *clearbuf;
-  char *p;
+  char *p=NULL;
   char *filename;
   MD5_CTX context;
 #ifdef WIN32  /* need to sort out the ~ on windows */
@@ -613,3 +650,220 @@ int load_crypted_file(char *afilename, char *buf, char *key)
   free(encbuf);
   return len;
 }
+
+int make_random_key()
+{
+  u_char hash[16];
+  int seed, havegoodkey=0;
+  char *key, *newkey;
+  MD5_CTX context;
+
+  key    = (char *)malloc(16);
+  newkey = (char *)malloc(24);
+
+  while (havegoodkey == 0 ){
+
+/* get random 16 byte key */
+
+    seed = getseed();
+    (void) goodkey(&key[0], &seed);
+    (void) goodkey(&key[8], &seed);
+ 
+/* take MD5 hash of the 16 bit key */
+
+    MD5Init(&context);
+    MD5Update(&context, (u_char *)key, (u_int)16);
+    MD5Final((u_char *)hash, &context);
+
+/* convert the 16 byte hash to base 64 */
+
+    bin_to_b64_aux(hash, 16, &newkey);
+
+/* change the last == to be \0= so we have a string terminator. Actually leave */
+/* off the last character as it is always A,w,Q or g as the last 4 bits of the */
+/* final 6 bit value are 0                                                     */
+ 
+    newkey[21] = '\0';
+ 
+/* now check the key doesn't have any "/" in it as vat doesn't like them       */
+/* some tools don't like other characters eg ",\,` and $ but as this is base64 */
+/* encoded we don't have them anyway and we check the key again later on       */
+ 
+    if ( strchr((const char *)newkey, '/') == NULL ) {
+        havegoodkey = 1;
+    }
+ 
+  }
+/* now have a good key so set the tcl $tempkey variable up and tidy up */
+
+  Tcl_SetVar(interp, "tempkey", newkey, TCL_GLOBAL_ONLY);
+
+  free (key);
+  free (newkey);
+
+  return OK;
+ 
+}
+
+static int getseed()
+{
+  int    prid, seed;
+  time_t curtime, time();
+ 
+  prid = getpid();
+  (void) time(&curtime);
+  seed = (int) curtime;
+ 
+  seed = (seed & ~0x0000) | (prid << 16);
+  return (seed);
+}
+ 
+static int goodkey(char *key, int *seed)
+{
+  (void) sec_randomkey((char *)key, seed);
+  while (isgoodkey(key) == NOTOK)
+    (void) sec_randomkey((char *)key, seed);
+ 
+  return (OK);
+}
+ 
+/* Weed out bad keys or keys with '*' in them */
+ 
+static int isgoodkey(key)
+   char            key[8];
+{
+   int             i;
+   int             j;
+ 
+   for (i = 0; i < 18; i++) {
+     for (j=0; j<8;j++){
+     }
+     if (strncmp((char *)key, (char *)(keytable[i].key), 8) == 0) {
+       return (NOTOK);
+     }
+   }
+   for (i = 0; i < 8; i++) {
+     if (key[i] == '*')
+       return (NOTOK);
+   }
+   return (OK);
+}
+
+/* ---------------------------------------------------------------------------- */
+/*  Function:      ToBase64                                                     */
+/*                                                                              */
+/*  Description:   Encode u_chars in Base64 as per MIME (RFC-1521)              */
+/*                 The routine will read as much of the input as is needed      */
+/*                 to fill the output, advancing the pointers in the input      */
+/*                 as it is used. Note that if you wish to call this with       */
+/*                 more than one input buffer, each call should provide         */
+/*                 a multiple of 3 u_chars, otherwise you will get padding      */
+/*                 at an intermediate stage.                                    */
+/*                                                                              */
+/*                 The output buffer is only filled with 4 character sets.      */
+/*                                                                              */
+/*  Parameters:    Pointer to pointer into input buffer                         */
+/*                 Pointer to length of input buffer remaining                  */
+/*                 Pointer to output buffer                                     */
+/*                 Length of output buffer                                      */
+/*                                                                              */
+/*  Return Value:  Number of u_chars written to output buffer                   */
+/*                                                                              */
+/* ---------------------------------------------------------------------------- */
+ 
+int ToBase64(
+    unsigned char **inbp, /* pointer to pointer into input buffer */
+    int *ilen,            /* pointer to number of u_chars remaining input */
+    char *outbuff,        /* pointer to output buffer */
+    int olen              /* max size of output buffer */
+)
+{
+    unsigned char *bp = *inbp;
+    int len   = *ilen;
+    int count;
+ 
+    static char Base64[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+ 
+#define PAD64 '='
+ 
+    olen -= 4;
+ 
+    for ( count = 0; len > 0 && count <= olen; count += 4, outbuff += 4 ) {
+        unsigned long val;
+ 
+        val = (*bp++) << 8;
+        len -= 2;
+        if ( len >= 0 )
+            val += *bp++;
+        val <<= 8;
+        if ( --len >= 0 )
+            val += *bp++;
+ 
+        outbuff[3] = Base64[val & 0x3f];
+        val >>= 6;
+        outbuff[2] = Base64[val & 0x3f];
+        val >>= 6;
+        outbuff[1] = Base64[val & 0x3f];
+        val >>= 6;
+        outbuff[0] = Base64[val & 0x3f];
+    }
+
+ 
+    /* Adjust at end of source */
+    switch ( len ) {
+    case -2:
+        outbuff[-2] = PAD64;
+        /* falls through */
+    case -1:
+        outbuff[-1] = PAD64;
+        len = 0;
+        break;
+    }
+ 
+    *ilen = len;
+    *inbp = bp;
+ 
+    return count;
+}
+ 
+/* ---------------------------------------------------------------------------- */
+/*  bin_to_b64_aux                                                              */
+/*                                                                              */
+/* Conversion routine to Base-64 : 3 binary octets to 4 Base-64 chars           */
+/*                                                                              */
+/* in           input binary data                                               */
+/* inlen        length of input in u_chars                                      */
+/* cpp          where to place pointer to newly alloc'd return data             */
+/*                                                                              */
+/* returns number of output u_chars (not including zero terminator),            */
+/* or 0 on error (*cpp not valid)                                               */
+/* ---------------------------------------------------------------------------- */
+ 
+int bin_to_b64_aux(u_char *in,int inlen,char **cpp /* Returned */)
+{
+  int             nc;
+  int             b64len = ((inlen + 2)/3) * 4 ;
+  char           *cp;
+ 
+  cp = (char *)calloc(1, (unsigned)b64len+1);
+ 
+  if (cp == NULL) {
+    printf("bin_to_b64_aux() out of memory\n");
+    *cpp = NULL;
+    return 0;
+  }
+ 
+  nc = ToBase64(&in, &inlen, cp, b64len);
+ 
+  if (nc == 0) {
+    free(cp);      /* no use to us, free it */
+    *cpp = NULL;
+  } else {
+    cp[nc] = '\0'; /* zero terminator */
+    *cpp = cp;
+  }
+ 
+  return nc;
+}
+
