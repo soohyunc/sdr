@@ -352,7 +352,7 @@ proc new_wiz_panel_timing_tech {panelnum panels aid} {
 
 proc new_wiz_panel_scope_norm {panelnum panels aid} {
     new_wiz_change_panels
-    .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
+    .new.f.l configure -text "Step $panelnum: Select the Distribution Scope"
     .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
     .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
@@ -365,7 +365,7 @@ proc new_wiz_panel_scope_norm {panelnum panels aid} {
 
 proc new_wiz_panel_scope_tech {panelnum panels aid} {
     new_wiz_change_panels
-    .new.f.l configure -text "Step $panelnum: Select the Distibution Scope"
+    .new.f.l configure -text "Step $panelnum: Select the Distribution Scope"
     .new.f.t insert 1.0 "You need to decide how far away you wish the traffic from this session to be received.  You can set this using TTL scoping or Admin Scoping.  TTL Scoping is the old method - we recommend Admin Scoping."
     .new.f.t configure -state disabled
     set next_panel [expr $panelnum + 1]
@@ -574,7 +574,7 @@ proc new_mk_session_accept {win base aid} {
     }
     set ldata(new,no_of_times) $no_of_times
     set timing [text_times_english new]
-    regsub "\n" $timing " " timing
+    regsub -all "\n" $timing " " timing
     set lines [expr 1+[string length $timing]/80]
     $win.r4.m configure -state normal -height $lines
     $win.r4.m delete 1.0 end
@@ -648,7 +648,7 @@ proc set_sess_type {win type} {
 }
 
 proc new_mk_session_norm_scope {win aid} {
-    global zone scope ldata
+    global zone scope ldata ttl
     if {[winfo exists $win.f3]==0} {
 	if {[string compare $aid "new"]!=0} {
 	    set sap_addr $ldata($aid,sap_addr)
@@ -681,7 +681,7 @@ proc new_mk_session_norm_scope {win aid} {
 }
 
 proc new_mk_session_tech_scope {win aid} {
-    global zone scope new_ttl ldata medialist send
+    global zone scope ldata medialist send ttl
     if {[winfo exists $win.f3]==0} {
 	if {[string compare $aid "new"]!=0} {
 	    set sap_addr $ldata($aid,sap_addr)
@@ -1008,12 +1008,12 @@ proc new_mk_session_url {win aid} {
 	tixAddBalloon $win.url.f0.e Entry [tt "You can enter a URL here to provide additional information about your session.\n\nA URL is a reference to a web page. E.g. http://www"]
 	button $win.url.f0.b -text "Test URL" \
 		-highlightthickness 0 \
-		-command \
-		{ $win.url.f0.e select from 0; \
-		$win.url.f0.e select to end; \
+		-command [format { \
+		%s.url.f0.e select from 0; \
+		%s.url.f0.e select to end; \
 		catch {selection get} url; \
 		timedmsgpopup "Testing URL - please wait" $url 5000; \
-		stuff_mosaic }
+		stuff_mosaic } $win $win]
 	tixAddBalloon $win.url.f0.b Button [tt "Click here to test the URL entered in the box to the left of this button"]
 	if {[string compare $aid "new"]!=0} {
 	    if {$ldata($aid,uri)!=0} {
