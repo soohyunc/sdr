@@ -1,7 +1,10 @@
 <H1>Sdr changes log</H1>
 <B><pre>
 
-2.5.8
+2.5.9
+  - 
+
+2.5.8 Released 9 October 1998
   - Unix version now uses Tcl/Tk from our CVS. This is Tcl/Tk 8.0.3 modified
     to remove all the path searching and include the initialisation files in
     the binary. Should solve the numerous problems with Tcl which people have
