@@ -5,7 +5,7 @@
 #and for a DISCLAIMER OF ALL WARRANTIES.
 
 # set the following to 1 to disable enc/auth and 0 to enable it
-set pgpdisable  1
+set pgpdisable  0
 set x509disable 1
 
 # address families
@@ -115,7 +115,7 @@ proc fixdaysinmonth {year} {
 	}
 }
 
-set sdrversion "v2.9"
+set sdrversion "v3.0"
 set titlestr "Multicast Session Directory $sdrversion"
 
 # return the 'current window' (usually ".w0", unless we're updating a subdir):
