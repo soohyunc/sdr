@@ -174,10 +174,25 @@ int announce_error(int code, char *command)
 {
 	if (code != TCL_OK) {
 		char buf[128];
-		strncpy(buf, interp->result, sizeof(buf) - 1);
-		fprintf(stderr, "sdr:%s %s\n", command, interp->result);
-		Tcl_VarEval(interp, "puts $errorInfo", NULL);
-		Tcl_VarEval(interp, "tkerror {", buf, "}", NULL);
+                char buf[128];
+#ifdef WIN32
+                DWORD dwMBResponse;
+                char *szFmt="Sdr failed with the following error:\n\n%s %s\n\nPlease report to sdr@cs.ucl.ac.uk.\n\nContinue running application?", *szErrMsg;   
+                DWORD dwErrMsgLen = strlen(command) + strlen(interp->result) + strlen(szFmt);
+                
+                szErrMsg = (char*)malloc(dwErrMsgLen);
+                sprintf(szErrMsg, szFmt, command, interp->result);
+                dwMBResponse = MessageBox(NULL, szErrMsg, "SDR Error", MB_ICONERROR|MB_YESNO);
+                free(szErrMsg);
+                if (dwMBResponse == IDNO) {
+                        exit(-1);
+                }       
+#else
+                fprintf(stderr, "sdr:%s %s\n", command, interp->result);
+#endif
+                buf[sizeof(buf) - 1] = 0; /* Let's not overflow */
+                strncpy(buf, interp->result, sizeof(buf) - 1);
+                 Tcl_VarEval(interp, "puts $errorInfo", NULL);
 	}
 	return (code);
 }
