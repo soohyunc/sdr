@@ -1,136 +1,99 @@
-
-# AUTH start
-# ---------------------------------------------------------------------
-proc show_pgp_keys {win} {
-    $win.auth.pwd.e configure -state normal
-    pgp_get_key_list $win
-}
- 
 proc clear_asym_keys {win type} {
-    global user_id
-    global key_id
-    set key_id($type,auth_cur_key_sel) ""
+    global user_id, key_id
+
+    set  key_id($type,auth_cur_key_sel) ""
     set user_id($type,auth_cur_key_sel) ""
+
     $win.auth.keys.lb configure -state normal
     $win.auth.keys.lb delete 1.0 end
+
     $win.auth.pwd.l configure -text "" -font [resource infoFont]
     $win.auth.pwd.e delete 0 end
     $win.auth.pwd.e configure -state disabled
 }
-# ---------------------------------------------------------------------
-# SYMT end
-# ---------------------------------------------------------------------
 
 proc enc_clear_asym_keys {win type} {
-    global user_id
-    global key_id
-    set key_id($type,enc_cur_key_sel) ""
+    global user_id, key_id
+
+    set  key_id($type,enc_cur_key_sel) ""
     set user_id($type,enc_cur_key_sel) ""
 #    $win.enc.keys.lb configure -state normal
     $win.enc.keys.lb delete 0 end
 }
 
+#--------------------------------------------------------------------#
+# Get the list of keys in the public keyring                         #
+# Return: 0 if succeeded; 1 if failed                                #
+#--------------------------------------------------------------------#
 proc enc_pgp_get_key_list {win aid} {
-    global no_of_keys
-    global user_id
-    global key_id
-    global sig_id
-    global ldata
-    global env
-    #putlogfile "enc_pgp_get_key_list"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-    #set testpgp $testdir/pgp
-    set tclcmd [ list exec pgp -kv ]
+  global no_of_keys user_id key_id sig_id ldata env
 
-    set result [ catch $tclcmd keylist ]
-      #putlogfile " $env(PGPPATH) $tclcmd $keylist"
-    
-    if {$result == 0} {
-        putlogfile "Cannot open key-file \n"
-        if { [ enter_pgp_path ] == 0} {
-          return 0
-        } else {
-        enc_pgp_get_key_list $win $aid
-        }
-    } else {
-        # Extract the user id and key id of each key found in the local
-        # PGP public key-ring.
-        set keylist [split $keylist "\n"]
-        set i 0
-	$win.enc.keys.lb delete 0 end
-        foreach line $keylist {
-           if [regexp {^(pub|sec) +[0-9]+/([0-9A-F]+) [0-9/]+ (.*)$} \
-               $line {} sigid keyid userid] {
-                  set user_id(pgp,$i) $userid
-                  set key_id(pgp,$i) $keyid
-                  set sig_id(pgp,$i) $sigid
-                  if { [string length $userid] > 60 } {
-                        set dotdot "..."
-                  } else {
-                        set dotdot ""
-                  }
-		  set keyn [string range $userid 0 60]$dotdot
-		  #$win.enc.keys.lb delete $i end
-		  $win.enc.keys.lb insert $i "$keyn"
- 
-                  incr i
- 
-             }
-           }
-		set no_of_keys $i
-   		bind  $win.enc.keys.lb <1> "%W selection clear 0 end;\
-                            %W selection set \[%W nearest %y\];\
-				 [ format { 
-		global no_of_keys
-                global  user_id key_id
-                set selkey [%s.enc.keys.lb curselection]
-		if {$selkey==""} {
-    		errorpopup "No Key Selected" "You must select a key for encryption"
-    		log "user selected no key"
-    		return 0
-  		}
-                %s.enc.keys.lb  get [lindex $selkey 0]
-		#%s.enc.keys.lb configure -state normal
-			set pgpkey [lindex $selkey 0]
-	   	set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$pgpkey)
-	   	set key_id(pgp,enc_cur_key_sel) $key_id(pgp,$pgpkey)
- 			if { [string length $user_id(pgp,enc_cur_key_sel)] > 60} {
-                              set dotdot "..."
-                            } else {
-                                set dotdot ""
-                            }
-		    } $win $win $win $win] "
-        }
+  if { [ get_pgppath ] == 1 } {
+    return 1
+  }
+
+  set tclcmd [ list exec pgp -kv $env(PGPPATH)/pubring.pgp]
+  catch $tclcmd keylist
+  pgp_InterpretOutput $keylist pgpresult 1
+
+  if {$pgpresult(ok) != 1} {
+    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)/$keyring" 10000
+    return 1
+  }
+
+# Extract the user and key ids of keys found in the PGP public keyring.
+
+  set keylist [split $keylist "\n"]
+  set i 0
+  $win.enc.keys.lb delete 0 end
+
+  foreach line $keylist {
+    if [regexp {^(pub) +[0-9]+/([0-9A-F]+) [0-9/]+ (.*)$} \
+        $line {} sigid keyid userid] {
+      set user_id(pgp,$i) $userid
+      set  key_id(pgp,$i) $keyid
+      set  sig_id(pgp,$i) $sigid
+      if { [string length $userid] > 60 } {
+        set dotdot "..."
+      } else {
+        set dotdot ""
+      }
+      set keyn [string range $userid 0 60]$dotdot
+      $win.enc.keys.lb insert $i "$keyn"
+      incr i
+    }
+  }
+
+# sort out the key selection
+
+  set no_of_keys $i
+  bind  $win.enc.keys.lb <1> "%W selection clear 0 end;\
+     %W selection set \[%W nearest %y\];\
+     [ format { 
+       global no_of_keys
+       global  user_id key_id
+       set selkey [%s.enc.keys.lb curselection]
+       %s.enc.keys.lb  get [lindex $selkey 0]
+       set pgpkey [lindex $selkey 0]
+       set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$pgpkey)
+       set key_id(pgp,enc_cur_key_sel) $key_id(pgp,$pgpkey)
+     } $win $win $win $win] "
  
   if {([string compare $aid "new"]!=0)&&($ldata($aid,enc_asym_keyid)!="")} {
-         for {set i 0} {$i < $no_of_keys} {incr i} {
-          if {[string compare $ldata($aid,enc_asym_keyid) $key_id(pgp,$i)] == 0} {
-                $win.enc.keys.lb  selection set $i
-                set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$i)
-		break
-          }
- 
-        	}
-	}
+    for {set i 0} {$i < $no_of_keys} {incr i} {
+      if {[string compare $ldata($aid,enc_asym_keyid) $key_id(pgp,$i)] == 0} {
+        $win.enc.keys.lb  selection set $i
+        set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$i)
+        break
+      }
+    }
+  }
   return
 }
 
-# ---------------------------------------------------------------------
-# SYMT end
-# ---------------------------------------------------------------------
-
-
+# ---------------------------------------------------------------------------
+# checks the signature of the received packets 
+# ---------------------------------------------------------------------------
 proc pgp_check_authentication {irand} {
     update
     global env 
@@ -138,64 +101,41 @@ proc pgp_check_authentication {irand} {
     global recv_authstatus
     global recv_authmessage
     putlogfile "entered pgp_check authentication: irand = $irand"
+
+# set up the filenames -should already exist 
+
     set local_authtxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
     set local_authsig_file "[glob -nocomplain [resource sdrHome]]/$irand.sig"
-    set local_key_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-       if {[string compare $env(PGPPATH) "none"] == 0 } {
-      		set recv_authstatus "failed"
-      		set recv_asym_keyid "nonenone"
-      		set recv_authmessage "No Key Ring Path"
-                set env(PGPPATH) "none"
-                return 1
-       } else {
-      set env(PGPPATH) $env(PGPPATH)
-      }
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-      		set recv_authstatus "failed"
-      		set recv_asym_keyid "nonenone"
-      		set recv_authmessage "No Key Ring Path"
-                set env(PGPPATH) "none"
-                return 1
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+    set local_key_file     "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
+
+# find the PGPPATH
+
+    if { [ get_pgppath ] == 1 } {
+      set recv_authstatus  "failed"
+      set recv_asym_keyid  "nonenone"
+      set recv_authmessage "No Key Ring Path"
+      return 1
     }
 
-    putlogfile "pgp_check authentication: env(PGPPATH) = $env(PGPPATH)"
+# set up command to check the authentication
+# pgp +batchmode=on SIGFILE TXTFILE 
 
     set tclcmd [ list exec pgp +batchmode=on $local_authsig_file $local_authtxt_file ]
-    putlogfile "pgp_check_authentication: tclcmd = $tclcmd"
     set result [ catch $tclcmd output ]
-    #putlogfile "PGPPATH $env(PGPPATH)" 
-    putlogfile "output $output" 
  
-    # The error information must be conveyed to the user - more work
-    # required....Need a mechanism to identify the session announcement to
-    # the user.
+# The error information must be conveyed to the user - more work needed
+# Need a mechanism to identify the session announcement to the user.
 
-    putlogfile "pgp_check_authentication: calling pgp_InterpretOutput $output pgpresult 1"
     pgp_InterpretOutput $output pgpresult 1
-    #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+
     if {$pgpresult(ok) == 1} {
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
-    putlogfile "pgp_check_authentication: pgpresult(msg) = $pgpresult(msg)"
-    set recv_authstatus "trustworthy"
-    regsub -all {\"} $pgpresult(msg) {} mess
-    set  recv_authmessage $mess
-    set recv_asym_keyid $pgpresult(keyid)
-
-    putlogfile "pgp_check_authentication: recv_authstatus  = $recv_authstatus"
-    putlogfile "pgp_check_authentication: recv_authmessage = $recv_authmessage"
-    putlogfile "pgp_check_authentication: recv_asym_keyid  = $recv_asym_keyid"
-
-    #timedmsgpopup "$pgpresult(msg)\n" "$recv_authstatus" 10000 
+      set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
+      regsub -all {\"} $pgpresult(msg) {} mess
+      set recv_authstatus   "trustworthy"
+      set recv_authmessage  $mess
+      set recv_asym_keyid   $pgpresult(keyid)
     } else {
-        if { [ file exists $local_key_file ] } {
+      if { [ file exists $local_key_file ] } {
         update
         set oldpgppath $env(PGPPATH)
         catch { unset env(PGPPATH)}
@@ -204,50 +144,44 @@ proc pgp_check_authentication {irand} {
         set localpub  "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
         file copy  $local_key_file $localpub
         set tclcmd [ list exec pgp +batchmode=on $local_authsig_file $local_authtxt_file ]
-         #putlogfile "$tclcmd"
         set result [ catch $tclcmd output ]
-        #putlogfile "inteoutput $output"
      	pgp_InterpretOutput $output pgpresult 1
-        #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
         file delete "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
         catch { unset env(PGPPATH)}
         set env(PGPPATH) $oldpgppath
-     		if {$pgpresult(ok) == 1} {
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
-      		set recv_authstatus "integrity"
-                regsub -all {\"} $pgpresult(msg) {} mess
-      		set recv_authmessage $mess
-    		set recv_asym_keyid $pgpresult(keyid)
-# Ask the user if he wants to add the certificate to the publicKey 
-                #catch { unset env(PGPPATH)}
-set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) "\"to your public key ring"]
-                 regsub -all {\"}  $pubkey {} pubkey1
-                 pgp_AddCert $local_key_file "Adding Public Key" "$pubkey1"
-                 
-     		} else {
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) "none" "none" "none" "none" ]
-    	# 	set result [ certExec [list  $local_authsig_file $local_authtxt_file ] output $irand]
-      		set recv_authstatus "failed"
-      		set recv_asym_keyid $pgpresult(keyid)
-                regsub -all {\"} $pgpresult(msg) {} mess
-      		set recv_authmessage $mess
-      		}
-        
-       # catch { unset env(PGPPATH)}
-  } else {
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) pgpresult(keyid) "none" "none" "none" "none" ]
-      		set recv_authstatus "failed"
-      		set recv_asym_keyid $pgpresult(keyid)
-                regsub -all {\"} $pgpresult(msg) {} mess
-      		set recv_authmessage $mess
-     }
- }
 
-    putlogfile "pgp_check_authentication: About to return"
-    putlogfile "pgp_check_authentication: pgpresult(msg) = $pgpresult(msg)"
-    putlogfile "pgp_check_authentication: recv_authstatus  = $recv_authstatus"
-    putlogfile "pgp_check_authentication: recv_authmessage = $recv_authmessage"
-    putlogfile "pgp_check_authentication: recv_asym_keyid  = $recv_asym_keyid"
+     	if {$pgpresult(ok) == 1} {
+    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
+          regsub -all {\"} $pgpresult(msg) {} mess
+          set recv_authstatus "integrity"
+      	  set recv_authmessage $mess
+    	  set recv_asym_keyid  $pgpresult(keyid)
+          set pubkey [concat "Would you like to add Public key of \" " $pgpresult(userid) "\"to your public key ring"]
+          regsub -all {\"}  $pubkey {} pubkey1
+          pgp_AddCert $local_key_file "Adding Public Key" "$pubkey1"
+     	} else {
+          set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) "none" "none" "none" "none" ]
+      	  set recv_authstatus "failed"
+      	  set recv_asym_keyid $pgpresult(keyid)
+          regsub -all {\"} $pgpresult(msg) {} mess
+      	  set recv_authmessage $mess
+        }
+
+      } else {
+
+        set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) $pgpresult(keyid) "none" "none" "none" "none" ]
+        set recv_authstatus "failed"
+        set recv_asym_keyid $pgpresult(keyid)
+        regsub -all {\"} $pgpresult(msg) {} mess
+        set recv_authmessage $mess
+      }
+    }
+
+#    putlogfile "pgp_chk_auth: About to return"
+#    putlogfile "pgp_chk_auth: pgpresult(msg)   = $pgpresult(msg)"
+#    putlogfile "pgp_chk_auth: recv_authstatus  = $recv_authstatus"
+#    putlogfile "pgp_chk_auth: recv_authmessage = $recv_authmessage"
+#    putlogfile "pgp_chk_auth: recv_asym_keyid  = $recv_asym_keyid"
 
     return 1
 }
@@ -298,652 +232,526 @@ proc enc_pgp_cleanup {irand} {
    }
 }
 
+
+#--------------------------------------------------------------------#
+# Get the list of keys in the secret keyring                         #
+# Return: 0 if succeeded; 1 if failed                                #
+#--------------------------------------------------------------------#
+# Removed smartcard code as it is messy enough as it is              #
+#--------------------------------------------------------------------#
 proc pgp_get_key_list { win } {
-    global no_of_keys
-    global user_id
-    global key_id
-    global sig_id
-    global env
-    set resultkey 0
 
-    putlogfile "entered pgp_get_key_list"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-     set i 0
-     set j 0
-      if { [file exists $env(PGPPATH)/secring.enc] } {
-     	if [info exists env(SMARTLOC)] {
-     	putlogfile " SMART CARD Being Used"
-     	set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-        set resultkey [ catch $tclcmd keylist ]
-         pgp_InterpretOutput $keylist pgpresult 1
-            if {$pgpresult(ok) == 1} { 
-                                 set i 1
-                                 set j 1
-                                 } else {
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                               return 0
-                                 }
-     	} else {
-        if { [pgp_smart "SMARTCARD" " Place your smartcard"  "OK"] == 0 } {
-           set resultkey 0
-        } else {
-     	while { $j == 0} {
-     	if { [enter_smart_pse_details] == 0 } {
-        if { [file exists $env(PGPPATH)/secring.pgp] } {
-     	set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-        set resultkey [ catch $tclcmd keylist ]
-         pgp_InterpretOutput $keylist pgpresult 1
-            if {$pgpresult(ok) == 1} { 
-                                 set i 1
-                                 set j 1
-                                 } else {
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                               return 0
-                                 }
-          } elseif  { [file exists $env(PGPPATH)/secring.enc] } {
-               timedmsgpopup "Secring view error" "You need SMART CARD Information" 10000 
-      	           set j 0
-                   catch { unset env(SMARTLOC)}
-             } else {
-                  timedmsgpopup "Secring view error" "You need pgp ring files in $env(PGPPATH)" 10000 
-                   catch { unset env(SMARTLOC)}
-              return 0
-            }
-     	} else {
-     	set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC)]
-     	while {$i == 0 } {
-                        	if { $result == 1} {
-                        	#putlogfile "The SMART pse and pin check OK"
-                         	set env(USERPIN) $env(SMARTPIN)
-                         	set tclcmd [ list exec secude pkcs7dec -p $env(SMARTLOC) -i $env(PGPPATH)/secring.enc -o $env(PGPPATH)/secring.pgp]
-                         	set result [ catch $tclcmd output ]
-                                pkcs7_InterpretOutput $output pkcs7result 
-                                if {$pkcs7result(ok) == 0} {
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                catch {unset env(SMARTLOC)}
-                        	catch {unset env(SMARTPIN)}
-				set i 1
-                                set j 0
-                               } else {
-                               set i 1
-                               set j 1
-                         	set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-                                set resultkey [ catch $tclcmd keylist ]
-                                pgp_InterpretOutput $keylist pgpresult 1
-                                  if {$pgpresult(ok) == 1} { 
-                                 set i 1
-                                 set j 1
-                                 } else {
-                                  set i 1
-                                  set j 0
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                 }
-                                 }
+  global no_of_keys user_id key_id sig_id env
 
-                        	} else {
-                        	catch {unset env(SMARTLOC)}
-                        	catch {unset env(SMARTPIN)}
-                        	if {[enter_smart_pse_details ] == 0} {
-                          if { [file exists $env(PGPPATH)/secring.pgp] } {
-     	                  set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-                          set resultkey [ catch $tclcmd keylist ]
-                                pgp_InterpretOutput $keylist pgpresult 1
-                                  if {$pgpresult(ok) == 1} { 
-                                    set i 1
-                                    set j 1
-                                 } else {
-                                  set i 1
-                                  set j 0
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                catch {unset env(SMARTLOC)}
-                                catch {unset env(SMARTPIN)}
-                                 }
-                            } elseif  { [file exists $env(PGPPATH)/secring.enc] } {
-                                 timedmsgpopup "Secring view error" "You need SMART CARD Information" 10000 
-                                     set i 1
-      	                             set j 0
-                               } else {
-                                    timedmsgpopup "Secring view error" "You need pgp ring files in $env(PGPPATH)" 10000 
-                                return 0
-                              }
-                         	} else {
-                          	set result [Misc_CheckSmart $env(SMARTPIN)  $env(SMARTLOC) ]
-                        	}
-                              }
-                      	   }
-                  	}
-           	}
-            }
-     	}
-    } else {
-     if { [file exists $env(PGPPATH)/secring.pgp] } {
-     set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-     set resultkey [ catch $tclcmd keylist ]
-     pgp_InterpretOutput $keylist pgpresult 1
-     if {$pgpresult(ok) == 1} {
-                             set resultkey 1
-                                 } else {
-                              timedmsgpopup "Secring view error" "Wrong smar
-t card configration" 10000
-                               return 0
-                                 }
-    } else {
-           set resultkey 0
-    }
-    }
-    #putlogfile "COMMAND= $tclcmd KEYLIST= $keylist"
-    if {$resultkey == 0} {
-        putlogfile "Cannot open key-file \n"
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             } else {
-        pgp_get_key_list $win
-        }
-    } else {
+  putlogfile "entered pgp_get_key_list"
+  set resultkey 0
+
+# If can't find the PGP directory then forget it 
+
+  if { [ get_pgppath ] == 1 } {
+    return 1
+  }
+
+# view the keys on the secret keyring
+
+  set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
+  catch $tclcmd keylist
+  pgp_InterpretOutput $keylist pgpresult 1
+
+  if {$pgpresult(ok) == 1} {
+    set resultkey 1
+  } else {
+    timedmsgpopup "PGP problem" "Couldn't view $env(PGPPATH)secring.pgp" 10000
+    return 0
+  }
+
+# Extract the user and keyid of the keys from the secret keyring.
+
+  set keylist [split $keylist "\n"]
+  set i 0
+
+  foreach line $keylist {
+# just looking for keys we can sign with so need secret only not public
+   if [regexp {^(sec) +[0-9]+/([0-9A-F]+) [0-9/]+ (.*)$} \
+         $line {} sigid keyid userid] {
+      set user_id(pgp,$i) $userid
+      set  key_id(pgp,$i) $keyid
+      set  sig_id(pgp,$i) $sigid
  
-        # Extract the user id and key id of each key found in the local
-        # PGP public key-ring.  A modification maybe required here to
-        # ensure that only public-private key pairs are listed.  Otherwise
-        # we'll see the keys (belonging to other PGP users) that we have
-        # certified and obviously cannot use for authentication.
-        set keylist [split $keylist "\n"]
-        set i 0
-        foreach line $keylist {
-           if [regexp {^(pub|sec) +[0-9]+/([0-9A-F]+) [0-9/]+ (.*)$} \
-               $line {} sigid keyid userid] {
-                  set user_id(pgp,$i) $userid
-                  set key_id(pgp,$i) $keyid
-                  set sig_id(pgp,$i) $sigid
+# make sure userid isn't too long to see in the window 
+
+      if { [string length $userid] > 60 } {
+        set dotdot "..."
+      } else {
+        set dotdot ""
+      }
  
-                  if { [string length $userid] > 60 } {
-                        set dotdot "..."
-                  } else {
-                        set dotdot ""
-                  }
+      $win.auth.keys.lb insert [expr $i+1].0 [string range $userid 0 60]$dotdot
+      $win.auth.keys.lb insert end " \n"
+      $win.auth.keys.lb tag add line$i [expr $i+1].0 [expr $i+1].end
+      $win.auth.keys.lb tag configure line$i -background \
+            [option get . background Sdr]
  
-                  $win.auth.keys.lb insert [expr $i+1].0 \
-                                [string range $userid 0 60]$dotdot
-                  $win.auth.keys.lb insert end " \n"
-                  $win.auth.keys.lb tag add line$i [expr $i+1].0 \
-                                [expr $i+1].end
-                  $win.auth.keys.lb tag configure line$i -background\
-                        [option get . background Sdr]
- 
-                  # Set-up bind on key selection
-                  $win.auth.keys.lb tag bind line$i <1>\
-                        [format {
-                            global no_of_keys
-                            for {set i 0} {$i < $no_of_keys} {incr i} {
-                                %s.auth.keys.lb tag configure line$i\
-                                -background [option get . background Sdr]
-                            }
- 
-                            %s.auth.keys.lb tag configure line%s -background\
-                            [option get . activeBackground Sdr]
-                            %s.auth.keys.lb configure -state disabled
-                            set user_id(pgp,auth_cur_key_sel) $user_id(pgp,%s)
-                            set key_id(pgp,auth_cur_key_sel) $key_id(pgp,%s)
-                            if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
-                                set dotdot "..."
-                            } else {
-                                set dotdot ""
-                            }
- 
-                            %s.auth.pwd.l configure -text "Enter passphrase\
- for [string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" \
-                                -font [resource infoFont]
-                        } $win $win $i $win $i $i $win]
-                  incr i
-           }
-        }
- 
-        set no_of_keys $i
-        if {$key_id(pgp,auth_cur_key_sel) == ""} {
-                set user_id(pgp,auth_cur_key_sel) $user_id(pgp,0)
-                set key_id(pgp,auth_cur_key_sel) $key_id(pgp,0)
-                set sig_id(pgp,auth_cur_key_sel) $sig_id(pgp,0)
-        }
- 
-        # Need to highlight previously used key in list or, if a new
-        # session is being created, the first key in the list
-        for {set i 0} {$i < $no_of_keys} {incr i} {
-          if {$key_id(pgp,auth_cur_key_sel)==$key_id(pgp,$i)} {
-                $win.auth.keys.lb tag configure line$i -background\
-                [option get . activeBackground Sdr]
-                set user_id(pgp,auth_cur_key_sel) $user_id(pgp,$i)
+# Set-up bind on key selection
+
+      $win.auth.keys.lb tag bind line$i <1>\
+        [format {
+          global no_of_keys
+          for {set i 0} {$i < $no_of_keys} {incr i} {
+            %s.auth.keys.lb tag configure line$i\
+              -background [option get . background Sdr]
           }
- 
-        }
- 
-        # Restrict how much we display of the user id of each key
-        if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
-             set dotdot "..."
-        } else {
-             set dotdot ""
-        }
- 
-        $win.auth.pwd.l configure -text "Enter passphrase for\
-[string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" -font [resource infoFont]
+
+          %s.auth.keys.lb tag configure line%s -background\
+              [option get . activeBackground Sdr]
+          %s.auth.keys.lb configure -state disabled
+          set user_id(pgp,auth_cur_key_sel) $user_id(pgp,%s)
+          set key_id(pgp,auth_cur_key_sel) $key_id(pgp,%s)
+          if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
+            set dotdot "..."
+          } else {
+            set dotdot ""
+          }
+
+          %s.auth.pwd.l configure -text "Enter passphrase for \
+                 [string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" \
+                 -font [resource infoFont]
+        } $win $win $i $win $i $i $win]
+        incr i
     }
+  }
+ 
+  set no_of_keys $i
+ 
+  if {  $key_id(pgp,auth_cur_key_sel) == ""} {
+    set user_id(pgp,auth_cur_key_sel) $user_id(pgp,0)
+    set  key_id(pgp,auth_cur_key_sel) $key_id(pgp,0)
+    set  sig_id(pgp,auth_cur_key_sel) $sig_id(pgp,0)
+  }
+ 
+# Need to highlight previously used key in list or, if a new
+# session is being created, the first key in the list
+
+  for {set i 0} {$i < $no_of_keys} {incr i} {
+    if {$key_id(pgp,auth_cur_key_sel)==$key_id(pgp,$i)} {
+      $win.auth.keys.lb tag configure line$i -background\
+          [option get . activeBackground Sdr]
+      set user_id(pgp,auth_cur_key_sel) $user_id(pgp,$i)
+    }
+  }
+ 
+# Restrict how much we display of the user id of each key
+
+  if { [string length $user_id(pgp,auth_cur_key_sel)] > 60} {
+    set dotdot "..."
+  } else {
+    set dotdot ""
+  }
+ 
+  $win.auth.pwd.l configure -text "Enter passphrase for\
+      [string range $user_id(pgp,auth_cur_key_sel) 0 60]$dotdot" \
+      -font [resource infoFont]
+
   return
 }
 
+#--------------------------------------------------------------------#
+# Create the PGP signature file                                      #        
+# 1) call pgp to create signature file irand.sig                     # 
+# 2) call pgp to extract key used to file irand.pgp                  # 
+# Returns:  0 = okay; 1 = problems                                   #
+#--------------------------------------------------------------------#
 proc pgp_create_signature {irand} {
-    global recv_result
-    global asympass
-    global user_id
-    global key_id
-    global recv_authmessage
-    global env
-    putlogfile "Entered pgp_create_signature : irand = $irand"
-    set local_authkey_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
-    set local_authsig_file "[glob -nocomplain [resource sdrHome]]/$irand.sig"
-    set local_authtxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-    putlogfile "pgp_create_sig: local_authkey_file = $local_authkey_file"
-    putlogfile "pgp_create_sig: local_authsig_file = $local_authsig_file"
-    putlogfile "pgp_create_sig: local_authtxt_file = $local_authtxt_file"
- 
-    set pgpdir "[glob -nocomplain ~]/.pgp"
+  global recv_result
+  global asympass
+  global user_id
+  global key_id
+  global recv_authmessage
+  global env
 
-    putlogfile "pgp_create_sig: pgpdir = $pgpdir"
+  putlogfile "Entered pgp_create_signature : irand = $irand"
 
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-      putlogfile "pgp_create_sig: env fd - env(PGPPATH) = $env(PGPPATH)"
-    } else { 
-          putlogfile "pgp_create_sig: no env fd"
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-    putlogfile "pgp_create_sig: PGPPATH is $env(PGPPATH)"
-    set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on \
-        +verbose=0 -u ]
-    set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
-    set tclcmd [ concat $tclcmd [ list $local_authtxt_file \
-        -o $local_authsig_file ] ]
-    putlogfile "pgp_create_sig: about to execute tclcmd = $tclcmd"
-    set result [catch $tclcmd output]
-    putlogfile "pgp_create_sig: executed tclcmd = $tclcmd"
-    putlogfile "pgp_create_sig: result= $result output= $output"
- 
-    # Either bad passphrase, we have not set-up the correct files properly
-    # in 'generate_authentication_info, or PGP doesn't work properly...
-    # May want to limit the error problem to a bad passphrase, only.  This
-    # can be achieved by tighter control over errors incurred in previous
-    # functions.
-    #if { $result == 1 } {
+# set up the text and signature files
 
-    putlogfile "pgp_create_sig: calling pgp_InterpretOutput $output pgpresult 1"
+  set local_authkey_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
+  set local_authsig_file "[glob -nocomplain [resource sdrHome]]/$irand.sig"
+  set local_authtxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
 
-    pgp_InterpretOutput $output pgpresult 1
-    set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
-    putlogfile "pgp_create_sig: pgpresult(msg) set to $pgpresult(msg)"
+# find PGPPATH 
 
-        	if {$pgpresult(ok) == 0} {
-                    putlogfile "pgp_create_sig pgpresult(ok)=$pgpresult(ok)"
-                    set recv_result "0"
-                    return 0
-		}
-    
-     #}
-    set mess [concat "The message is signed using keyid" 0x$key_id(pgp,auth_cur_key_sel)]
-    set  recv_authmessage $mess
-    
-    set tclcmd [ list exec pgp -kx +batchmode=on +verbose=0 ]
-    set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
-    set tclcmd [ concat $tclcmd $local_authkey_file ]
-    set result [catch $tclcmd output]
-    if { $result == 1 } {
-    #putlogfile "result= $result output= $output"
-    pgp_InterpretOutput $output pgpresult 1
-    if {$pgpresult(ok) == 0} {
-        #putlogfile "Something wrong here...cannot extract key for $user_id(pgp,auth_cur_key_sel) \n"
-        set recv_result "0"
-        return 0
-    } else {
-        #putlogfile "$user_id(pgp,auth_cur_key_sel) key extracted...\n"
-    }
- 
-    #putlogfile "Adding authentication to session announcement \n"
-
-                    set recv_result "1"
+  if { [ get_pgppath ] == 1 } {
     return 1
-   }
-                    set recv_result "1"
+  }
+
+# set up the cmd for signing: 
+# pgp -sb -z pwd +batchmode=on +verbose=0 -u keyid txt_file -o sig_file
+
+  set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on +verbose=0 -u ]
+  set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
+  set tclcmd [ concat $tclcmd [ list $local_authtxt_file -o $local_authsig_file ] ]
+
+# execute the command to create the signature file 
+
+  putlogfile "pgp_create_sig: about to execute tclcmd = $tclcmd"
+# [catch { $tclcmd } output]
+  set result [catch $tclcmd output]
+ 
+# check the call was okay (0 = something wrong)
+
+  pgp_InterpretOutput $output pgpresult 1
+  set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
+
+  if {$pgpresult(ok) == 0} {
+    set recv_result "1"
     return 1
+  }
+    
+  set mess [concat "The message is signed using keyid" 0x$key_id(pgp,auth_cur_key_sel)]
+  set recv_authmessage $mess
+
+# set up the cmd for extracting the key to a keyfile:
+# pgp -kx +batchmode=on +verbose=0 key_id keyfile
+    
+  set tclcmd [ list exec pgp -kx +batchmode=on +verbose=0 ]
+  set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
+  set tclcmd [ concat $tclcmd $local_authkey_file ]
+
+# execute the command to extract key from keyring to file
+
+  putlogfile "pgp_create_sig: about to execute tclcmd = $tclcmd"
+  set result [catch $tclcmd output]
+  putlogfile "result = $result"
+
+# check the call was okay (0 = something wrong)
+
+  pgp_InterpretOutput $output pgpresult 1
+
+  if {$pgpresult(ok) == 0} {
+    set recv_result "1"
+    return 1
+  }
+ 
+  set recv_result "0"
+  return 0
 }
-# ---------------------------------------------------------------------
-# AUTH end
-# ---------------------------------------------------------------------
- 
-proc pgp_create_encryption {irand} {
-    global user_id
-    global key_id
-    global env
-    global recv_encmessage
-    global recv_result
-    putlogfile "Entered pgp_create_encryption: irand = $irand"
-    set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
-    set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-    set configfile $env(PGPPATH)/config.txt
-    putlogfile "pgp_create_encryption: env(PGPPATH) = $env(PGPPATH)"
-    putlogfile "pgp_create_encryption: configfile = $env(PGPPATH)/config.txt"
+#--------------------------------------------------------------------#
+# Create the PGP encryption                                          #        
+# 1) call pgp to encrypted file irand.pgp                            # 
+# Returns: 0 if okay and 1 if not                                    #
+#--------------------------------------------------------------------#
+proc pgp_encrypt {irand} {
 
-    #putlogfile "env $env(PGPPATH)"
-    if { [file exists $configfile] } {
-     putlogfile "pgp_create_encryption: $configfile exists"
-     set config [open $configfile r]
-     set contents [read $config ] 
-     	if { [regexp {.*EncryptToSelf = on.*} $contents {} contents] == 1} {
-	     #putlogfile " Config File is on"
-     	} else {
-	    	set config [open $configfile a 0600]
-    		puts $config "EncryptToSelf = on"
-    		close $config
-	       }
+  global user_id
+  global key_id
+  global env
+  global recv_encmessage
+  global recv_result
+
+  putlogfile "Entered pgp_create_encryption: irand = $irand"
+
+# set up the txt and encrypted pgp files 
+
+  set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
+  set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
+
+# find the PGPPATH
+
+  if { [ get_pgppath ] == 1 } {
+    putlogfile "pgp_encrypt: failed to find PGPPATH"
+    return 1
+  }
+
+# find the config file and set to encrypt to self as well as recipient
+
+  set configfile $env(PGPPATH)/config.txt
+
+  if { [file exists $configfile] } {
+    putlogfile "pgp_encrypt: $configfile exists"
+    set config [open $configfile r]
+    set contents [read $config ] 
+    if { [regexp {.*EncryptToSelf = on.*} $contents {} contents] == 1} {
+      putlogfile "pgp_encrypt: EncryptToSelf is already on"
     } else {
-    putlogfile "pgp_create_encryption: $configfile doesnt exist"
+      set config [open $configfile a 0600]
+      puts $config "EncryptToSelf = on"
+      close $config
+    }
+  } else {
+    putlogfile "pgp_encrypt: $configfile does not exist"
     set config [open $configfile a 0600]
     puts $config "EncryptToSelf = on"
     close $config
-    }
+  }
 
-    set tclcmd [ list exec pgp -e +batchmode=on]
-    set tclcmd [concat $tclcmd [  list $local_enctxt_file  ]]
-    set tclcmd [ concat $tclcmd 0x$key_id(pgp,enc_cur_key_sel) ]
-    set tclcmd [concat $tclcmd [ list -o $local_sapenc_file  ]]
-    putlogfile "pgp_create_encryption: tclcmd = $tclcmd"
-    set result [catch $tclcmd output]
-    putlogfile "pgp_create_encryption: executed $tclcmd : result = $result : output = $output"
+# set up cmd for encrypting the file:
+# pgp -e +batchmode=on txt_file key_id -o pgp_file
 
-    #putlogfile "env $env(PGPPATH) $tclcmd output= $output"
- 
-   # if {$result == 1} {
-        #return 0
-    #}
-    set mess [concat "The message is encrypted for yourself using the most recent key on your secret key ring and user with keyid" 0x$key_id(pgp,enc_cur_key_sel)]
-    #putlogfile " ENCRYPTION =$mess"
-    set  recv_encmessage $mess
+  set tclcmd [ list exec pgp -e +batchmode=on]
+  set tclcmd [ concat $tclcmd [ list $local_enctxt_file  ]]
+  set tclcmd [ concat $tclcmd 0x$key_id(pgp,enc_cur_key_sel) ]
+  set tclcmd [ concat $tclcmd [ list -o $local_sapenc_file  ]]
 
-    putlogfile "pgp_create_encryption: recv_encmessage = $recv_encmessage"
- 
-    #putlogfile "Adding PGP encryption to session announcement \n"
+# execute the command to encrypt the file 
+
+  putlogfile "pgp_encrypt: about to execute tclcmd = $tclcmd"
+#  [catch $tclcmd output]
+  set result [catch $tclcmd output]
+  putlogfile "debug a"
+  putlogfile "result = $result"
+  putlogfile "debug b"
+  putlogfile "pgp_encrypt: output = $output"
+
+# check the call was okay (0 = something wrong)
+
+  pgp_InterpretOutput $output pgpresult 1
+
+  if {$pgpresult(ok) == 0} {
     set recv_result "1"
-    putlogfile "pgp_create_encryption: recv_result = $recv_result"
-    putlogfile "pgp_create_encryption: returning 1"
     return 1
+  }
+
+  set mess [concat "The message is encrypted for yourself using the most recent key on your secret key ring and user with keyid" 0x$key_id(pgp,enc_cur_key_sel)]
+  set  recv_encmessage $mess
+
+  set recv_result "0"
+  return 0
 }
 
+#--------------------------------------------------------------------#
+# Try to find out where the PGP files are located                    #
+# Returns: 0 if directory containing pubring.pgp and secring.pgp     #
+#          1 if can't find directory or files                        #
+#--------------------------------------------------------------------#
+proc get_pgppath {} {
 
-proc pgp_check_encryption {irand } {
+  global env
+
+# set the default location to be the .pgp directory 
+
+  putlogfile " Entered get_pgppath"
+
+  set default_pgpdir "[glob -nocomplain ~]/.pgp"
+  set pgppathset 0
+
+# if PGPPATH is set make sure its not set to "none" (?) or blank
+
+  if { [info exists env(PGPPATH)] } {
+     if { [string compare $env(PGPPATH) "none"] == 0 || 
+          [string compare $env(PGPPATH) ""    ] == 0  } {
+       set pgppathset 0
+     } else {
+       set pgppathset 1
+     }
+   }
+  
+# set PGPPATH to something sensible if its not set or silly
+
+  if { $pgppathset == 0 } {
+    if { [file isdirectory $default_pgpdir ] == 1} {
+      set env(PGPPATH) $default_pgpdir
+      set pgppathset 1
+    } else {
+      if { [ enter_pgp_path ] == 0 } {
+        set pgppathset 0
+      } else {
+        set pgppathset 1
+      }
+    }
+  }
+
+# should have env(PGPPATH) set so expand any ~ etc
+# check the directory and pubring.pgp and secring.pgp files exist
+
+  set env(PGPPATH) [glob -nocomplain $env(PGPPATH)]
+
+  if { [file isdirectory $env(PGPPATH)] == 1} {
+    if { [file exists $env(PGPPATH)/secring.pgp] && 
+         [file exists $env(PGPPATH)/pubring.pgp]    } {
+      putlogfile "get_pgppath: returning with rc 0"
+      return 0
+    } else {
+      timedmsgpopup "PGP file problem" "The directory $env(PGPPATH) doesn't seem to contain secret and public keyrings (secring.pgp/pubring.pgp)" 10000
+      putlogfile "get_pgppath: returning with rc 1 - no files found"
+      return 1
+    }
+  } else {
+    putlogfile "get_pgppath: returning with rc 1 - not directory"
+    timedmsgpopup "PGP file problem" "Cannot find $env(PGPPATH)" 10000
+    return 1
+  }
+
+}
+
+#--------------------------------------------------------------------#
+# Pop up window to prompt user to enter their PGP directory          #
+# Returns: 1 = OK ; 0 = problems !!                                  #
+# sets $yourkey to be the PGPPATH and $pgpinfo(ok) = 1 when finish   # 
+#--------------------------------------------------------------------#
+proc enter_pgp_path {} {
+  global  env pgpinfo yourkey 
+
+  catch {destroy $w}
+  set w [toplevel .pgpinfo -borderwidth 2] 
+  wm title .pgpinfo "Sdr: PGP Configuration"
+
+  frame $w.f -borderwidth 5 -relief groove
+  pack  $w.f -side top
+
+  message $w.f.l -aspect 500  -text "Please provide the name of the directory holding your PGP key files"
+  pack    $w.f.l -side top
+
+  frame $w.f.f0 
+  pack  $w.f.f0 -side top -fill x -expand true
+
+  label $w.f.f0.l -text "Key File Directory"
+  pack  $w.f.f0.l -side left -anchor e -fill x -expand true
+
+  entry $w.f.f0.e -width 30 -relief sunken -borderwidth 1 \
+    -bg [option get . entryBackground Sdr] \
+    -highlightthickness 0 -textvariable yourkey
+  pack  $w.f.f0.e -side left
+  bind  $w.f.f0.e <Key-Return> "set pgpinfo(ok) 1"
+
+  frame $w.f.f3 
+  pack  $w.f.f3 -side top -fill x -expand true
+
+  button $w.f.f3.ok -text OK -command {set pgpinfo(ok) 1 }
+  pack   $w.f.f3.ok -side left -fill x -expand true
+  button $w.f.f3.cancel -text Cancel \
+    -command {set pgpinfo(ok) 0 }
+  pack   $w.f.f3.cancel -side left -fill x -expand true
+
+  grab $w
+  tkwait variable pgpinfo(ok)
+  grab release $w
+  destroy .pgpinfo
+
+  if { $pgpinfo(ok) == 1} {
+    set env(PGPPATH) $yourkey
+    return 1
+  } else {
+    set env(PGPPATH) "none"
+    return 0
+  }
+}
+
+#------------------------------------------------------------------------#
+# Invoke PGP to decrypt the file $irand.pgp and output to $irand.txt     #
+# need to check this code as I'm not sure where it should return etc     #
+#------------------------------------------------------------------------#
+proc pgp_check_encryption { irand } {
     update
+
+    global env
     global recv_enc_asym_keyid
     global recv_encstatus
-    global recv_encmessage
-    global env
-    set resultkey 0
+    global recv_encmessage 
+
     putlogfile "Entered pgp_check_encryption: irand = $irand"
+
+    set resultkey 0
+
+# set up the encrypted and plaintext filenames 
+
     set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
     set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-     if {[string compare $env(PGPPATH) "none"] == 0 } {
-                set recv_encstatus "failed"
-                set recv_enc_asym_keyid "nonenone"
-                set recv_encmessage "No Key Ring Path"
-                set env(PGPPATH) "none"
-                return 1
-       } else {
-      set env(PGPPATH) $env(PGPPATH)
-      }
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                set recv_encstatus "failed"
-                set recv_enc_asym_keyid "nonenone"
-                set recv_encmessage "No Key Ring Path"
-                set env(PGPPATH) "none"
-                return 1
 
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
-    }
-     putlogfile "pgp_check_encryption: env(PGPPATH) = $env(PGPPATH)"
-     set i 0
-     set j 0
-        if { [file exists $env(PGPPATH)/secring.enc] } {
-     	if [info exists env(SMARTLOC)] {
-     	putlogfile " SMART CARD Being Used"
-        set resultkey 1
-     	} else {
-          if { [pgp_smart "SMARTCARD" " Place your smartcard" "OK" ] == 0 } {
-           set resultkey 0
-          } else {
-     	while { $j == 0} {
-     	if { [enter_smart_pse_details] == 0 } {
-        if { [file exists $env(PGPPATH)/secring.pgp] } {
-     	set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-        set resultkey [ catch $tclcmd keylist ]
-         pgp_InterpretOutput $keylist pgpresult 1
-            if {$pgpresult(ok) == 1} { 
-                                 set i 1
-                                 set j 1
-                                 } else {
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                               set j 1
-                               set resultkey 0
-                                 }
-          } elseif  { [file exists $env(PGPPATH)/secring.enc] } {
-               timedmsgpopup "Secring view error" "You need SMART CARD Information" 10000 
-      	           set j 0
-                   catch { unset env(SMARTLOC)}
-                               set resultkey 0
-             } else {
-                  timedmsgpopup "Secring view error" "You need pgp ring files in $env(PGPPATH)" 10000 
-                   catch { unset env(SMARTLOC)}
-                               set j 1
-                               set resultkey 0
-            }
-     	} else {
-     	set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC)]
-     	while {$i == 0 } {
-                        	if { $result == 1} {
-                        	#putlogfile "The SMART pse and pin check OK"
-                         	set env(USERPIN) $env(SMARTPIN)
-                         	set tclcmd [ list exec secude pkcs7dec -p $env(SMARTLOC) -i $env(PGPPATH)/secring.enc -o $env(PGPPATH)/secring.pgp]
-                         	set result [ catch $tclcmd output ]
-                                pkcs7_InterpretOutput $output pkcs7result 
-                                if {$pkcs7result(ok) == 0} {
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                catch {unset env(SMARTLOC)}
-                        	catch {unset env(SMARTPIN)}
-				set i 1
-                                set j 0
-                               } else {
-                               set i 1
-                               set j 1
-                         	set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-                                set resultkey [ catch $tclcmd keylist ]
-                                pgp_InterpretOutput $keylist pgpresult 1
-                                  if {$pgpresult(ok) == 1} { 
-                                 set i 1
-                                 set j 1
-                                 } else {
-                                  set i 1
-                                  set j 0
-                                 set resultkey 0
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                 }
-                                 }
+# find PGPPATH
 
-                        	} else {
-                        	catch {unset env(SMARTLOC)}
-                        	catch {unset env(SMARTPIN)}
-                        	if {[enter_smart_pse_details ] == 0} {
-                          if { [file exists $env(PGPPATH)/secring.pgp] } {
-     	                  set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-                          set resultkey [ catch $tclcmd keylist ]
-                                pgp_InterpretOutput $keylist pgpresult 1
-                                  if {$pgpresult(ok) == 1} { 
-                                    set i 1
-                                    set j 1
-                                 } else {
-                                  set i 1
-                                  set j 0
-                              timedmsgpopup "Secring view error" "Wrong smart card configration" 10000
-                                 set resultkey 0
-                                catch {unset env(SMARTLOC)}
-                                catch {unset env(SMARTPIN)}
-                                 }
-                            } elseif  { [file exists $env(PGPPATH)/secring.enc] } {
-                                 timedmsgpopup "Secring view error" "You need SMART CARD Information" 10000 
-                                     set i 1
-      	                             set j 0
-                                 set resultkey 0
-                               } else {
-                                    timedmsgpopup "Secring view error" "You need pgp ring files in $env(PGPPATH)" 10000 
-                                 set resultkey 0
-                              }
-                         	} else {
-                          	set result [Misc_CheckSmart $env(SMARTPIN)  $env(SMARTLOC) ]
-                        	}
-                              }
-                      	   }
-                  	}
-           	}
-            }
-     	}
-      } else {
-     if { [file exists $env(PGPPATH)/secring.pgp] } {
-     set tclcmd [ list exec pgp -kv $env(PGPPATH)/secring.pgp ]
-     set resultkey [ catch $tclcmd keylist ]
-     pgp_InterpretOutput $keylist pgpresult 1
-                             if {$pgpresult(ok) == 1} {
-                             set resultkey 1
-                                 } else {
-                              timedmsgpopup "Secring view error" "Wrong smar
-t card configration" 10000
-                               return 0
-                                 }
-    } else {
-           set resultkey 0
-       }
- 
+    if { [ get_pgppath ] == 1 } {
+      set recv_encstatus      "failed"
+      set recv_enc_asym_keyid "nonenone"
+      set recv_encmessage     "No Key Ring Path"
+      return 1
     }
 
-    
-if { $resultkey == 1} {
-        set tclcmd [ list exec pgp +batchmode=on $local_sapenc_file -o $local_enctxt_file]
-        #putlogfile "$tclcmd \n"
-        set result [ catch $tclcmd output ]
-         #putlogfile "$output"
-         pgp_InterpretOutput $output pgpresult 1
-         #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
-         	if {$pgpresult(ok) == 1} {
-    		set recv_encstatus "success"
-                regsub -all {\"} $pgpresult(msg) {} mess
-    		set recv_encmessage $mess
-    set recv_encmessage [concat "\n Message Decryption: Success\n " "\n Key Information: \n Key Length: " $pgpresult(siglen) "\n Key Creation Date:" $pgpresult(date) "\n Key ID:" $pgpresult(keyid)]
-    		set recv_enc_asym_keyid $pgpresult(keyid)
-    		} else {
-# set result [pgpExecw [list $local_sapenc_file -o $local_enctxt_file] output]
-                set test [regexp -nocase {user id:(.+)} $output {} userw]
-                if {$test == 1} {
-                set key [lindex $userw 0]
-                set interactive 0
-    		set result [pgpExec [list $local_sapenc_file \
-		        -o $local_enctxt_file] output $key $irand $interactive]
-               } else {
-               set recv_encstatus "failed"
-               set recv_enc_asym_keyid "nonenone"
-               set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) "none" "none" "none" "none" "none"] 
-                regsub -all {\"} $pgpresult(msg) {} mess
-    		set recv_encmessage $mess
-	       #timedmsgpopup "Decr: $pgpresult(msg)"  "$recv_encstatus" 10000
-               return 1
-               }
-          }
-        
+# set up the cmd to decrypt the file 
+# pgp +batchmode=on irand.pgp -o irand.txt
 
-    # The error information must be conveyed to the user - more work
-    # required....Need a mechanism to identify the session announcement to
-    # the user.
-    pgp_InterpretOutput $output pgpresult $key
-    #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+    set tclcmd [ list exec pgp +batchmode=on $local_sapenc_file -o $local_enctxt_file]
+
+# execute the tclcmd 
+
+    putlogfile "pgp_check_encryption: about to execute tclcmd = $tclcmd"
+#    [ catch $tclcmd output ]
+    set result [ catch $tclcmd output ]
+    putlogfile "pgp_check_encryption: output= $output"
+
+# check the call was okay (0 = something wrong)
+
+    pgp_InterpretOutput $output pgpresult 1
 
     if {$pgpresult(ok) == 1} {
-        set recv_enc_asym_keyid $pgpresult(keyid)
-        set recv_encstatus "success"
 
-    set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
-    #set recv_encmessage [concat "Message were Successfully Decrepted for" $key ]
+# it all worked okay 
+
+      set recv_encstatus "success"
+      regsub -all {\"} $pgpresult(msg) {} mess
+      set recv_encmessage $mess
+      set recv_encmessage [concat "\n Message Decryption: Success\n " "\n Key Information: \n Key Length: " $pgpresult(siglen) "\n Key Creation Date:" $pgpresult(date) "\n Key ID:" $pgpresult(keyid)]
+      set recv_enc_asym_keyid $pgpresult(keyid)
+      return 0
+
     } else {
-     set result [pgpExec [list $local_sapenc_file \
-                        -o $local_enctxt_file] output  $key $irand 0]
-            pgp_InterpretOutput $output pgpresult $key
-            if {$pgpresult(ok) == 1} {
-            #putlogfile "keyid:$pgpresult(keyid)"
-    set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n  Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
-    #set recv_encmessage [concat "Message were Successfully Decrepted for" $key ]
-    
-            set recv_encstatus "success"
-            set recv_enc_asym_keyid $pgpresult(keyid)
-           } else {
-            set recv_encstatus "failed"
-            set recv_enc_asym_keyid "nonenone"
-            set recv_encmessage $pgpresult(msg)
-          }
- 
-     }
-  } else {
-    set recv_encstatus "failed"
-    set recv_enc_asym_keyid "nonenone"
-    set recv_encmessage "Decryption failed"
+
+# something went wrong  - not sure what this code is doing 
+
+      #set result [pgpExecw [list $local_sapenc_file -o $local_enctxt_file] output]
+      set test [regexp -nocase {user id:(.+)} $output {} userw]
+      if {$test == 1} {
+        set key [lindex $userw 0]
+        set interactive 0
+    	set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output $key $irand $interactive]
+      } else {
+        set recv_encstatus "failed"
+        set recv_enc_asym_keyid "nonenone"
+        set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary) "none" "none" "none" "none" "none"] 
+        regsub -all {\"} $pgpresult(msg) {} mess
+        set recv_encmessage $mess
+        return 1
+      }
     }
-    #timedmsgpopup "Decryption= $pgpresult(msg)"  "$recv_encstatus" 10000
-    putlogfile "pgp_check_encryption: recv_encstatus = $recv_encstatus"
-    putlogfile "pgp_check_encryption: recv_enc_asym_keyid = $recv_enc_asym_keyid"
-    putlogfile "pgp_check_encryption: recv_encmessage = $recv_encmessage"
-    putlogfile "pgp_check_encryption: about to return 1"
-    return 1
+        
+
+# The error information must be conveyed to the user - more work required
+# Need a mechanism to identify the session announcement to the user.
+
+    pgp_InterpretOutput $output pgpresult $key
+
+    if {$pgpresult(ok) == 1} {
+
+# it all worked okay 
+
+      set recv_enc_asym_keyid $pgpresult(keyid)
+      set recv_encstatus "success"
+      set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
+      return 0
+
+    } else {
+
+# there was some problem 
+
+      set result [pgpExec [list $local_sapenc_file -o $local_enctxt_file] output  $key $irand 0]
+      pgp_InterpretOutput $output pgpresult $key
+      if {$pgpresult(ok) == 1} {
+        set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n  Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
+        set recv_encstatus "success"
+        set recv_enc_asym_keyid $pgpresult(keyid)
+        return 0
+      } else {
+        set recv_encstatus "failed"
+        set recv_enc_asym_keyid "nonenone"
+        set recv_encmessage $pgpresult(msg)
+      }
+    }
+
+  return 0
 }
 
-# ---------------------------------------------------------------------
-# AUTH end 
-# ---------------------------------------------------------------------
-
-
+#------------------------------------------------------------------------#
+# pgp_InterpretOutput handles a lot of the error output                  #
+# I haven't checked it yet                                               #
+#------------------------------------------------------------------------#
 proc pgp_InterpretOutput { in outvar key} {
     global env
  
@@ -956,32 +764,29 @@ proc pgp_InterpretOutput { in outvar key} {
     upvar $outvar pgpresult
 
     putlogfile "entered pgp_InterpretOutput"
-    putlogfile "   pgp_InterpretOutput: in     = $in"
-    putlogfile "   pgp_InterpretOutput: outvar = $outvar"
-    putlogfile "   pgp_InterpretOutput: key    = $key"
+#    putlogfile "   pgp_InterpretOutput: in     = $in"
+#    putlogfile "   pgp_InterpretOutput: outvar = $outvar"
+#    putlogfile "   pgp_InterpretOutput: key    = $key"
  
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+# find PGPPATH
+
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
 
-    putlogfile "   pgp_InterpretOutput: env(PGPPATH) = $env(PGPPATH)"
+#    putlogfile "   pgp_InterpretOutput: env(PGPPATH) = $env(PGPPATH)"
+
+# child process exited abnormally
 
     if {[regexp {(.*)child process exited abnormally} $in {} in] == 1} {
-    set in [string trim $in]
+      set in [string trim $in]
     }
    #set pgpresult(long) $in 
 
-    putlogfile "   pgp_InterpretOutput: setting pgpresult(ok) to be 1"
+#    putlogfile "   pgp_InterpretOutput: setting pgpresult(ok) to be 1"
     set pgpresult(ok) 1
+
+# find the key ID - or set to "nonenone" if not found
 
     if { [ regexp -nocase {key id ([0-9a-f]+)} $in {} pgpresult(keyid)] == 1} {
 	putlogfile "   pgp_InterpretOutput: keyid == $pgpresult(keyid)"
@@ -990,97 +795,111 @@ proc pgp_InterpretOutput { in outvar key} {
      } else {
           set pgpresult(keyid) "nonenone"
      }
+
+# find the user ID - set to "none" if not found
+
      if { [regexp {user ("[^"]*")} $in {} pgpresult(userid)] == 1} {
 	putlogfile "   pgp_InterpretOutput: USER = $pgpresult(userid) "
      } else {
-            if { $key != 1 } {
-	    set pgpresult(userid) $key
-            } else {
-	    set pgpresult(userid) "none"
-            }
+       if { $key != 1 } {
+	 set pgpresult(userid) $key
+       } else {
+	 set pgpresult(userid) "none"
+       }
      }
-    if { $pgpresult(userid) != "none" } {
-        set tclcmdkey [ list exec pgp -kv  +batchmode=on]
-        set tclcmdkey [concat $tclcmdkey $pgpresult(userid)]
-        putlogfile "   pgp_InterpretOutput: $tclcmdkey"
-        set resultkey [ catch $tclcmdkey output1 ]
-        set keyinfo  [split $output1 "\n"]
+
+# if found userid then find the date etc
+#  pgp -kv  +batchmode=on USERID
+
+     if { $pgpresult(userid) != "none" } {
+       set tclcmdkey [ list exec pgp -kv  +batchmode=on]
+       set tclcmdkey [concat $tclcmdkey $pgpresult(userid)]
+       putlogfile "  pgp_InterpretOutput: $tclcmdkey"
+       set resultkey [ catch $tclcmdkey output1 ]
+       set keyinfo   [split $output1 "\n"]
        set i  0
-	foreach line $keyinfo {
+
+       foreach line $keyinfo {
         if { [regexp {^(pub|sec) +([0-9]+)/([0-9A-F]+) +([0-9]+)/([0-9]+)/([0-9]+) +(.*)$} $line pgpresult(line) sigid pgpresult(siglen) pgpresult(keyid) year month day pgpresult(userid)] == 1} {
-                set pgpresult(date) [concat $year $month $day]
-		putlogfile "   pgp_InterpretOutput: $pgpresult(date) $pgpresult(siglen) $pgpresult(keyid) $pgpresult(userid)"
-     }
-    incr i
-    }
+          set pgpresult(date) [concat $year $month $day]
+          putlogfile "  pgp_InterpretOutput: $pgpresult(date) $pgpresult(siglen) $pgpresult(keyid) $pgpresult(userid)"
+        }
+        incr i
+      }
+
     } else {
-       set pgpresult(date) "none"
+       set pgpresult(date)   "none"
        set pgpresult(siglen) "none"
      }
+
+# find the date the signature was made 
+
     set pgpresult(sigdate) "Unknown"
-    if { [regexp {.*Signature made (.*) GMT.*} $in {} pgpresult(sigdate)] == 1 }  {
+    if {[regexp {.*Signature made (.*) GMT.*} $in {} pgpresult(sigdate)]==1} {
 	putlogfile "   pgp_InterpretOutput: $pgpresult(sigdate)"
-	}
-    if [regexp {This.*do not have the secret key.*file.} $in \
-            pgpresult(msg)] {
-        set pgpresult(summary) "SecretMissing"
-        set pgpresult(ok) 0
+    }
+
+# look for errors and set summary information
+
+    if [regexp {This.*do not have the secret key.*file.} $in pgpresult(msg)] {
+      set pgpresult(summary) "SecretMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {File is encrypted.*} $in pgpresult(msg)] {
-        if [regexp {Pass phrase is good} $pgpresult(msg)] {
-            set pgpresult(summary) "GoodPass Phrase"
-        } else {set pgpresult(summary) "BadPass Phrase"}
+      if [regexp {Pass phrase is good} $pgpresult(msg)] {
+        set pgpresult(summary) "GoodPass Phrase"
+      } else {set pgpresult(summary) "BadPass Phrase"}
     } elseif [regexp {Can't.*can't check signature integrity.*} $in \
-                  pgpresult(msg)] {
-        set pgpresult(summary) "PublicMissing"
-        set pgpresult(ok) 0
+		  pgpresult(msg)] {
+      set pgpresult(summary) "PublicMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {WARNING:Bad signature,.*match file contents.*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "BadContent"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "BadContent"
+      set pgpresult(ok) 0
     } elseif [regexp {.*Bad pass phrase.*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "BadPassA"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "BadPassA"
+      set pgpresult(ok) 0
     } elseif [regexp {WARNING:Can't.*can't check signature integrity.*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "PublicMissing"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "PublicMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {Key matching expected Key .* not found in .*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "PublicMissing"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "PublicMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {Keyring view error.*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "SecringMissing"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "SecringMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {Can't open key ring file .*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "SecringMissing"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "SecringMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {0 matching keys .*} $in \
                   pgpresult(msg)] {
-        set pgpresult(summary) "SecringMissing"
-        set pgpresult(ok) 0
+      set pgpresult(summary) "SecringMissing"
+      set pgpresult(ok) 0
     } elseif [regexp {Good signature.*} $in pgpresult(msg)] {
         if [regexp {WARNING:.*confidence} $pgpresult(msg)] {
             set pgpresult(summary) "GoodSignatureUntrusted"
         } else {set pgpresult(summary) "GoodSignatureTrusted"}
     } elseif [regexp {WARNING:.*doesn't match.*} $in \
                   pgpresult(msg)] {
-        if [regexp {WARNING:.*confidence.*} $pgpresult(msg)] {
-            set pgpresult(summary) "BadSignatureUntrusted"
-        } else {set pgpresult(summary) "BadSignatureTrusted" }
-            set pgpresult(ok) 0
+      if [regexp {WARNING:.*confidence.*} $pgpresult(msg)] {
+        set pgpresult(summary) "BadSignatureUntrusted"
+      } else {set pgpresult(summary) "BadSignatureTrusted" }
+      set pgpresult(ok) 0
     } elseif [regexp {Error:.*is not a ciphertext, signature, or key file.* } \
                  $in pgpresult(msg)] {
-        set pgpresult(summary) "PublicMissing"
-        set pgpresult(msg) $in
-        set pgpresult(ok) 0
+      set pgpresult(summary) "PublicMissing"
+      set pgpresult(msg) $in
+      set pgpresult(ok) 0
     } elseif [regexp {Error:.*Badly-formed or corrupted signature .* } \
                  $in pgpresult(msg)] {
-        set pgpresult(summary) "BadCert"
-        set pgpresult(msg) $in
-        set pgpresult(ok) 0
+      set pgpresult(summary) "BadCert"
+      set pgpresult(msg) $in
+      set pgpresult(ok) 0
     } elseif [regexp {ERROR} $in \
                   pgpresult(msg)] {
         set pgpresult(summary) "UnknownError"
@@ -1095,58 +914,69 @@ proc pgp_InterpretOutput { in outvar key} {
         set pgpresult(msg) $in
     }
  
-    # DecryptExpect sometimes notifies the user that the
-    # file is not encrypted.
+# DecryptExpect sometimes notifies the user that the file is not encrypted.
  
     if [regexp {Note: File may not have been encrypted} $in] {
         set pgpresult(msg) \
             "Note: File may not have been encrypted.\n\n$pgpresult(msg)"
     }
- 
- 
-#     if $pgp(shortmsgs) {
-        #set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) \
-                                #$pgpresult(summary)]
-    #}
 }
  
+#------------------------------------------------------------------------#
+# pgp_ShortenOutput - shorten the long message                           #
+#------------------------------------------------------------------------#
 proc pgp_ShortenOutput { pgpresult summary idkey user siglen date sigdate} {
 
     putlogfile "entered pgp_ShortenOutput"
 
     switch $summary {
+
        SecretMissing {return "\n Cannot decrypt, missing secret key for \n User: $user \n Keyid: $idkey \n key Length: $siglen Bits \n  Key Createdion Date: $date."}
+
        PublicMissing {return "\n Missing Public Key \n Key matching expected \n Key ID: $idkey \n not found in the Public Key ring "}
+
        GoodSignatureUntrusted {return "\n Good untrusted Signature \n From: $user \n Keyid: $idkey \n Signature Length: $siglen Bits \n Key Created date: $date \n Signature date: $sigdate."}
+
        GoodSignatureTrusted {return "\n Good trusted Signature \n From: $user \n Keyid: $idkey \n Signature Length: $siglen Bits \n Key Creation date: $date \n Signature date: $sigdate. "}
+
        BadSignatureTrusted {return "\n WARNING: Bad trusted signature doesnot match file content, \n From user: $user \n keyid: $idkey \n Signature Length: $siglen Bits \n Signature created date: $date \n Signature date:  $pgpresult(sigdate)."}
+
        BadSignatureUntrusted {return "\n WARNING: Bad untrusted signature, does not match file content \n From: $user \n  Keyid $idkey \n  Signature Length: $siglen Bits \n Key Creation Date: $date \n Signature date:  $pgpresult(sigdate)."}
+
        GoodPass {return " Good Pass $user with keyid $idkey and Signature Lenght $siglen created $date."}
+
        BadPass {return "\n Bad Password \n From: $user \n Keyid: $idkey\n  Signature Length $siglen Bits \n Key Creation Date: $date."}
+
        BadPassA {return "\n Bad Password \n From: $user \n Keyid: $idkey\n  Signature Length $siglen Bits \n Key Creation Date: $date."}
+
        BadCert {return " \n Bad Signature File ."}
-       BadContent {return "\n Doesnot Match Content ."}
+
+       BadContent {return "\n Does not Match Content ."}
+
        UnknownError {return "PGP Error while processing message:\n$pgpresult"}
+
        SecringMissing {return "PGP Secretering is missing Please enter your smart card detail to decrypt secring"}
+
        Other {return $pgpresult}
     }
 }
 proc pgpExec { arglist outvar key  irand  interactive  } {
-    upvar $outvar output
-    global  env
+ upvar $outvar output
+ global  env
+
  if {$interactive !=0 } {
-        return [pgpExec_Interactive $arglist output $irand]
-    } else {
-        if {$key == {}} {
-            return [pgpExec_Batch $arglist output $irand]
-        } else {
-            set p [pgp_GetPass $key]
-            if {[string length $p] == 0} {
-                return 0
-            }
-            return [pgpExec_Batch $arglist output $p]
-        }
-    }
+   return [pgpExec_Interactive $arglist output $irand]
+ } else {
+   if {$key == {}} {
+     return [pgpExec_Batch $arglist output $irand]
+   } else {
+     set p [pgp_GetPass $key]
+     if {[string length $p] == 0} {
+       return 0
+     }
+     return [pgpExec_Batch $arglist output $p]
+   }
+ }
 
 }
 
@@ -1203,6 +1033,12 @@ proc pgpExecw { arglist outvar } {
              }
      return [pgpExec_Batch $arglist output $p]
 }
+
+#-------------------------------------------------------------------------#
+# prompt the user for the password                                        #
+#  - needs rewriting as if you don't know the password it doesn't go away #
+#-------------------------------------------------------------------------#
+
 proc pgp_GetPass { key } {
     global  pgpPass
     global sspass
@@ -1210,41 +1046,40 @@ proc pgp_GetPass { key } {
  
     set keyname [lindex $key 0]
     if [info exists sspass] {
-         if {$sspass == 0} {
-              if [info exists pgpPass($keyname)] {
-               return $pgpPass($keyname)
-                }
-    		set passtimeout 60
-        		while 1 {
-        		if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw ] {
-            		return {}
-        		} elseif {[pgpExec_CheckPassword $passw $key]} {
-                		set pgpPass($keyname) $passw
-                		#after [expr $passtimeout * 60 * 1000] \
-                        	#	[list pgp_ClearPassword $key]
-            		return $passw
-        		}
-    			}
+      if {$sspass == 0} {
+        if [info exists pgpPass($keyname)] {
+          return $pgpPass($keyname)
+        }
+        set passtimeout 60
+
+        while 1 {
+          if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw ] {
+            return {}
+          } elseif {[pgpExec_CheckPassword $passw $key]} {
+            set pgpPass($keyname) $passw
+#           after [expr $passtimeout * 60 * 1000] [list pgp_ClearPassword $key]
+            return $passw
+          }
+        }
  
-       	} else {
+      } else {
        	set pgpPass($keyname) $ppass
-         return $pgpPass($keyname)
-       	}
+        return $pgpPass($keyname)
+      }
    } else {
     if [info exists pgpPass($keyname)] {
-        return $pgpPass($keyname)
+      return $pgpPass($keyname)
     }
      
     set passtimeout 60
-	while 1 {
-        if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw] {
-            return {}
-        } elseif {[pgpExec_CheckPassword $passw $key]} {
-                set pgpPass($keyname) $passw
-                #after [expr $passtimeout * 60 * 1000] \
-                #        [list pgp_ClearPassword $key]
-            return $passw
-        }
+    while 1 {
+      if [catch {Misc_GetPass "Enter PGP password" "password for $key "} passw] {
+        return {}
+      } elseif {[pgpExec_CheckPassword $passw $key]} {
+        set pgpPass($keyname) $passw
+#       after [expr $passtimeout * 60 * 1000] [list pgp_ClearPassword $key]
+        return $passw
+      }
     }
    }
 }
@@ -1264,18 +1099,11 @@ proc pgpExec_Batch { arglist outvar passw } {
     global env
  
     # pgp 4.0 command doesn't like the +keepbinary=off option
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
+
     set tclcmd [concat \
             [list exec pgp +armorlines=0 +batchmode=on +pager=cat] \
             $arglist]
@@ -1499,18 +1327,11 @@ proc pgp_Rename { old new } {
 
 proc pgp_AddCert { filename title label } {
     global getans env
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
+
      catch {destroy $w}
     set w [toplevel .getans -borderwidth 10]
      wm title .getans  $title
@@ -1545,18 +1366,11 @@ proc pgp_AddCert { filename title label } {
 }
 proc pgp_smart { title label but} {
     global getsmartans env
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
+
      catch {destroy $w}
     set w [toplevel .getsmartans -borderwidth 10]
      wm title .getsmartans  $title
@@ -1796,18 +1610,10 @@ proc Help1_Text {frame help} {
 proc pgp_Setup {  } {
     global pgp env
  
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
+
     set PGPPATH $env(PGPPATH)
     set pgp(pgppath) $env(PGPPATH)
  
@@ -1880,18 +1686,11 @@ proc pgpExec_KeyList { pattern keyring } {
 proc pgpExec_GetKeys { key } {
     global  env
     set pgpfile  "[glob -nocomplain [resource sdrHome]]/pgpkeyfile"
-    set pgpdir "[glob -nocomplain ~]/.pgp"
-    if [info exists env(PGPPATH)] {
-      set env(PGPPATH) $env(PGPPATH)
-    } else { 
-          if { [file isdirectory $pgpdir ] == 0} {
-            if { [ enter_pgp_path] == 0 } {
-                return 0
-             }
-           } else {
-            set env(PGPPATH) $pgpdir
-           }
+
+    if { [ get_pgppath ] == 1 } {
+      return 1
     }
+
     set tmpfile  "[glob -nocomplain [resource sdrHome]]/tmpfile"
             set p [pgp_GetPass $key]
             if {[string length $p] == 0} {
@@ -2029,50 +1828,3 @@ proc creat_des_key {} {
        }
 }
 
- 
-proc enter_pgp_path {} {
-    global  env pgpinfo yourkey yourpin
-
-    catch {destroy $w}
-    set w [toplevel .pgpinfo -borderwidth 2] 
-    wm title .pgpinfo "Sdr: PGP  Configure Information"
-
-    frame $w.f -borderwidth 5 -relief groove
-    pack  $w.f -side top
-
-    message $w.f.l -aspect 500  -text "Please configure sdr with your PGP PATH "
-    pack    $w.f.l -side top
-
-    frame $w.f.f0 
-    pack  $w.f.f0 -side top -fill x -expand true
-
-    label $w.f.f0.l -text "PGP Key Ring Location"
-    pack  $w.f.f0.l -side left -anchor e -fill x -expand true
-
-    entry $w.f.f0.e -width 30 -relief sunken -borderwidth 1 \
-	-bg [option get . entryBackground Sdr] \
-	-highlightthickness 0   -textvariable yourkey
-    pack  $w.f.f0.e -side left
-    bind  $w.f.f0.e <Key-Return> "set pgpinfo(ok) 1"
-
-    frame $w.f.f3 
-    pack  $w.f.f3 -side top -fill x -expand true
-
-    button $w.f.f3.ok -text OK -command {set pgpinfo(ok) 1 }
-    pack   $w.f.f3.ok -side left -fill x -expand true
-    button $w.f.f3.cancel -text Cancel \
-	 -command {set pgpinfo(ok) 0 }
-    pack   $w.f.f3.cancel -side left -fill x -expand true
-
-    grab $w
-    tkwait variable pgpinfo(ok)
-    grab release $w
-    destroy .pgpinfo
-    if { $pgpinfo(ok) == 1} {
-      set env(PGPPATH) $yourkey
-      return 1
-    } else {
-      set env(PGPPATH) "none"
-      return 0
-    }
-}
