@@ -2321,6 +2321,21 @@ proc show_times {win aid} {
     }
 }
 
+proc todaytime {time} {
+    #We're given a time on a particular date.  What we want is the same 
+    #time today - ignoring DST changes.
+    #eg given 10am July 1st EDT, on Dec 1st we want 9am EST
+
+    if {$time > [clock seconds]} {
+	return $time
+    }
+
+    set diff [expr [clock seconds] - $time]
+    set days [expr $diff / 86400]
+    set todaytime [expr $time + $days*86400]
+    return $todaytime
+}
+
 proc text_times_english {aid} {
     global ldata
     set timestr [tt "Session will take place\n"]
@@ -2339,7 +2354,7 @@ proc text_times_english {aid} {
 	      case $ldata($aid,time$i,interval$r) in {
 		  86400 {
 		      set rtime [clock format \
-			      [expr $begintime+\
+			      [expr [todaytime $begintime]+\
 			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
 			        -format {%H:%M %Z}]
 		      set timestr "${timestr}daily at $rtime for $durationstr between $fromdate and $todate"
@@ -2359,13 +2374,13 @@ proc text_times_english {aid} {
 			      [lindex [gettime \
 			       [expr $ldata($aid,starttime,$i) + $offset]] 8]]
 		      }
-		      set rtime [clock format $begintime -format {%H:%M %Z}]
+		      set rtime [clock format [todaytime $begintime] -format {%H:%M %Z}]
 		      set timestr "${timestr}weekly at $rtime on $dayofweek for $durationstr\nfrom $fromdate to $todate"
 		  }
 		  1209600 {
 		      set dayofweek [lindex [gettime $ldata($aid,starttime,$i)] 8]
 		      set rtime [clock format \
-			      [expr $begintime+\
+			      [expr [todaytime $begintime]+\
 			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
 			        -format {%H:%M %Z}]
 		      set timestr "${timestr}every 2 weeks at $rtime on $dayofweek for $durationstr\nfrom $fromdate to $todate"
@@ -2388,7 +2403,7 @@ proc text_times_english {aid} {
 			  }
 		      }
 		      set rtime [clock format \
-			      [expr $begintime+\
+			      [expr [todaytime $begintime]+\
 			        [lindex $ldata($aid,time$i,offset$r) $rno]] \
 			        -format {%H:%M %Z}]
 		      set timestr "${timestr}every $interval starting at $rtime on $dayofweek $fromdate for $durationstr until $todate"
