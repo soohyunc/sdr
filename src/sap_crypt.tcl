@@ -1010,7 +1010,7 @@ proc set_enc_type {win type aid} {
             clear_keys $win
             $win.enc.sel.menc configure -text Des
             set security private
-            enc_pgp_get_key_list $win $aid
+            enc_show_keys $win $aid
 
         }
         pgp {
