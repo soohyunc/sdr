@@ -23,7 +23,7 @@ proc new {aid} {
 
 proc new_wiz_init {aid iftype} {
     global new_wiz_norm_panels new_wiz_tech_panels 
-    global send new_createtime medialist
+    global send new_createtime medialist ldata
     catch {destroy .new}
     toplevel .new
 
@@ -116,6 +116,7 @@ proc new_wiz_panel_type {panelnum panels aid} {
 }
 
 proc new_wiz_panel_timing_norm {panelnum panels aid} {
+    global ldata
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: When will the session be active?"
     .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
@@ -241,6 +242,7 @@ proc new_wiz_panel_timing_norm {panelnum panels aid} {
     pack .new.f.f.f2.act.fd.l -side left -anchor w
 }
 proc new_wiz_panel_timing_tech {panelnum panels aid} {
+    global ldata
     new_wiz_change_panels
     .new.f.l configure -text "Step $panelnum: When will the session be active?"
     .new.f.t insert 1.0 "You need to configure when the session will be active so people will know when to join it.  For example, if the session is active on Monday and Thursday each week for four weeks, configure Monday's start time and duration in the first row, Thursday's start time and duration in the second row, set both to be \"Weekly\" and configure \"Repeat for\" to be \"4 weeks\"."
@@ -646,7 +648,7 @@ proc set_sess_type {win type} {
 }
 
 proc new_mk_session_norm_scope {win aid} {
-    global zone scope
+    global zone scope ldata
     if {[winfo exists $win.f3]==0} {
 	if {[string compare $aid "new"]!=0} {
 	    set sap_addr $ldata($aid,sap_addr)
@@ -679,7 +681,7 @@ proc new_mk_session_norm_scope {win aid} {
 }
 
 proc new_mk_session_tech_scope {win aid} {
-    global zone scope new_ttl
+    global zone scope new_ttl ldata
     if {[winfo exists $win.f3]==0} {
 	if {[string compare $aid "new"]!=0} {
 	    set sap_addr $ldata($aid,sap_addr)
