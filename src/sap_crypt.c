@@ -525,7 +525,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
 
     if (bp == NULL) {
       bp=malloc(sap_hdr_len);
-      memset(bp, 0, sizeof(struct sap_header));
+      memset(bp, 0, sap_hdr_len);
       bp->version  = 1;
       bp->authlen  = auth_len /4;
       bp->enc      = 1;
