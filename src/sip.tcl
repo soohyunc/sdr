@@ -25,8 +25,10 @@ set qpmway {1 1 1}
 #    ringing - we alerted the user but no response yet
 #    accepted - we sent a 200 response
 #    connected - we sent a 200 response and got an ACK
+#    failed - we sent more than ten 200 responses and got no ACK
 #    refused - we sent a failure response
-#    done - we sent a failure response and got an ACK
+#    done - we sent a failure response and got an ACK or didn't get an
+#           ACK after resending the response more than ten times.
 
 proc qcall {} {
     global scope qdurs qdurt qpurp qpmway medialist send youremail
@@ -258,7 +260,7 @@ proc embed_invite {aid win} {
     pack $wname.f0.l -side left
     menubutton $wname.f0.m -text "Browse" -menu $wname.f0.m.m -relief raised
     menu $wname.f0.m.m
-    make_address_book $wname.f0.m.m $wname.f.e
+    make_address_book $wname.f0.m.m $wname.f.e $wname.f.inv
     pack $wname.f0.m -side right 
     
     frame $wname.f
@@ -266,13 +268,46 @@ proc embed_invite {aid win} {
     entry $wname.f.e -width 30 -relief sunken \
 	    -bg [option get . entryBackground Sdr]
     tixAddBalloon $wname.f.e Entry [tt "Enter username and machinename for user in the form: username@machine"]
-    bind $wname.f.e <Return> "send_sip \[$wname.f.e get\] \[$wname.f.e get\] \"$session\" 0 $wname 0 0 0 NONE"
+
     pack $wname.f.e -side left -fill x -expand true
     button $wname.f.inv -text "Invite" -highlightthickness 0 \
+	    -state disabled \
 	    -command "send_sip \[$wname.f.e get\] \[$wname.f.e get\] \"$session\" 0 $wname 0 0 0 NONE"
+    foreach binding [bind Entry] {
+	bind $wname.f.e $binding "[bind Entry $binding];break"
+    }
+    bind $wname.f.e <Key> "[bind Entry <Key>];check_sip_url $wname.f.e $wname.f.inv;break"
+    bind $wname.f.e <Delete> "[bind Entry <Delete>];check_sip_url $wname.f.e $wname.f.inv;break"
+    bind $wname.f.e <BackSpace> "[bind Entry <BackSpace>];check_sip_url $wname.f.e $wname.f.inv;break"
+    bind $wname.f.e <Return> "if {\[check_sip_url $wname.f.e $wname.f.inv\]==1} {send_sip \[$wname.f.e get\] \[$wname.f.e get\] \"$session\" 0 $wname 0 0 0 NONE} else {bell}"
     pack $wname.f.inv -side right
     sip_list_invitees $wname $session
     catch {pack unpack $win.f3.invite}
+}
+
+proc check_sip_url {entry button} {
+    #try and ensure it's a valid URL before we let the user press the 
+    #invite button
+    set url [$entry get]
+    set res [sip_parse_url $url]
+    set user [lindex $res 0]"
+    set passwd [lindex $res 1]
+    set addr [lindex $res 2]
+    set port [lindex $res 3]
+    set ttl [lindex $res 5]
+    set maddr [lindex $res 6]
+    set parts [split $addr "."]
+    if {([llength $parts] <2)} {set addr ""}
+    if {[string length [lindex $parts [expr [llength $parts] - 1]]]==0} {
+	set addr ""
+    }
+    if {($user!="")&&($addr!="")} {
+	$button configure -state normal
+	return 1
+    } else {
+	$button configure -state disabled
+	return 0
+    }
 }
 
 proc sip_list_invitees {wname aid} {
@@ -340,7 +375,8 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
 	puts "$dstuser --> $res"
 	set addr [lookup_host [lindex $res 2]]
 	if {$addr=="0.0.0.0"} {
-	    msgpopup "Invalid Address" "The hostname $host is not known"
+	    msgpopup "Invalid Address" \
+		    "The hostname [lindex $res 2] is not known"
 	    return 0
 	}
 	set maddr [lindex $res 6]
@@ -373,12 +409,12 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
     catch {
 	set addrstatus $sip_request_addrs($id,$addr)
     }
+    puts "addrstatus: $addrstatus"
     if {$addrstatus==""} {
 	set sip_request_addrs($id,$addr) "possible"
     } elseif {$addrstatus=="failed"} {
 	return 0
     }
-
     if {[lsearch $sip_requests $id]!=-1} {
 	if {($sip_request_status($id)=="unknown") &&
 	    ($sip_request_count($id)>20)} {
@@ -512,12 +548,13 @@ proc sip_send_ack {fd dstuser origuser id cseq} {
 	    set msg "$msg\r\nCseq:[lindex $cseq 0] ACK"
 	    set msg "$msg\r\nFrom:$youremail"
 	    set msg "$msg\r\nTo:$origuser"
-	    set msg "$msg\r\nUser-Agent:sdr/$sdrversion\r\n"
+	    set msg "$msg\r\nUser-Agent:sdr/$sdrversion"
+	    set msg "$msg\r\nContent-length:0\r\n\r\n"
 	    if {$maddr!=""} {set addr $maddr}
 	    if {$transport=="UDP"} {
 		sip_send_udp $addr $ttl $port $msg 
 	    } else {
-		sip_send_tcp_request $fd $addr $ttl $port $msg 
+		sip_send_tcp_request $fd $addr $port $msg 
 		puts "about to close connection"
 		sip_close_tcp_connection $id
 		puts "connection closed"
@@ -573,7 +610,7 @@ proc sip_send_bye {fd dstuser origuser id cseq} {
 	if {$maddr!=""} {set addr $maddr}
 	sip_send_udp $addr $ttl $port $msg 
     } else {
-	sip_send_tcp_request $fd $addr $ttl $port $msg
+	sip_send_tcp_request $fd $addr $port $msg
     }
 }
 
@@ -735,7 +772,8 @@ proc sip_user_alert {fd msg} {
 	    sip_handle_ack $fd $id
 	}
 	default {
-	    sip_send_method_unsupported $fd $id $srcuser $dstuser $path $cseq
+	    sip_send_method_unsupported $fd $id $srcuser $dstuser \
+		    $path $cseq $request
 	}
     }
 }
@@ -775,7 +813,7 @@ proc sip_handle_bye {fd id srcuser dstuser path cseq} {
     } else {
 	#a bye for a call we have no knowledge should result in 
 	#us returning "481 Invalid Call-ID"
-	sip_send_invalid_callid $fd $id $srcuser $dstuser $path $cseq
+	sip_send_invalid_callid $fd $id $srcuser $dstuser $path $cseq BYE
     }
 }
 
@@ -848,9 +886,9 @@ proc sip_ringing_user {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation:sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact:sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg INVITE -1
     start_ringing $id
 }
 
@@ -894,25 +932,25 @@ proc sip_send_accept_invite {fd id srcuser dstuser path sdp cseq} {
     #keep resending the response until we get an ACK, BYE, or timeout
     set sip_invite_responses($id) 1
     #puts "sip_send_accept_invite $sip_invite_status($id)"
-    if {[lsearch $sip_invites $id]>=0} {
-	if {$sip_invite_status($id)!="accepted"} {
-	    catch {unset sip_invite_responses($id)}
-	    return
-	}
-	#resend a maximum of 10 times according to spec
-	if {$sip_invite_responses($id)>10} {
-	    unset sip_invite_responses($id)
+#    if {[lsearch $sip_invites $id]>=0} {
+#	if {$sip_invite_status($id)!="accepted"} {
+#	    catch {unset sip_invite_responses($id)}
+#	    return
+#	}
+#	#resend a maximum of 10 times according to spec
+#	if {$sip_invite_responses($id)>10} {
+#	    unset sip_invite_responses($id)
 	    #we never got either an ACK or a NACK back in response 
 	    #to our 200 response - strictly speaking this is a failure
 	    #and we should notify the user.
-	    set sip_invite_status($id) failure
-	    return
-	}
-	#resend every 2 seconds according to spec
-	incr sip_invite_responses($id)
-	after 2000 "sip_send_accept_invite $fd $id $srcuser $dstuser \
-		\"$path\" \"$sdp\" {$cseq}"
-    }
+#	    set sip_invite_status($id) failure
+#	    return
+#	}
+#	#resend every 2 seconds according to spec
+#	incr sip_invite_responses($id)
+#	after 2000 "sip_send_accept_invite $fd $id $srcuser $dstuser \
+#		\"$path\" \"$sdp\" {$cseq}"
+#    }
     set tag ";tag=$sip_invite_tag($id)"
     puts "**tag: $tag"
     set msg "SIP/2.0 200 OK"
@@ -923,11 +961,11 @@ proc sip_send_accept_invite {fd id srcuser dstuser path sdp cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact: sip:[getusername]@[gethostname]"
     #XXXX must send back the original request
     set msg "$msg\r\nContent-length:0\r\n\r\n"
     #puts "------\nSending response to [lrange $path end end]\n$msg\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg INVITE 0
 }
 
 proc sip_send_refuse_invite {fd id srcuser dstuser path cseq} {
@@ -944,12 +982,12 @@ proc sip_send_refuse_invite {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact: sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg INVITE 0
 }
 
-proc sip_send_method_unsupported {fd id srcuser dstuser path cseq} {
+proc sip_send_method_unsupported {fd id srcuser dstuser path cseq method} {
     global sip_invite_tag
     set tag ""
     if {[info exists sip_invite_tag($id)]} {
@@ -963,12 +1001,12 @@ proc sip_send_method_unsupported {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
 	set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact: sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg $method 0
 }
 
-proc sip_send_invalid_callid {fd id srcuser dstuser path cseq} {
+proc sip_send_invalid_callid {fd id srcuser dstuser path cseq method} {
     global sip_invite_tag
     set tag ""
     if {[info exists sip_invite_tag($id)]} {
@@ -981,13 +1019,13 @@ proc sip_send_invalid_callid {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
         set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact: sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg $method 0
 }
 
 
-proc sip_send_unknown_user {fd id srcuser dstuser path cseq} {
+proc sip_send_unknown_user {fd id srcuser dstuser path cseq method} {
     global sip_invite_tag
     set tag ""
     if {[info exists sip_invite_tag($id)]} {
@@ -1000,9 +1038,23 @@ proc sip_send_unknown_user {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
         set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg $method 0
+}
+
+proc sip_unknown_user_ack {callid} {
+    #we got an ACK containing an unknown user.
+    #either something bizarre happened, or we previously sent 404 Not Found
+    #or something similar, so we need to stop resending this response.
+    global sip_invite_status
+    if {[info exists sip_invite_status($callid)]} {
+	if {$sip_invite_status($callid)=="refused"} {
+	    #Ok, this makes sense - we had sent a response.
+	    set sip_invite_status($callid) "done"
+	} else {
+	    puts "got an ACK for an unknown user when we're is $sip_invite_status($callid) state"
+	}
+    }
 }
 
 proc sip_send_cancelled {fd id srcuser dstuser path cseq} {
@@ -1018,12 +1070,13 @@ proc sip_send_cancelled {fd id srcuser dstuser path cseq} {
     if {$cseq!=""} {
         set msg "$msg\r\nCseq:$cseq"
     }
-    set msg "$msg\r\nLocation: sip:[getusername]@[gethostname]"
+    set msg "$msg\r\nContact: sip:[getusername]@[gethostname]"
     set msg "$msg\r\nContent-length:0\r\n\r\n"
-    sip_send_reply $fd $id $path $msg
+    sip_send_reply $fd $id $path $msg CANCEL 0
 }
 
-proc sip_send_reply {fd callid path msg} {
+proc sip_send_reply {fd callid path msg method counter} {
+    global sip_invite_status
     set res [sip_parse_path $path]
     puts "$path ---> $res"
     set version [lindex $res 0]
@@ -1039,7 +1092,38 @@ proc sip_send_reply {fd callid path msg} {
         return 0
     }
     if {$transport=="UDP"} {
-	sip_send_udp $addr $ttl $port $msg
+	if {$method=="INVITE"} {
+	    if {$counter==-1} {
+		#it's a response we don't repeat
+		sip_send_udp $addr $ttl $port $msg
+	    } elseif {$counter==0} {
+		sip_send_udp $addr $ttl $port $msg
+		after 2000 "sip_send_reply $fd \"$callid\" \"$path\" \
+			\"$msg\" $method 1"
+		if {[info exists sip_invite_status($callid)]==0} {
+		    #we've no state for this reply - must be a failure
+		    #response - instatiate the state
+		    set sip_invite_status($callid) "refused"
+		}
+	    } elseif {$counter<10} {
+		#only keep retransmitting if we're in a retransmit state
+		if {($sip_invite_status($callid)=="refused")||
+		    ($sip_invite_status($callid)=="accepted")} {
+			sip_send_udp $addr $ttl $port $msg
+			after 2000 "sip_send_reply $fd \"$callid\" \"$path\" \
+				\"$msg\" $method [expr $counter + 1]"
+		}
+	    } else {
+		#we failed to get an ACK.
+		if {$sip_invite_status($callid)=="accepted"} {
+		    set sip_invite_status($callid) failure
+		} else {
+		    set sip_invite_status($callid) done
+		}
+	    }
+	} else {
+	    sip_send_udp $addr $ttl $port $msg
+	}
     } else {
 	sip_send_tcp_reply $fd $callid $addr $port $msg
     }
@@ -1084,7 +1168,7 @@ proc sip_success {fd msg pktsrc} {
 	    CONTENT-TYPE {
 		set ct [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
-	    LOCATION {
+	    CONTACT {
 		set dstuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	}
@@ -1158,7 +1242,7 @@ proc sip_status {fd msg pktsrc} {
 	    CONTENT-TYPE {
 		set ct [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
-	    LOCATION {
+	    CONTACT {
 		set ch [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	}
@@ -1188,7 +1272,6 @@ proc sip_failure {fd msg pktsrc} {
     set lines [split $msg "\n"]
     set path ""
     set srcuser ""
-    set origuser ""
     set dstuser ""
     set ct ""
     set cseq ""
@@ -1208,7 +1291,7 @@ proc sip_failure {fd msg pktsrc} {
 		set srcuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    TO {
-		set origuser [string trim [join [lrange $lparts 1 end] ":"]]
+		set dstuser [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    VIA {
 		if {$path==""} {
@@ -1220,15 +1303,12 @@ proc sip_failure {fd msg pktsrc} {
 	    CONTENT-TYPE {
 		set ct [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
-	    LOCATION {
-		set dstuser [string trim [join [lrange $lparts 1 end] ":"]]
-	    }
         }
     }
     switch $smode {
 	400 {
 	    # Bad request
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 400"
 	    }
@@ -1236,7 +1316,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	401 {
 	    # Unauthorised
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was an authorization failure will contacting $dstuser"
 	    }
@@ -1244,7 +1324,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	402 {
 	    # Payment required
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "$dstuser is requiring payment!"
 	    }
@@ -1252,7 +1332,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	403 {
 	    # Forbidden
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "The remote server is refusing to connect your call"
 	    }
@@ -1260,7 +1340,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	404 {
 	    #Not found
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "User $dstuser does not appear to exist"
 	    }
@@ -1268,7 +1348,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	407 {
 	    #Method Not Allowed
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 407"
 	    }
@@ -1276,7 +1356,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	408 {
 	    #Request Timeout
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 408"
 	    }
@@ -1284,7 +1364,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	420 {
 	    #Bad extension
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 420"
 	    }
@@ -1292,7 +1372,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	480 {
 	    #temporarily unavailable
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "User $dstuser was unavailable"
 	    }
@@ -1300,7 +1380,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	481 {
 	    #Invalid call ID
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 481"
 	    }
@@ -1308,7 +1388,7 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	481 {
 	    #Loop detected
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    if {$no_of_connections($id)==1} {
 		sip_connection_fail $id "There was a internal SIP problem: code 482"
 	    }
@@ -1316,31 +1396,31 @@ proc sip_failure {fd msg pktsrc} {
 	}
 	600 {
 	    # Busy
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    sip_connection_fail $id "User $dstuser was busy"
 	    sip_cancel_connection $id all
 	}
 	603 {
 	    # Decline
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    sip_connection_fail $id "User $dstuser declined your call"
 	    sip_cancel_connection $id all
 	}
 	604 {
 	    # Does not exist anywhere
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    sip_connection_fail $id "User $dstuser aparently no longer exists!"
 	    sip_cancel_connection $id all
 	}
 	606 {
 	    # Not acceptable
-	    sip_send_ack $fd $dstuser $origuser $id $cseq
+	    sip_send_ack $fd $dstuser $dstuser $id $cseq
 	    sip_connection_fail $id "User $dstuser does not have the facilities to participate in the session you specified"
 	    sip_cancel_connection $id all
 	}
 	default {
 	    if {($smode>=400)&&($smode<600)} {
-		sip_send_ack $fd $dstuser $origuser $id $cseq
+		sip_send_ack $fd $dstuser $dstuser $id $cseq
 		if {$no_of_connections($id)==1} {
 		    sip_connection_fail $id \
 			    "Failed to contact $dstuser (reason $smode)"
@@ -1348,7 +1428,7 @@ proc sip_failure {fd msg pktsrc} {
 		    sip_cancel_connection $id $pktsrc
 		}
 	    } else {
-		sip_send_ack $fd $dstuser $origuser $id $cseq
+		sip_send_ack $fd $dstuser $dstuser $id $cseq
 		sip_connection_fail $id \
 			"Failed to contact $dstuser (reason $smode)"
 		sip_cancel_connection $id all
@@ -1366,7 +1446,7 @@ proc sip_moved {fd msg pktsrc} {
     set srcuser ""
     set dstuser ""
     set ct ""
-    set location ""
+    set contact ""
     set id ""
     foreach line $lines {
         set line [string trim $line "\r"]
@@ -1389,8 +1469,8 @@ proc sip_moved {fd msg pktsrc} {
 		    set path "$path\r\n$line"
 		}
 	    }
-	    LOCATION {
-		set location [string trim [join [lrange $lparts 1 end] ":"]]
+	    CONTACT {
+		set contact [string trim [join [lrange $lparts 1 end] ":"]]
 	    }
 	    CONTENT-TYPE {
 		set ct [string trim [join [lrange $lparts 1 end] ":"]]
@@ -1403,41 +1483,41 @@ proc sip_moved {fd msg pktsrc} {
 	return 0
     }
     set aid $sip_request_aid($id) 
-    if {[string compare [string range $location 0 3] "sip:"]==0} {
+    if {[string compare [string range $contact 0 3] "sip:"]==0} {
 	#it's a SIP URL
 	#trim the URL
-	set location [string range $location 6 end]
-	set param [string first ";" $location]
+	set contact [string range $contact 6 end]
+	set param [string first ";" $contact]
 	if {$param>=0} {
 	    #there was a parameter to the URL.
 	    #we don't understand parameters, so trim it off and continue
 	    #in the hope this is OK.
-	    set location [string range $location 0 [expr $param - 1]]
+	    set contact [string range $contact 0 [expr $param - 1]]
 	}
     }
-    if {[string first ":" $location]>=0} {
+    if {[string first ":" $contact]>=0} {
 	#it's some other URL
 	if {$no_of_connections($id)==1} {
-	    sip_connection_fail $id "I got an alternative location I don't undertand: $location."
+	    sip_connection_fail $id "I got an alternative location I don't undertand: $contact."
 	}
 	sip_cancel_connection $id $pktsrc
 	return
     }
 	
-    if {[string first "@" $location]>=0} {
-	set dstuser $location
+    if {[string first "@" $contact]>=0} {
+	set dstuser $contact
     }
     switch $smode {
 	301 {
 	    #moved permanently
-	    sip_session_status $id "progressing $location"
+	    sip_session_status $id "progressing $contact"
 	    sip_cancel_connection $id $pktsrc
 	    send_sip $dstuser $dstuser $aid $id $sip_request_win($id) 0 0 0 NONE
 	}
 	302 {
 	    #moved temporarily
 	    #puts "got a 302, $origuser->$dstuser"
-	    sip_session_status $id "progressing $location"
+	    sip_session_status $id "progressing $contact"
 	    sip_cancel_connection $id $pktsrc
 	    send_sip $dstuser $origuser $aid $id $sip_request_win($id) 0 0 0 NONE
 	}
@@ -1494,11 +1574,12 @@ proc sip_cancel_connection {id hostaddr} {
     puts "sip_cancel_connection $id $hostaddr"
     if {$hostaddr=="all"} {
 	#need to cancel all requests made for this call-ID
+	set sip_request_status($id) "declined"
 	set list [array names sip_request_addrs]
 	foreach item $list {
 	    set tmpid [lindex [split $item ","] 0]
 	    if {[string compare $tmpid $id]==0} {
-		set sip_request_addrs($id,$item) "failed"
+		set sip_request_addrs($item) "failed"
 	    }
 	}
     } else {
@@ -1791,7 +1872,7 @@ proc embedd_enter_new_address {origwin win after mode} {
     }
 }
 
-proc add_address_entry {menu entry} {
+proc add_address_entry {menu entry button} {
     global address_book ab
     if {$ab(name)==""} {
 	errorpopup "No name entered" "You must enter a name to add to your address book"
@@ -1807,7 +1888,7 @@ proc add_address_entry {menu entry} {
     }
     clear_address_book $menu
     set address_book($ab(name)) $ab(url)
-    make_address_book $menu $entry
+    make_address_book $menu $entry $button
     save_prefs
     catch {destroy .ab}
     foreach var [array names ab] {
@@ -1843,13 +1924,13 @@ proc delete_address_entry {user} {
     }
 }
 
-proc make_address_book {menu entry} {
+proc make_address_book {menu entry button} {
     global address_book
     if {$menu!="0"} {
 	if {[info exists address_book]} {
 	    foreach user [array names address_book] {
 		$menu add command -label $user -command \
-			"insert_invite_addr $entry \"$address_book($user)\"" 
+			"insert_invite_addr $entry $button \"$address_book($user)\"" 
 	    }
 	} else {
 	    $menu add command -label \
@@ -1867,9 +1948,10 @@ proc clear_address_book {menu} {
     }
 }
 
-proc insert_invite_addr {entry address} {
+proc insert_invite_addr {entry button address} {
     $entry delete 0 end
     $entry insert 0 $address
+    check_sip_url $entry $button
 }
 
 proc save_address_book {file} {

@@ -60,6 +60,21 @@ char *sipdata=NULL;
 int sipblocks=0;
 int sipdatalen=0;
 
+void debug_tcp_conns() { 
+#ifdef NOTDEF
+  int i;
+  for(i=0;i<MAX_CONNECTIONS;i++) {
+    if (sip_tcp_conns[i].used==1) {
+      printf("%d: fd: %d addr:%s host:%s port:%d\n",
+	     i,
+	     sip_tcp_conns[i].fd,
+	     sip_tcp_conns[i].addr,
+	     sip_tcp_conns[i].host,
+	     sip_tcp_conns[i].port);
+    }
+  }
+#endif
+}
 
 int sip_send_udp(char *dst, int ttl, int port, char *msg)
 {
@@ -489,6 +504,7 @@ int sip_tcp_listen(int port)
   int fd, one=1;
   struct sockaddr_in name;
 
+  debug_tcp_conns();
   fd=socket(PF_INET, SOCK_STREAM, 0);
   if (fd<0) {
     fprintf(stderr, "failed to create socket\n");
@@ -529,6 +545,7 @@ int sip_tcp_accept(connection conns[])
 {
   struct sockaddr_in addr;
   int cnum=-1, addrlen=sizeof(struct sockaddr_in);
+  debug_tcp_conns();
   for(cnum=0;cnum<MAX_CONNECTIONS;cnum++)
   {
     if (conns[cnum].used==0)
@@ -543,11 +560,13 @@ int sip_tcp_accept(connection conns[])
   conns[cnum].fd=accept(sip_tcp_rx_sock, (struct sockaddr *)&addr, &addrlen);
   conns[cnum].addr=strdup(inet_ntoa(addr.sin_addr));
   printf("Accepted connection from %s\n", conns[cnum].addr);
+  debug_tcp_conns();
   return 0;
 }
 
 void sip_tcp_free(connection *conn)
 {
+  debug_tcp_conns();
   conn->used=0;
   conn->len=0;
   free(conn->buf);
@@ -556,8 +575,12 @@ void sip_tcp_free(connection *conn)
   conn->fd=0;
   free(conn->addr);
   conn->addr=0;
+  free(conn->host);
+  conn->host=0;
+  conn->port=0;
   free(conn->callid);
   conn->callid=0;
+  debug_tcp_conns();
 }
 
 /*if there is a request ready in the buffer, this returns the total number
@@ -916,120 +939,122 @@ int sip_send_tcp_request(int origfd, char *host, int port, char *user_data,
   struct sockaddr_in sinhim;
   struct hostent *addr;
   unsigned long inaddr;
-  int fd;
+  int fd,i,len;
   int sipstate;
 #define	CONNECTING	1
 #define	READING		2
   struct msghdr msg;
   struct iovec iov[10];
   int iovlen;
-#ifdef MSG_EOF
-  int usettcp = 1;
-#endif
 
 #ifdef DEBUG
   printf("proto=sip, host=%s, port=%d\nmsg=%s",
 	 host, port, user_data);
 #endif
+  debug_tcp_conns();
   if (origfd!=0) {
     /*there may be an existing TCP connection we can use*/
-    /*XXXXX TBD*/
+    for(i=0;i<MAX_CONNECTIONS;i++) {
+      if (sip_tcp_conns[i].used==1) {
+	printf("1: fd: %d, host: %s port: %d\n", origfd, host, port);
+	printf("2: fd: %d, host: %s port: %d\n", sip_tcp_conns[i].fd,
+	       sip_tcp_conns[i].host, sip_tcp_conns[i].port);
+	if ((sip_tcp_conns[i].fd==origfd)&&
+	    (strcmp(sip_tcp_conns[i].host,host)==0)&&
+	    (sip_tcp_conns[i].port==port)) {
+	  /*there's an existing connection that still seems to be up.*/
+	  printf("sending %d butes\n", strlen(user_data));
+	  len=send(origfd, user_data, strlen(user_data), 0);
+	  printf("sent %d bytes:\n>>>%s<<<\n", len, user_data);
+	  if (len==strlen(user_data)) {
+	    printf("send message on existing connection %d\n", i);
+	    return origfd;
+	  }
+	}
+      }
+    }
+    printf("existing connection had been closed\n");
   }
-      if ( (inaddr = inet_addr(host)) != INADDR_NONE)
-	{
-	  /* it's dotted-decimal */
-	  memcpy((char *)&sinhim.sin_addr.s_addr, (char *)&inaddr, sizeof(inaddr) );
-	  sinhim.sin_family = AF_INET;
-	}
-      else
-	{
-	  if ((addr=gethostbyname(host)) == NULL)
-	    {
-	      fprintf(stderr, "Unknown hostname %s\n", host);
-	      return -1;
-	    }
-	  sinhim.sin_family = addr->h_addrtype;
-	  sinhim.sin_family = AF_INET;
+  if ( (inaddr = inet_addr(host)) != INADDR_NONE)
+  {
+    /* it's dotted-decimal */
+    memcpy((char *)&sinhim.sin_addr.s_addr, (char *)&inaddr, sizeof(inaddr) );
+    sinhim.sin_family = AF_INET;
+  }
+  else
+  {
+    if ((addr=gethostbyname(host)) == NULL)
+    {
+      fprintf(stderr, "Unknown hostname %s\n", host);
+      return -1;
+    }
+    sinhim.sin_family = addr->h_addrtype;
+    sinhim.sin_family = AF_INET;
 #ifdef h_addr
-	  memcpy((char*)&sinhim.sin_addr, addr->h_addr_list[0], addr->h_length);
+    memcpy((char*)&sinhim.sin_addr, addr->h_addr_list[0], addr->h_length);
 #else
-	  memcpy((char*)&sinhim.sin_addr, addr->h_addr, addr->h_length);
+    memcpy((char*)&sinhim.sin_addr, addr->h_addr, addr->h_length);
 #endif
-	}
-      sinhim.sin_port = htons(port);
-
-      sdr_update_ui();
+  }
+  sinhim.sin_port = htons(port);
+  
+  sdr_update_ui();
 
 try_again:
-      if((fd=socket(AF_INET, SOCK_STREAM, 0))<0)
-	{
-	  perror("socket");
-	  return -1;
-	}
+  if((fd=socket(AF_INET, SOCK_STREAM, 0))<0)
+  {
+    perror("socket");
+    return -1;
+  }
 #ifdef NBCONNECT
-      fcntl(fd, F_SETFL, FNDELAY);
+  fcntl(fd, F_SETFL, FNDELAY);
 #endif
 
-      iovlen = 0;
-      iov[iovlen].iov_base = user_data;
-      iov[iovlen].iov_len = strlen(iov[iovlen].iov_base);
-      iovlen++;
+  iovlen = 0;
+  iov[iovlen].iov_base = user_data;
+  iov[iovlen].iov_len = strlen(iov[iovlen].iov_base);
+  iovlen++;
 
-      /* workaround for accrights / control renaming */
-      memset((char *)&msg, 0, sizeof(msg));
+  /* workaround for accrights / control renaming */
+  memset((char *)&msg, 0, sizeof(msg));
 
-      msg.msg_name = (void *)&sinhim;
-      msg.msg_namelen = sizeof sinhim;
-      msg.msg_iov = iov;
-      msg.msg_iovlen = iovlen;
-#ifdef MSG_EOF
-      msg.msg_flags = usettcp ? MSG_EOF : 0;
-
-      if (sendmsg(fd, &msg, msg.msg_flags) < 0
+  msg.msg_name = (void *)&sinhim;
+  msg.msg_namelen = sizeof sinhim;
+  msg.msg_iov = iov;
+  msg.msg_iovlen = iovlen;
+  if (connect(fd, (struct sockaddr *)&sinhim, sizeof(struct sockaddr_in))<0
 #ifdef NBCONNECT
-		&& errno != EINPROGRESS
+      && errno != EINPROGRESS
 #endif
-	 )
-	{
-	  perror("connect/send");
-	  return -1;
-	}
-#else
-      if (connect(fd, (struct sockaddr *)&sinhim, sizeof(struct sockaddr_in))<0
-#ifdef NBCONNECT
-		&& errno != EINPROGRESS
-#endif
-	 )
-	{
-	  perror("connect");
-	  return -1;
-	}
-#endif
+    )
+  {
+    perror("connect");
+    return -1;
+  }
 
-      sipdatalen=0;
-      sipstate = CONNECTING;
-      if (sipdata==NULL) {
-	sipdata=malloc(BLOCKSIZE);
-	sipblocks=1;
-      }
+  sipdatalen=0;
+  sipstate = CONNECTING;
+  if (sipdata==NULL) {
+    sipdata=malloc(BLOCKSIZE);
+    sipblocks=1;
+  }
 
-      while (1)
-	{
-	  fd_set r,w;
-	  struct timeval tv;
-	  int i;
-
-	  tv.tv_sec=0;
-	  tv.tv_usec=100000;
-	  FD_ZERO(&r);
-	  if (sipstate == READING) FD_SET(fd, &r);
-	  FD_ZERO(&w);
-	  if (sipstate == CONNECTING) FD_SET(fd, &w);
-	  
-	  if(select(fd+1, &r, &w, NULL, &tv)!=0)
-	    {
-	      Tk_DoOneEvent(TK_DONT_WAIT);
-	      if (sipstate == CONNECTING) {
+  while (1) {
+    fd_set r,w;
+    struct timeval tv;
+    int i;
+    
+    tv.tv_sec=0;
+    tv.tv_usec=100000;
+    FD_ZERO(&r);
+    if (sipstate == READING) FD_SET(fd, &r);
+    FD_ZERO(&w);
+    if (sipstate == CONNECTING) FD_SET(fd, &w);
+    
+    if(select(fd+1, &r, &w, NULL, &tv)!=0)
+    {
+      Tk_DoOneEvent(TK_DONT_WAIT);
+      if (sipstate == CONNECTING) {
 #ifdef NBCONNECT
 		int err = 0;
 		int errlen = sizeof(err);
@@ -1094,9 +1119,10 @@ try_again:
 		  }
 		fcntl(fd, F_SETFL, 0);
 #endif
-#ifndef MSG_EOF
-		sendmsg(fd, &msg, 0);
-#endif
+		if (send(fd, user_data, strlen(user_data),0)
+		    !=strlen(user_data)) {
+		  printf("failed to send to fd %d\n", fd);
+		}
 		if (wait==0) {
 		  /*don't wait around for a reply - this was called from a
 		    context where we don't expect a reply on this connection
@@ -1112,14 +1138,19 @@ try_again:
 		  if (sip_tcp_conns[i].used==0) {
 		
 		    sip_tcp_conns[i].used=1;
+		    sip_tcp_conns[i].len=0;
 		    sip_tcp_conns[i].buf=malloc(6000);
 		    sip_tcp_conns[i].bufsize=6000;
 		    sip_tcp_conns[i].fd=fd;
+		    sip_tcp_conns[i].port=port;
+		    printf("port is now %d\n", port);
+		    sip_tcp_conns[i].host=strdup(host);
 		    sip_tcp_conns[i].addr=
 		      strdup(inet_ntoa(sinhim.sin_addr));
+		    debug_tcp_conns();
 #ifdef DEBUG
-		    printf("Initiated new SIP TCP connection to %s\n",
-			   sip_tcp_conns[i].addr);
+		    printf("\n-------------------------------------------\nInitiated new SIP TCP connection %d to %s\n",
+			   i, sip_tcp_conns[i].addr);
 #endif
 		    linksocket(sip_tcp_conns[i].fd, TK_READABLE,
 			       (Tcl_FileProc*)sip_readfrom_tcp);
@@ -1133,20 +1164,20 @@ try_again:
 	  else 
 	    {
 	    }
-	}
-      close(fd);
+  }
+  close(fd);
 #ifdef MSG_EOF
-      /*
-       * Some sip servers can't handle T/TCP and just close the connection.
-       * Try again if we hit one of those.
-       */
-      if (sipdatalen == 0 && usettcp) {
-	usettcp = 0;
-	goto try_again;
-      }
+  /*
+   * Some sip servers can't handle T/TCP and just close the connection.
+   * Try again if we hit one of those.
+   */
+  if (sipdatalen == 0 && usettcp) {
+    usettcp = 0;
+    goto try_again;
+  }
 #endif
-      sipdata[sipdatalen]='\0';
-      interp->result=sipdata;
+  sipdata[sipdatalen]='\0';
+  interp->result=sipdata;
   return -1;
 }
 
@@ -1160,6 +1191,7 @@ int sip_send_tcp_reply(int fd, char *callid, char *addr, int port, char *msg)
    */
   int i, nfd;
   printf("seeking for call-id >>%s<<\n", callid);
+  debug_tcp_conns();
   for(i=0;i<MAX_CONNECTIONS; i++) {
     if ((sip_tcp_conns[i].used==1)) {
       printf("Used conn %d has callid >>%s<<\n", i, sip_tcp_conns[i].callid);

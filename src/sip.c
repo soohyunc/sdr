@@ -138,23 +138,52 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	printf("cseq: >%s<\n", cseq);
 	switch(method) {
 	case INVITE:
+	  if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr ," ", 
+			  callid, " {", srcuser, "} {", dstuser, "} {", 
+			  path, "} {", cseq, "} INVITE", NULL)!=TCL_OK) {
+            Tcl_AddErrorInfo(interp, "\n");
+            fprintf(stderr, "%s\n", interp->result);
+            Tcl_VarEval(interp, "puts $errorInfo", NULL);
+	  };
+	  break;
 	case OPTIONS:
+	  if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr ," ", 
+			  callid, " {", srcuser, "} {", dstuser, "} {", 
+			  path, "} {", cseq, "} OPTIONS", NULL)!=TCL_OK) {
+            Tcl_AddErrorInfo(interp, "\n");
+            fprintf(stderr, "%s\n", interp->result);
+            Tcl_VarEval(interp, "puts $errorInfo", NULL);
+	  };
+	  break;
 	case BYE:
 	  if (Tcl_VarEval(interp, "sip_send_unknown_user ", sipfdstr ," ", 
 			  callid, " {", srcuser, "} {", dstuser, "} {", 
-			  path, "} {", cseq, "}", NULL)!=TCL_OK) {
+			  path, "} {", cseq, "} BYE", NULL)!=TCL_OK) {
             Tcl_AddErrorInfo(interp, "\n");
             fprintf(stderr, "%s\n", interp->result);
             Tcl_VarEval(interp, "puts $errorInfo", NULL);
 	  };
 	  break;
 	case ACK:
+	  if (Tcl_VarEval(interp, "sip_unknown_user_ack ", 
+                          callid, NULL)!=TCL_OK) {
+            Tcl_AddErrorInfo(interp, "\n");
+            fprintf(stderr, "%s\n", interp->result);
+            Tcl_VarEval(interp, "puts $errorInfo", NULL);
+          };
 	  break;
 	case CANCEL:
 	  /*XXX should we send an ACK here?  I think so...*/
 	  break;
 	case REGISTER:
-	  /*XXX should send METHOD unsupported here*/
+	  if (Tcl_VarEval(interp, "sip_send_method_unsupported ", 
+			  sipfdstr ," ", 
+			  callid, " {", srcuser, "} {", dstuser, "} {", 
+			  path, "} {", cseq, "} REGISTER", NULL)!=TCL_OK) {
+            Tcl_AddErrorInfo(interp, "\n");
+            fprintf(stderr, "%s\n", interp->result);
+            Tcl_VarEval(interp, "puts $errorInfo", NULL);
+	  };
 	  break;
 	}
 	free(callid);free(srcuser);free(dstuser);free(path);free(cseq);
@@ -203,8 +232,10 @@ int sip_recv_tcp()
 int sip_readfrom_tcp() 
 {
   int i, bytes, consumed;
-  char callid[80];
+  char callid[80], *parsebuf;
   fd_set readfds;
+  debug_tcp_conns();
+
   /*Got new data on an existing TCP socket*/
   for(i=0;i<MAX_CONNECTIONS;i++)
   {
@@ -226,7 +257,7 @@ int sip_readfrom_tcp()
       bytes=read(sip_tcp_conns[i].fd, 
 		 &(sip_tcp_conns[i].buf[sip_tcp_conns[i].len]),
 		 1500);
-      printf("read %d bytes\n", bytes);
+      printf("read %d bytes from connection %d\n", bytes, i);
       if (bytes==0)
       {
 	fprintf(stderr, "connection aborted\n");
@@ -254,10 +285,14 @@ int sip_readfrom_tcp()
 	  return -1;
 	}
 	sip_tcp_conns[i].callid=strdup(callid);
-	sip_parse_recvd_data(sip_tcp_conns[i].buf, 
+	parsebuf=malloc(consumed+1);
+	memcpy(parsebuf, sip_tcp_conns[i].buf, consumed);
+	parsebuf[consumed]='\0';
+	sip_parse_recvd_data(parsebuf, 
 			     consumed,
 			     sip_tcp_conns[i].fd, 
 			     sip_tcp_conns[i].addr);
+	free(parsebuf);
 	if (consumed > 0) {
 	  memcpy(sip_tcp_conns[i].buf, sip_tcp_conns[i].buf+consumed, 
 		 sip_tcp_conns[i].len+1-consumed);
@@ -266,6 +301,7 @@ int sip_readfrom_tcp()
       }
     }
   }
+  debug_tcp_conns();
 }
 
 

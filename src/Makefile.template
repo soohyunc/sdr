@@ -118,13 +118,13 @@ sdr_server: $(SERVOBJS)
 	 $(CC) -ggdb -o sdr_server $(SERVOBJS) $(LIBS)
 sd_listen.o:	../src/sd_listen.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sd_listen.c
-sip.o:	../src/sip.c ../src/sdr.h
+sip.o:	../src/sip.c ../src/sdr.h ../src/sip.h
 	$(CC) $(CFLAGS) -c ../src/sip.c
-sip_common.o:	../src/sip_common.c ../src/sdr.h
+sip_common.o:	../src/sip_common.c ../src/sdr.h ../src/sip.h
 	$(CC) $(CFLAGS) -c ../src/sip_common.c
-sip_server.o:   ../src/sip_server.c ../src/sdr.h
+sip_server.o:   ../src/sip_server.c ../src/sdr.h ../src/sip.h
 	$(CC) $(CFLAGS) -c ../src/sip_server.c
-sip_register.o:	../src/sip_register.c ../src/sdr.h
+sip_register.o:	../src/sip_register.c ../src/sdr.h ../src/sip.h
 	$(CC) $(CFLAGS) -c ../src/sip_register.c
 bus.o:	../src/bus.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/bus.c

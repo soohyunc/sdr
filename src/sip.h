@@ -30,6 +30,8 @@ typedef struct connection_s {
   int bufsize;
   int len;
   char *addr;
+  char *host;
   char *callid;
+  int port;
 } connection;
 

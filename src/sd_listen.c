@@ -1320,7 +1320,7 @@ char *argv[];
 
 /* comment out the sip listen so if crash can restart okay while debugging */
 
-    /*    sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);*/
+    sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);
     sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
 
     if (sip_udp_rx_sock!=-1)
