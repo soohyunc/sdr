@@ -133,7 +133,7 @@ unsigned int ttlint=1;
 #endif
 #ifdef WIN32
 unsigned int ttl=1;
-unsigned char rfd2sock[768];
+unsigned char rfd2sock[1024];
 #else
 unsigned char ttl=1;
 unsigned char rfd2sock[64];
@@ -3668,7 +3668,7 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
                        (char *)&wttl,  sizeof(wttl))) 
 #else
         if (setsockopt(tx_sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, 
-                       (char *)&ttl,  sizeof(ttl)))
+                       (char *)&wttl,  sizeof(wttl)))
 #endif
             {
             perror("send_advert: setsockopt HOPS");
