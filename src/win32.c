@@ -35,7 +35,7 @@
  */
 #ifndef lint
 static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.7 1998-04-21 16:00:55 ucackha Exp $ (LBL)";
+    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.8 1998-07-29 13:49:30 ucacewh Exp $ (LBL)";
 #endif
 
 #include <assert.h>
@@ -131,6 +131,12 @@ int
 strcasecmp(const char *s1, const char *s2)
 {
     return stricmp(s1, s2);
+}
+
+int
+strncasecmp(const char *s1, const char *s2, size_t count)
+{
+    return strnicmp(s1, s2, count);
 }
 
 uid_t
