@@ -3655,9 +3655,9 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
 /* not sure why we want to do this                                          */
     
     if (*sap_hdr==NULL) {
-        *sap_hdr=(struct sap_header *)malloc(sizeof(struct sap_header));
+        *sap_hdr=(struct sap_header *)malloc(sizeof(struct sap_header)+addr_len);
     }
-    memcpy(*sap_hdr, buf, sizeof(struct sap_header));
+    memcpy(*sap_hdr, buf, sizeof(struct sap_header)+addr_len);
     
     if (addr_fam == IPv6) {
 #ifdef HAVE_IPv6        
