@@ -8,6 +8,7 @@ int load_keys();
 int save_keys();
 int get_sdr_home(char *str);
 int find_key_by_name(char *keyname, char *key);
+int find_keyname_by_key(char *key, char *keyname);
 int set_pass_phrase(char *newphrase);
 int register_key(char *key, char *keyname);
 int delete_key(char *keyname);
