@@ -41,6 +41,11 @@
 struct keydata* keylist;
 char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
+
+#ifdef WIN32
+extern int _fmode=_O_BINARY;
+#endif
+
 /*#define DEBUG*/
 
 int set_pass_phrase(char *newphrase)
@@ -137,11 +142,11 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 int get_sdr_home(char str[])
 {
 #ifdef WIN32
+  strcpy(str, getenv("HOME"));
+#else
   announce_error(Tcl_GlobalEval(interp, "resource sdrHome"),
 		 "resource sdrHome");
   strcpy(str, interp->result);
-#else
-  strcpy(str, getenv("HOME"));
 #endif
   return 0;
 }
@@ -432,7 +437,7 @@ int write_crypted_file(char *filename, char *data, int len, char *key)
   file=fopen(tmpfilename, "w");
 
 #ifdef WIN32
-  chmod(tmpfilename, S_IREAD|S_IWRITE);
+  chmod(tmpfilename, _S_IREAD|_S_IWRITE);
 #else
   chmod(tmpfilename, S_IRUSR|S_IWUSR);
 #endif
@@ -445,6 +450,10 @@ int write_crypted_file(char *filename, char *data, int len, char *key)
   /*move install the new keyfile (should be atomic on Unix...)*/
   /*I could check the return from this, but I don't really know
     what recovery I can take if it actually fails!*/
+#ifdef WIN32
+/* need to remove file first on windows or rename fails */
+  remove(filename);
+#endif
   rename(tmpfilename, filename);
   return 0;
 }
