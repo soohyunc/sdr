@@ -27,9 +27,11 @@ proc debug {str} {
 proc putlogfile {text} {
     global logfile
 #    puts "In putlogfile - logfile = $logfile"
-    set out [open $logfile a]
-    puts $out "$text"
-    close $out
+#    set out [open $logfile a]
+#    puts $out "$text"
+#    close $out
+# change to just the followign if on unix and want all output to screen
+     puts "$text"
 }
 
 #set langtab [open "/tmp/langtab" "w"]
@@ -209,7 +211,7 @@ proc build_interface {first} {
     if {$first=="first"} {
 
         set tmpfile [clock format [clock seconds]  -format {%H%M%S}]
-        set logfile "[glob -nocomplain [resource sdrHome]]/log$tmpfile"
+        set logfile "[glob -nocomplain [resource sdrHome]]/log$tmpfile.txt"
 #       puts "debug - logfile will be $logfile"
         set startlogtime "[clock format [clock seconds]]"
         putlogfile "logfile started at $startlogtime"
