@@ -2025,7 +2025,11 @@ int send_advert(char *adstr, int tx_sock, unsigned char ttl,
 /* second 4 is for the DES privacy header (always 32 bits)  */
 /* this needs changing when we start using PGP etc          */
 
-  buf=(char *)malloc(sizeof(struct sap_header)+len+4+4);
+  if (encrypt == 0 ) {
+    buf=(char *)malloc(sizeof(struct sap_header)+len);
+  } else {
+    buf=(char *)malloc(sizeof(struct sap_header)+len+4+4);
+  }
   len+=build_packet(buf, adstr, len, encrypt);
 
 #ifdef WIN32
