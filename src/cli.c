@@ -1,4 +1,5 @@
 /*Command line interface - see cli.tcl for details*/
+#include <stdio.h>
 #include <tcl.h>
 #include <tk.h>
 
@@ -13,7 +14,7 @@ int do_cli(clientData, mask)
     int mask;				/* Not used. */
 {
   static char cmd[256];
-  gets(cmd);
+  fgets(cmd, sizeof(cmd), stdin);
   if (Tcl_SetVar(interp, "cli_cmd", cmd, TCL_GLOBAL_ONLY)==NULL)
   {
     Tcl_AddErrorInfo(interp, "\n");
