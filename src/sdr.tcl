@@ -481,7 +481,7 @@ proc quit {w} {
     ui_quit
     destroy .
   } else {
-    destroy $w 
+    handleWindowClose $w 
   }
 }
 
