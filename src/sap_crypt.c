@@ -124,13 +124,14 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
         strncpy(recvkey, key, MAXKEYLEN);
         memcpy(buf, dstbuf, *len);
         buf[*len]='\0';
-        break;
+        return 0;
       }
     } 
     tmpkey=tmpkey->next;
   }
-      
-  return 0;
+
+/* if reach here then decryption has failed */
+  return -1;
 }
  
 int get_sdr_home(char str[])
