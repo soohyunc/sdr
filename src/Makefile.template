@@ -1,6 +1,6 @@
 # Pick one of the following...
-include ../src/Makefile.template.clear
-#include ../src/Makefile.template.crypt
+#include ../src/Makefile.template.clear
+include ../src/Makefile.template.crypt
 
 TK_LIBRARY_FILES = \
                 $(LIBRARY_TCL)/init.tcl \
