@@ -391,7 +391,7 @@ int ui_createsession(dummy, interp, argc, argv)
       Tcl_SetVar(interp, "validpassword", "0", TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "validauth",     "0", TCL_GLOBAL_ONLY);
       free(data);
-      return 1;
+      return TCL_OK;
     } else {
       Tcl_SetVar(interp, "validpassword", "1", TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "validauth",     "1", TCL_GLOBAL_ONLY);
