@@ -14,7 +14,7 @@ proc select_security_info {win width height} {
     frame $win.f.l 
     pack $win.f.l -side right -fill both -expand true
 
-    frame $win.f.l.pad -height 10
+    frame $win.f.l.pad -height 30
     pack $win.f.l.pad -side top 
 
     frame $win.f.l.f -borderwidth 2 -relief groove
