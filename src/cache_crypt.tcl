@@ -22,7 +22,7 @@ proc load_from_cache_crypt {} {
 
 
 proc write_cache {} {
-    global ldata fullix pix
+    global ldata fullix
 # XXX Just a note here:
 # XXX The user interface is probably destroyed by now, if the user clicked
 # on quit, so these msgpopups don't do much good.
@@ -75,23 +75,33 @@ proc write_cache {} {
     set ixnames {}
     catch {set ixnames [array names fullix]}
     foreach i $ixnames {
+      if {$ldata($fullix($i),list) == "norm"} {
+        set filename "$dirname/cache/$fullix($i)"
+        write_cache_entry $fullix($i) $filename clear
+      } else {
         if {$ldata($fullix($i),key) != ""} {
-            set filename "$dirname/encrypt/$fullix($i)"
-            write_cache_entry $fullix($i) $filename crypt
+          set filename "$dirname/encrypt/$fullix($i)"
+          write_cache_entry $fullix($i) $filename crypt
         } else {
-            set filename "$dirname/cache/$fullix($i)"
-            write_cache_entry $fullix($i) $filename clear
+          # its a SIP Invitation 
         }
+      }
     }
 
 }
 
 proc write_cache_entry {aid filename security} {
     global ldata rtp_payload
+
+    #if there's no sd_addr specified, this was not an announced session
+    #so don't cache it - probably it was a SIP session.
+    set sd_addr ""
+    catch {set sd_addr $ldata($aid,sd_addr)}
+    if {$sd_addr==""} return
+
     set source [dotted_decimal_to_decimal $ldata($aid,source)]
     set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
     set lastheard $ldata($aid,lastheard)
-    set sd_addr $ldata($aid,sd_addr)
     set sd_port $ldata($aid,sd_port)
     set trust $ldata($aid,trust)
     set key $ldata($aid,key)
