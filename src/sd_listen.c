@@ -570,7 +570,7 @@ int load_cache_entry(
 	memcpy(advert, p, strlen(p)+1);
       }
 
-/* Ensure that we discard the "z=" component of the cache entry as it was  */
+/* Ensure that we discard the "Z=" component of the cache entry as it was  */
 /* not included in the original signature creation                         */ 
 
 /* debugging info - leave in for the moment */
@@ -621,10 +621,10 @@ int load_cache_entry(
 
 /* we have authentication info */
 
-/* data_len is length of data from "v=0" to "z= " (not including signature) */
+/* data_len is length of data from "v=0" to "Z= " (not including signature) */
 /* ie advert[data_len-3] is the "z"                                         */
 /* "(p-buf)+data_len" gives length of whole file except the signature       */
-/* so new_len = length of stuff following "z= "                             */
+/* so new_len = length of stuff following "Z= "                             */
 
 	  advert[data_len-3]=0;
 
@@ -640,8 +640,8 @@ int load_cache_entry(
 	    goto out;
 	  }
 
-/* the following will copy the stuff following "z= " to newbuf */ 
-/* NB. What follows z= is the whole SAP packet                 */ 
+/* the following will copy the stuff following "Z= " to newbuf */ 
+/* NB. What follows Z= is the whole SAP packet                 */ 
 
           memcpy(newbuf,p+data_len,new_len);
 
@@ -792,10 +792,10 @@ int load_cache_entry(
         memset(authmessage,   0, AUTHMESSAGELEN);
         memset(nrandstr,      0, NRANDSTRLEN);
 
-/* data_len is length of data from "v=0" to "z= " (not including signature) */
+/* data_len is length of data from "v=0" to "Z= " (not including signature) */
 /* ie advert[data_len-3] is the "z"                                         */
 /* "(p-buf)+data_len" gives length of whole file except the signature       */
-/* so new_len = length of stuff following "z= "                             */
+/* so new_len = length of stuff following "Z= "                             */
 
 	advert[data_len-3] = 0;
         new_len=(len)-abs((p-buf)+data_len);
@@ -810,8 +810,8 @@ int load_cache_entry(
 	  goto out;
 	}
 
-/* the following will copy the stuff following "z= " to newbuf */
-/* NB. What follows z= is the whole SAP packet                 */
+/* the following will copy the stuff following "Z= " to newbuf */
+/* NB. What follows Z= is the whole SAP packet                 */
 
         memcpy(newbuf,p+data_len,new_len);
 

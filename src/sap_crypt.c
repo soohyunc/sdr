@@ -531,12 +531,12 @@ int write_crypted_file(char *afilename, char *data, int len, char *key,
     buf = (char *)malloc(len+24+sizeof(struct sap_header)+auth_len+TIMEOUT+des_enc_hdrlen+addata->length);
 
 /* copy data to buf - note 1st 24 bytes are for checksum   */
-/* data is "n=......k=keyhere\nv=0......\nz="              */
-/* also note that a full sap packet is appended after z=\n */
+/* data is "n=......k=keyhere\nv=0......\nZ="              */
+/* also note that a full sap packet is appended after Z=\n */
 
     memcpy(buf+24, data, len);
 
-/* copy sap_header following "z="   */
+/* copy sap_header following "Z="   */
 
     memcpy(buf+24+len, bp,sizeof(struct sap_header));
     bplen = sizeof(struct sap_header);

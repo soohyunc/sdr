@@ -997,10 +997,10 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   }
 
 /* set up the SDP payload in newbuf - this is used later on    */
-/* need to skip the first part (to v=0) and the last (z=\n)    */
+/* need to skip the first part (to v=0) and the last (Z=\n)    */
 
-/* len=length of "n=...k=..\nv=...z=\n"; len1="n=...k=..\n"v=  */
-/* newlen="v=...\n"z= ie SDP payload length                    */         
+/* len=length of "n=...k=..\nv=...Z=\n"; len1="n=...k=..\n"v=  */
+/* newlen="v=...\n"Z= ie SDP payload length                    */         
 
   tmpbuf = strchr(data,'v');
   len1   = tmpbuf - data;
@@ -1028,7 +1028,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
   writelog(printf("write_auth: malloced: len(%d) + sap_hdr(%d) + auth_len(%d) + newlen(%d) = total(%d)\n",len,sizeof(struct sap_header),auth_len,newlen,total);)
 
-/* write the data (starting "n=...v=...z=\n"to the buffer */
+/* write the data (starting "n=...v=...Z=\n"to the buffer */
 
   memcpy(buf,data,len);
 
