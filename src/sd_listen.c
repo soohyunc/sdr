@@ -1923,7 +1923,6 @@ void recv_packets(ClientData fd)
     encstatus_p = (char *)malloc(8);
 
     if ( bp->enc == 1 ) {
-        printf("should not be here\n");
 /* create the privacy header part of the advert_data structure */
 
       addata->sapenc_p=(struct priv_header *)malloc(sizeof(struct priv_header));
@@ -3470,13 +3469,11 @@ int check_net_type(char *in, char *ip, char *addr)
   if (strncmp(in, "IN", 2)!=0) {
       if (debug1==TRUE) {
           fprintf(stderr, "sdr: expected network type IN, got %s\n", in);
-          printf("bad 1\n");
       }
       return -1;
   }
-  if ((strncmp(ip, "IP4", 3)!=0) || (strncmp(ip, "IP6", 3)!=0)) {   /* MM */
+  if ((strncmp(ip, "IP4", 3)!=0) && (strncmp(ip, "IP6", 3)!=0)) {   /* MM */
       if (debug1==TRUE) {
-          printf("bad 2\n");
           fprintf(stderr, "sdr: expected address type IP4, got %s\n", ip);
           return -1;
       }
@@ -3502,7 +3499,6 @@ int check_net_type(char *in, char *ip, char *addr)
       if (!isok) {
           if (debug1)
               fprintf(stderr, "sdr: illegal IP address %s\n", addr);
-          printf("bad 3\n");
           return -1;
       }
   }
