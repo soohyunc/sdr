@@ -2,7 +2,7 @@ CC          = gcc
 INCLUDES    = -I/usr/openwin/include -I../../tcl-8.0/generic -I../../tk-8.0/generic -I../../common
 LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/libtcl8.0.a ../../common/libuclmmbase.a \
              -L/usr/openwin/lib -lX11 -lm -lnsl -ldl -lsocket -lresolv 
-CFLAGS      = -g -O -Wall -Wno-implicit-int $(INCLUDES) -DSOLARIS -DCANT_MCAST_BIND -DNORANDPROTO -DAUTH -DSYSV -DSolaris
+CFLAGS = -g -O -Wall -Wno-implicit-int $(INCLUDES) -DSOLARIS -DCANT_MCAST_BIND -DNORANDPROTO -DAUTH -DSYSV -DSolaris $(IFLAGS)
 
 all::	sdr 
 install:

@@ -1,2 +1,7 @@
 #!/bin/sh
-cat Makefile.solaris ../src/Makefile.template > Makefile
+if test "$1" = "--enable-ipv6"
+then
+  (echo "IFLAGS=-DHAVE_IPV6 -DSOLARIS7_IPV6"; cat Makefile.solaris ../src/Makefile.template) > Makefile
+else
+  cat Makefile.solaris ../src/Makefile.template > Makefile
+fi

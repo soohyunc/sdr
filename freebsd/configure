@@ -1,2 +1,8 @@
 #!/bin/sh
-cat Makefile.freebsd ../src/Makefile.template > Makefile
+if test "$1" = "--enable-ipv6"
+then
+  (echo "IFLAGS=-DHAVE_IPV6"; echo "ILIB="-L/usr/local/v6/lib -linet6"; cat
+Makefile.freebsd ../src/Makefile.template) > Makefile
+else
+  cat Makefile.freebsd ../src/Makefile.template > Makefile
+fi

@@ -1,2 +1,7 @@
 #!/bin/sh
-cat Makefile.linux ../src/Makefile.template > Makefile
+if test "$1" = "--enable-ipv6"
+then
+  (echo "IFLAGS=-DHAVE_IPV6 -DLINUX_IPV6"; cat Makefile.linux ../src/Makefile.template) > Makefile
+else
+  cat Makefile.linux ../src/Makefile.template > Makefile
+fi
