@@ -729,9 +729,9 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
 #    puts "fixing rule: $rule"
     set rule [fix_up_plugin_rule $rule]
     global tcl_platform
-    if {$tcl_platform(platform) != "windows"} {
+    #if {$tcl_platform(platform) != "windows"} {
 	eval "set rule \"$rule\""
-    }
+    #}
 #    catch {eval puts \"$rule\"}
 
     set pid [eval exec $rule &]
