@@ -88,28 +88,16 @@ int delete_address(struct addr_list *test)
 #ifdef DEBUG
   printf("Address %s no longer in use\n", test->addr);
 #endif
-  if(test->next==NULL)
-    {
-      if (test->prev!=NULL) test->prev->next=NULL;
-      else first_addr=NULL;
-      last_addr=test->prev;
-    }
-  else
-    {
-      if(test->prev!=NULL) test->prev->next=test->next;
-      else first_addr=test->next;
-    }
-  if(test->prev==NULL)
-    {
-      if (test->next!=NULL) test->next->prev=NULL;
-      else last_addr=NULL;
-      first_addr=test->prev;
-    }
-  else
-    {
-      if(test->next!=NULL) test->next->prev=test->prev;
-      else last_addr=test->prev;
-    }
+  if (test->prev) {
+    test->prev->next = test->next;
+   } else {
+     first_addr = test->next;
+   }
+   if (test->next) {
+     test->next->prev = test->prev;
+   } else {
+     last_addr = test->prev;
+   }
   free(test);
   return 0;
 }
