@@ -113,7 +113,7 @@ $(SDR_HELP_FILES): tcl2c
 $(SDR_UI_FILES): tcl2c
 
 parsed_plugins.tcl: ../src/plugin2tcl.tcl
-	tclsh8.0 ../src/plugin2tcl.tcl
+	tclsh ../src/plugin2tcl.tcl
 
 libs.tcl: $(TK_LIBRARY_FILES)
 	cat $(TK_LIBRARY_FILES) | sed '/^[      ]*source[       ]/d' > libs.tcl

@@ -17,14 +17,14 @@ proc write_cache {} {
 # on quit, so these msgpopups don't do much good.
     set dirname [resource sdrHome]
     if {[file isdirectory $dirname]==0} {
-	catch {exec mkdir $dirname}
+	catch {file mkdir $dirname}
 	if {[file isdirectory $dirname]==0} {
 	    msgpopup "Error" "Could not create sdr config directory $dirname"
 	    return -1
 	}
     }
     if {[file isdirectory $dirname/cache]==0} {
-	catch {exec mkdir $dirname/cache}
+	catch {file mkdir $dirname/cache}
 	if {[file isdirectory $dirname/cache]==0} {
 	    msgpopup "Error" "Could not create sdr cache directory $dirname/cache"
 	    return -1
@@ -38,7 +38,7 @@ proc write_cache {} {
 		set flag $ldata($tmpaid,session)
 	    }
 	    if {$flag==0} {
-		exec rm $file
+		file rm $file
 	    }
 	}
     }

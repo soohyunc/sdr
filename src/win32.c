@@ -35,7 +35,7 @@
  */
 #ifndef lint
 static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.5 1998-01-27 16:57:52 ucacewh Exp $ (LBL)";
+    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.6 1998-03-02 17:04:29 ucackha Exp $ (LBL)";
 #endif
 
 #include <assert.h>
@@ -352,10 +352,10 @@ WinPutsCmd(clientData, interp, argc, argv)
 	    ckfree(result);
 	return TCL_OK;
     } else {
-	extern int Tcl_PutsCmd(ClientData clientData, Tcl_Interp *interp,
+	extern int Tcl_PutsObjCmd(ClientData clientData, Tcl_Interp *interp,
 			       int argc, char **argv);
 
-	return (Tcl_PutsCmd(clientData, interp, argc, argv));
+	return (Tcl_PutsObjCmd(clientData, interp, argc, argv));
     }
 }
 

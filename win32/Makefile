@@ -13,17 +13,17 @@ CFLAGS=$(INCLUDES) -DWIN32 -DCANT_MCAST_BIND -Wall
 
 TCL2C = ./tcl2c -c
 
-makefile.vc: makefile.vc.template
-	-rm -f makefile.vc
-	echo "OBJS = win32.obj $(OBJS:.o=.obj) $(SDR_UI_FILES:.o=.obj)" > makefile.vc
-	cat makefile.vc.template >> makefile.vc
+makefile.mak: makefile.vc.template
+	-rm -f makefile.mak
+	echo "OBJS = win32.obj $(OBJS:.o=.obj) $(SDR_UI_FILES:.o=.obj)" > makefile.mak
+	cat makefile.vc.template >> makefile.mak
 
-../winsdr.tar: $(SDR_UI_C_FILES) $(SDR_HELP_FILES) makefile.vc ../src/tcl_modules.h
+../winsdr.tar: $(SDR_UI_C_FILES) $(SDR_HELP_FILES) makefile.mak ../src/tcl_modules.h
 	-ln -s ../src/*.[ch] ../src/*.xbm  .
-	tar cfh ../winsdr.tar makefile.vc *.[ch] *.xbm *.ehtml
+	tar cfh ../winsdr.tar makefile.mak *.[ch] *.xbm *.ehtml
 
 clean:
-	rm -f ../winsdr.tar *.[ch] *.tcl *.xbm *.ehtml tcl2c makefile.vc
+	rm -f ../winsdr.tar *.[ch] *.tcl *.xbm *.ehtml tcl2c makefile.mak
 
 $(SDR_HELP_FILES): tcl2c
 $(SDR_UI_C_FILES): tcl2c

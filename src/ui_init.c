@@ -134,11 +134,13 @@ ui_init(argc, argv)
     Tcl_SetVar(interp, "argv", buf, TCL_GLOBAL_ONLY);
 
     if (gui==GUI) {
-      if(Tk_Init(interp)!=TCL_OK)
-	{
-	  fprintf(stderr, "Sdr: %s\n", interp->result);
-	  exit(-1);
-	}
+      /* There is no easy way of preventing the Init functions from
+	 * loading the library files. Ignore error returns and load
+	 * built in versions.
+	 */
+	Tcl_Init(interp);
+	Tk_Init(interp);
+
       mainWindow = Tk_MainWindow(interp);
     }
 

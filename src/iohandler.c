@@ -47,9 +47,13 @@
 #ifdef WIN32
 #define WM_WSOCK_READY 	WM_USER+123
 
-extern HINSTANCE TkWinGetAppInstance();
+extern HINSTANCE Tk_GetHINSTANCE();
 
+#ifdef WIN32
+#define MAX_FD 512
+#else
 #define MAX_FD 64
+#endif
 static Tcl_FileProc* sockproc[MAX_FD];
 static HWND sockwin;
 
@@ -88,8 +92,10 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
 	int flags = 0;
 
 
-	if (fd < 0 || fd >= MAX_FD || sockproc[fd])
+	if (fd < 0 || fd >= MAX_FD || sockproc[fd]) {
+		fprintf(stderr, "iohandler error: (%d)\n", fd);
 		return;
+	}
 
 	if (sockwin == 0) {
 		/*
@@ -101,7 +107,7 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
 		cl.lpfnWndProc = WSocketHandler;
 		cl.cbClsExtra = 0;
 		cl.cbWndExtra = 0;
-		cl.hInstance = TkWinGetAppInstance();
+		cl.hInstance = Tk_GetHINSTANCE();
 		cl.hIcon = NULL;
 		cl.hCursor = NULL;
 		cl.hbrBackground = NULL;
@@ -113,7 +119,7 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
 					WS_POPUP | WS_CLIPCHILDREN,
 					CW_USEDEFAULT, CW_USEDEFAULT, 1, 1,
 					NULL,
-					NULL, TkWinGetAppInstance(), callback);
+					NULL, Tk_GetHINSTANCE(), callback);
 		ShowWindow(sockwin, SW_HIDE);
 	}
 
@@ -130,7 +136,7 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
         }
 	sockproc[fd] = callback;
 #else
-	Tcl_CreateFileHandler(fd,
+	Tcl_CreateFileHandler(Tcl_GetFile((ClientData)fd, TCL_UNIX_FD),
 			      mask, callback, (ClientData)fd);
 #endif
 }
@@ -143,6 +149,6 @@ void unlinksocket(fd)
 		(void) WSAAsyncSelect(fd, sockwin, 0, 0);
 	}
 #else
-	Tcl_DeleteFileHandler(fd);
+	Tcl_DeleteFileHandler(Tcl_GetFile((ClientData)fd, TCL_UNIX_FD));
 #endif
 }

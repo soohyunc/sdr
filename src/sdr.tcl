@@ -2868,7 +2868,7 @@ proc preferences {} {
 proc save_prefs {} {
     global balloonHelp
     if {[file isdirectory [resource sdrHome]]==0} {
-	catch {exec mkdir [resource sdrHome]} msg
+	catch {file mkdir [resource sdrHome]} msg
     }
     if {[file isdirectory [resource sdrHome]]==0} {
 	errorpopup "Error Creating Directory" "I can't save your preferences because I can't create the directory [resource sdrHome] $msg"
@@ -3564,7 +3564,7 @@ proc sdr2.2_fix_cache {} {
 	if {[file isdirectory $dirname/cache]==0} {
 	    #but no cache subdir
 	    #this means the last version was pre-sdr2.2a5
-	    catch {exec mkdir $dirname/cache}
+	    catch {file mkdir $dirname/cache}
 	    if {[file isdirectory $dirname/cache]==0} {
 		catch {puts "couldn't create cache directory `$dirname/cache'"}
 		return 0

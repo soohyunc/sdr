@@ -128,7 +128,7 @@ char username[TMPSTRLEN];
 char sipalias[MAXALIAS];
 #ifdef WIN32
 unsigned int ttl=1;
-unsigned char rfd2sock[128];
+unsigned char rfd2sock[512];
 #else
 unsigned char ttl=1;
 unsigned char rfd2sock[64];
