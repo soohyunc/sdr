@@ -65,6 +65,8 @@
 #include "prototypes.h"
 #include "prototypes_crypt.h"
 
+#define writelog(a) a
+
 static struct advert_data *first_ad=NULL;
 static struct advert_data *last_ad=NULL;
  
@@ -3692,7 +3694,8 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval, long end_time, ch
     writelog(printf("++ debug ++ Version= %d, Padding= %d, enc Type = %d, enc Len = %d\n\r ", sapenc_p->version, sapenc_p->pad_len, sapenc_p->enc_type, hdr_len) ;)
   } else {
     hdr_len = 0;
-    sapenc_p = NULL;
+    free(sapenc_p);
+    addata->sapenc_p = sapenc_p = NULL;
     addata->length=strlen(adstr);
     addata->data=malloc(addata->length);
     addata->encrypt=0;
