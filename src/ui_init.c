@@ -173,7 +173,6 @@ ui_init(int *argc, char **argv)
 int announce_error(int code, char *command)
 {
 	if (code != TCL_OK) {
-		char buf[128];
                 char buf[128];
 #ifdef WIN32
                 DWORD dwMBResponse;
