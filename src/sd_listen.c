@@ -893,7 +893,7 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     int mediactr, tctr, pctr, ectr, bctr, kctr, uctr;
     char vars[MAXMEDIA][TMPSTRLEN];
     char debug=0;
-
+    char *tag, *mediakey[MAXMEDIA], *fullkey=NULL;
     char tmpstr[TMPSTRLEN], fmt[TMPSTRLEN], proto[TMPSTRLEN],
          heardfrom[TMPSTRLEN], origsrc[TMPSTRLEN], creator[TMPSTRLEN],
          modtime[TMPSTRLEN], createtime[TMPSTRLEN], createaddr[TMPSTRLEN],
@@ -905,6 +905,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     struct in_addr maddr;
     struct timeval tv;
 
+    for (i=0; i<=MAXKEY; i++) {
+      key[i]=NULL;
+    }
+    for (i=0; i<=MAXMEDIA; i++) {
+      mediakey[i]=NULL;
+    }
+ 
     if (data[length-1]!='\n')
     {
       if (debug1)
@@ -1187,13 +1194,11 @@ unsigned long parse_entry(char *advertid, char *data, int length,
                         length -= end-cur;
                         break;
                 case 'k':
-                        /* print channel */
+                        /* print keys */
 			if (kctr<MAXKEY)
 			  {
-			    key[kctr] = end+2;
-			  }
-			else
-			  {
+			    key[++kctr] = end+2;
+			  } else {
 			    if (debug1==TRUE)
 			      fprintf(stderr, "Too many keys\n");
 			    goto errorleap;
@@ -1208,7 +1213,42 @@ unsigned long parse_entry(char *advertid, char *data, int length,
 			  goto errorleap;
                         }
                         *end++ = '\0';
-			remove_cr(key[kctr]++);
+                        remove_cr(key[kctr]);
+
+/* have something like "clear:key" "base64:key" etc in key[kctr] */
+ 
+                        fullkey = key[kctr];
+
+/* see if we understand the tag - only handle "clear" at the moment */ 
+
+                        tag = strtok(fullkey,":");
+                        if (tag == NULL) {
+                          if (debug1==TRUE) {
+                              fprintf(stderr, "No keytag found with key\n");
+                          }
+                          goto errorleap;
+                        } else {
+                          if (strcmp(tag,"clear")==0) {
+                            fullkey = fullkey + strlen(fullkey) + 1;
+                          } else {
+                            if (debug1==TRUE) {
+                              fprintf(stderr, "Can't handle %s keytag\n",tag);
+                            }
+                            goto errorleap;
+                          }
+                        }
+ 
+                        mediakey[mediactr] = malloc(MAXKEYLEN);
+                        if (strlen(fullkey) > MAXKEYLEN ) {
+                          if (debug1) {
+                            printf("Mediakey too long - it has been truncated\n");
+                          }
+                          strcpy(mediakey[mediactr],(char *)"\0");
+                          strncat(mediakey[mediactr],fullkey,MAXKEYLEN-1);
+                        } else {
+                          strcpy(mediakey[mediactr],fullkey);
+                        }
+
                         length -= end-cur;
                         break;
                 case 'm':
@@ -1502,8 +1542,8 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       {
 	/*tricky one here - have to be careful in the TCL 'cause we can't
           splat Tcl special characters here! - at least issue a warning*/
-	warn_tcl_special_chars(key[0]);
-	Tcl_SetVar(interp, "key", key[0], TCL_GLOBAL_ONLY);
+	warn_tcl_special_chars(key[1]);
+	Tcl_SetVar(interp, "key", key[1], TCL_GLOBAL_ONLY);
       }
     splat_tcl_special_chars(vars[0]);
     Tcl_SetVar(interp, "sessvars", vars[0],  TCL_GLOBAL_ONLY);
@@ -1540,6 +1580,13 @@ unsigned long parse_entry(char *advertid, char *data, int length,
       sprintf(namestr, "%d", medialayers);
       Tcl_SetVar(interp, "medialayers", namestr, TCL_GLOBAL_ONLY);
       Tcl_SetVar(interp, "mediaaddr", tmpstr, TCL_GLOBAL_ONLY);
+
+      if ((kctr>0) && (mediakey[i] != NULL) ) {
+        warn_tcl_special_chars(mediakey[i]);
+        Tcl_SetVar(interp, "mediakey", mediakey[i], TCL_GLOBAL_ONLY);
+      } else {
+        Tcl_SetVar(interp, "mediakey", "", TCL_GLOBAL_ONLY);
+      }
 
       code = Tcl_GlobalEval(interp, "set_media");
       if (code != TCL_OK)
