@@ -1,5 +1,9 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.5a4 E.Whelan@cs.ucl.ac.uk  29th July 1998
+
+  - added code so that the media tools can be started encrypted 
+
 2.5a4 E.Whelan@cs.ucl.ac.uk
   - modified so that a privacy header is used in the case of symmetric 
     encryption. 
