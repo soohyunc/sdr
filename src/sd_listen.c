@@ -349,6 +349,18 @@ int load_cache_entry(
 
     writelog(printf("++ debug ++ > entered load_cache_entry\n");)
 
+/* don't load any PGP encrypted cache files if PGPSTATE isn't set         */
+/* Note "symm" is asymmetrically and "crypt" is symmetrically encrypted ! */
+
+    if (strcmp(argv[2], "symm")==0) {
+      Tcl_Eval(interp, "pgpstate");
+      if (strcmp(interp->result,"1") != 0) {
+        writelog(printf("PGPSTATE != 1: Not loading %s\n",argv[1]);)
+        retval = 0;
+        goto out;
+      }
+    }
+
     memset(buf,            0, MAXADSIZE);
     memset(advert,         0, MAXADSIZE);
     memset(tmp_keyid,      0, TMPKEYIDLEN);
@@ -660,7 +672,8 @@ int load_cache_entry(
 			    new_data, newlength, auth_len, tmp_keyid, 
 			    authmessage, AUTHMESSAGELEN, addata, authtype);
 
-	      writelog(printf("lce: authstatus=%s\n",authstatus);)
+	      writelog(printf("lce: authstatus = %s\n",authstatus);)
+	      writelog(printf("lce: authmessage= %s\n",authmessage);)
 
 	    } else {
 
@@ -1594,14 +1607,23 @@ void recv_packets(ClientData fd)
 
           strcpy(enctype,"pgp");
           strcpy(recvkey,"");
-          if (check_encryption(enc_p,data,length,enc_asym_keyid,encmessage,ENCMESSAGELEN,addata, enctype) != 0) {
-            strcpy(encstatus_p,"failed");
-            writelog(printf("recv_pkts: PGP decryption failed\n");)
-            goto bad;
+
+/* don't try to decrypt it if PGPSTATE isn't set */
+
+          Tcl_Eval(interp, "pgpstate");
+          if (strcmp(interp->result,"1") == 0) {
+            if (check_encryption(enc_p,data,length,enc_asym_keyid,encmessage,ENCMESSAGELEN,addata, enctype) != 0) {
+              strcpy(encstatus_p,"failed");
+              writelog(printf("recv_pkts: PGP decryption failed\n");)
+              goto bad;
+            } else {
+              strcpy(encstatus_p,"success");
+              has_encryption = 1;
+              has_security   = 1;
+            }
           } else {
-            strcpy(encstatus_p,"success");
-            has_encryption = 1;
-            has_security   = 1;
+            encstatus_p="failed";
+            return;
           }
           break;
 
@@ -1753,6 +1775,9 @@ void recv_packets(ClientData fd)
                              new_data, newlength, auth_len, asym_keyid,
                              authmessage, AUTHMESSAGELEN, addata, authtype);
         strcpy(authstatus,tmpauthptr);
+
+        writelog(printf("recv_pkts: authstatus  = %s\n",authstatus);)
+        writelog(printf("recv_pkts: authmessage = %s\n",authmessage);)
 
         has_authentication = 1;
         has_security       = 1;
