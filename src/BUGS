@@ -36,12 +36,14 @@ There are many little things on the to-do list.  The main big things are:
 1) Windows problem - sdr crashes when it receives a session and the scrollbar 
    is being moved.
 
-2) Create session - the final window doesn't show any session details and 
-   doesn't disappear when you click Accept.
+2) Create session - the final window doesn't show any session details
 
-3) Modify session doesn't work
+3) Create session - doesn't disappear when you click Accept 
+   FIXED EPW 26/Aug/98
 
-4) Roy had problem:
+4) Modify session doesn't work
+
+5) Roy had problem:
 
   >  when changing the scope from admin to ttl:
   >    invalid command name ".new.f3.rr.f.r4"
@@ -62,14 +64,14 @@ There are many little things on the to-do list.  The main big things are:
   >   while executing
   > "return $fmtlayers($media.$proto.$fmt)"
 
-5) PC version of sdr didn't need Tcl environment but now it does ? Shrimp 
+6) PC version of sdr didn't need Tcl environment but now it does ? Shrimp 
    version doesn't need tcl ?
 
-6) Quitting on Windows 95 gives a very ugly "this program crashed" message.
+7) Quitting on Windows 95 gives a very ugly "this program crashed" message.
 
-7) conflict with random and srandom prototypes
+8) conflict with random and srandom prototypes
 
-8) SIP always listens on 5060 so if sdr dies on windows you have to log off - 
+9) SIP always listens on 5060 so if sdr dies on windows you have to log off - 
    is it supposed to just listen on port 5060 meaning you can only have one 
    person running sdr on each machine ?
 
