@@ -73,16 +73,16 @@ int generate_authentication_info(char *data,
                    struct advert_data *addata,
                                  char *auth_type)
 {
-    FILE *auth_fd=NULL, *sig_fd=NULL, *key_fd=NULL;
+    FILE *auth_fd=NULL, *sig_fd=NULL;
 
     struct auth_info *authinfo;
-    struct stat sbuf, sbufk;
-    char *fulltxt=NULL, *fullsig=NULL, *fullkey=NULL;
+    struct stat sbuf;
+    char *fulltxt=NULL, *fullsig=NULL;
     char *homedir=NULL;
     char *irandstr=NULL;
     char *code=NULL;
     char *auth_message=NULL;
-    char *encsig=NULL, *keycert=NULL;
+    char *encsig=NULL;
     int  irand;
     int tmplength;
 
@@ -96,23 +96,19 @@ int generate_authentication_info(char *data,
 
     fulltxt  = (char *)malloc(MAXFILENAMELEN);
     fullsig  = (char *)malloc(MAXFILENAMELEN);
-    fullkey  = (char *)malloc(MAXFILENAMELEN);
 
     homedir  = (char *)getenv("HOME");
 
 #ifdef WIN32
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
-    sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
 #else
     sprintf(fulltxt, "%s/.sdr/%d.%s",  homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
-    sprintf(fullkey, "%s/.sdr/%d.%s",  homedir, irand, authkey_fname);
 #endif
 
     writelog(printf("gen_auth_info fulltxt is %s\n",fulltxt);)
     writelog(printf("gen_auth_info fullsig is %s\n",fullsig);)
-    writelog(printf("gen_auth_info fullkey is %s\n",fullkey);)
 
 /* need the random number as a string for use in tcl code (pgp) */
 
@@ -185,19 +181,26 @@ int generate_authentication_info(char *data,
 
         if ((authinfo->sig_len % 4) != 0) {
           writelog(printf( "gen_auth_info: signature not a multiple of 4\n");)
+#ifdef NEVER
           authinfo->siglen = (authinfo->sig_len +1) / 4 ;
           authinfo->signature = (char *)malloc(authinfo->sig_len+1);
           memcpy (authinfo->signature, encsig,authinfo->sig_len);
+#else
+/* siglen needed so know where certificate starts - the cert is no longer */
+/* sent so always set this to 0                                           */
 
-/* XXX the following line is clearly bogus but what was it meant to do???  */
-/* it used to read: memcpy(authinfo->signature+1,'\0',1); but the second   */
-/* parameter needs to be a pointer.  However, it still sets the 2nd byte of*/
-/* the sig to \0                                                           */
-
-          /*memcpy(authinfo->signature+1,"\0",1);*/
+          authinfo->siglen = 0;
+          authinfo->signature = (char *)malloc(authinfo->sig_len);
+          memcpy (authinfo->signature, encsig,authinfo->sig_len);
+#endif
 
         } else {
+
+#ifdef NEVER
           authinfo->siglen    = (authinfo->sig_len) / 4 ;
+#else
+          authinfo->siglen    = 0;                   /* see comment above */
+#endif
           tmplength = (int)authinfo->sig_len;
           authinfo->signature = (char *)malloc(tmplength);
           memcpy (authinfo->signature, encsig, authinfo->sig_len);
@@ -216,77 +219,26 @@ int generate_authentication_info(char *data,
 
     free(fullsig);
 
-/* see if the auth_type needs the certificate sending as well */
-/* obsolete - will be removed                                 */
-
-    if ( strncmp(auth_type,"cpgp",4) == 0) {
-
-/* open key file (irand.pgp) and read in the key */
-
-      key_fd = fopen(fullkey, "r");
-
-      if (key_fd == NULL) {
-        writelog(printf("gen_auth_info: cannot open %s\n", fullkey);)
-        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-        return 1;
-      } else {
-
-/* read in file to temporary certificate memory */
-
-        stat(fullkey,&sbufk);
-        keycert = (char *)malloc(sbufk.st_size);
-
-        if(( fread(keycert, 1, sbufk.st_size ,key_fd)) != sbufk.st_size) {
-          writelog(printf("gen_auth_info: problem reading in key file\n");)
-          fclose(key_fd);
-          free(keycert);
-        } else {
-          authinfo->key_len = sbufk.st_size;
-          writelog(printf("gen_auth_info: key_len = %d\n", authinfo->key_len);)
-          authinfo->keycertificate = (char *)malloc(authinfo->key_len);
-          memcpy(authinfo->keycertificate,keycert,authinfo->key_len);
-  
-          if (authinfo->key_len > 1024 ) {
-            writelog(printf("Certificate too large (%d)\n", authinfo->key_len);)
-            authinfo->key_len = 0;
-          }
-          fclose(key_fd);
-          free(keycert);
-        }
-      }
-    } else {
-      authinfo->key_len = 0;
-      authinfo->keycertificate = NULL;
-    }
-    free(fullkey);
-
-/* have now read in sig and key file into the advert_data structure */
-/* Now fill in the rest of the advert_data -> authinfo              */
+/* have now read in sig file into the advert_data structure */
+/* Now fill in the rest of the advert_data -> authinfo      */
 
 /* auth_type */
 
-    if (memcmp(auth_type,"pgp",3) == 0) {
-      authinfo->auth_type = 1;
-    } else  if (memcmp(auth_type,"cpgp", 4) == 0) {
-      authinfo->auth_type = 3;
-    } else {
-      writelog(printf("gen_auth_info: unknown auth_type: (%s)\n", auth_type);)
-    }
+  if (memcmp(auth_type,"pgp",3) == 0) {
+    authinfo->auth_type = 1;
+  } else {
+    writelog(printf("gen_auth_info: unknown auth_type: (%s)\n", auth_type);)
+  }
 
 /* padding - must be aligned to 32-bit boundary and                      */
 /* there is a 2 byte auth_header - 2nd byte is signature length. This is */
 /* not in agreement with the spec as the sig length shouldn't be there   */
 
-  if ( authinfo->auth_type == 1 ) {
-    authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
-    if (authinfo->pad_len == 4) {
-      authinfo->pad_len = 0;
-    }
-    authinfo->autlen  = (authinfo->sig_len+2+authinfo->pad_len) / 4 ;
-  } else {
-    authinfo->pad_len = 4-((authinfo->sig_len+authinfo->key_len+2) % 4);
-    authinfo->autlen=(authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len)/4;
+  authinfo->pad_len = 4-((authinfo->sig_len+AUTH_HEADER_LEN) % 4);
+  if (authinfo->pad_len == 4) {
+    authinfo->pad_len = 0;
   }
+  authinfo->autlen  = (authinfo->sig_len+2+authinfo->pad_len) / 4 ;
 
 /* padding bit */
 
@@ -296,14 +248,14 @@ int generate_authentication_info(char *data,
 
 /* version - always 1 at moment */
 
-    authinfo->version = 1;
+  authinfo->version = 1;
 
 /* clean up the PGP files */
 
-    Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-    free(irandstr);
+  Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
+  free(irandstr);
 
-    return 0;
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -320,12 +272,12 @@ char *check_authentication(struct auth_header *auth_p,
 			struct advert_data *addata, 
 			char *auth_type)
 {
-    FILE *auth_fd=NULL, *sig_fd=NULL, *key_fd=NULL;
-    char *fulltxt=NULL, *fullsig=NULL, *fullkey=NULL;
+    FILE *auth_fd=NULL, *sig_fd=NULL;
+    char *fulltxt=NULL, *fullsig=NULL;
     char *homedir=NULL;
     char *irandstr=NULL;
   
-    int irand, sig_len, key_len, pad_len, messagelen;
+    int irand, sig_len, pad_len, messagelen;
     char *key_id=NULL, *auth_status=NULL, *auth_message=NULL;
     char *tmpauth_status=NULL;
 
@@ -341,50 +293,40 @@ char *check_authentication(struct auth_header *auth_p,
 
     fulltxt  = (char *)malloc(MAXFILENAMELEN);
     fullsig  = (char *)malloc(MAXFILENAMELEN);
-    fullkey  = (char *)malloc(MAXFILENAMELEN);
 
     homedir  = (char *)getenv("HOME");
 
 #ifdef WIN32
     sprintf(fulltxt, "%s\\sdr\\%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s\\sdr\\%d.%s", homedir, irand, authsig_fname);
-    sprintf(fullkey, "%s\\sdr\\%d.%s", homedir, irand, authkey_fname);
 #else
     sprintf(fulltxt, "%s/.sdr/%d.%s", homedir, irand, authtxt_fname);
     sprintf(fullsig, "%s/.sdr/%d.%s",  homedir, irand, authsig_fname);
-    sprintf(fullkey, "%s/.sdr/%d.%s",  homedir, irand, authkey_fname);
 #endif
 
     writelog(printf("chk_auth fulltxt is %s\n",fulltxt);)
     writelog(printf("chk_auth fullsig is %s\n",fullsig);)
-    writelog(printf("chk_auth fullkey is %s\n",fullkey);)
 
 /* need the random number as a string for use in tcl code (pgp) */
 
     irandstr = (char *)malloc(10);
     sprintf(irandstr, "%d", irand);
 
-/* determine length of key and signature */
-
-    sig_len = auth_p->siglen * 4;
-    key_len = (auth_len - sig_len) - 2;
-
 /* remove padding, if necessary */
 
     if ( auth_p->padding ) {
       pad_len = *((char *)auth_p+auth_len-1);
-      key_len -= pad_len;
       writelog(printf("chk_auth: pad len=%d\n",pad_len);)
-    }
- 
-/* quick check to see if things look okay */
-
-    if ( auth_p->auth_type == 1 && key_len != 0 ) {
-      writelog(printf("chk_auth: Error: have authtype %d and key_len %d\n",auth_p->auth_type,key_len);)
-      return("failed");
+    } else {
+      pad_len = 0;
     }
 
-/* Extract the signature and key certificate from packet and store in files */
+/* determine length of key and signature - sending key is obsolete  */
+
+    sig_len = auth_len - pad_len - AUTH_HEADER_LEN;
+    writelog(printf("sig_len = auth_len (%d) - pad_len (%d) - 2 = %d\n",auth_len,pad_len,sig_len);)
+
+/* Extract the signature and store in files */
 
   Tcl_Eval(interp, "pgpstate");
   if (strcmp(interp->result,"1") == 0) {
@@ -411,27 +353,6 @@ char *check_authentication(struct auth_header *auth_p,
     }
     free(fullsig);
   
-/* key file - irand.pgp */
- 
-    if (auth_p->auth_type == authPGPC) {
-      key_fd=fopen(fullkey, "w");
-      if (key_fd == NULL) {
-        writelog(printf("Cannot open %s\n", fullkey);)
-        Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-        return ("failed");
-      } else {
-        if ( fwrite((char *)auth_p+sig_len+AUTH_HEADER_LEN,1,key_len,key_fd)<key_len) {
-          writelog(printf("chk_auth: error writing certificate to file\n");)
-          fclose(key_fd);
-          Tcl_VarEval(interp, "pgp_cleanup ", irandstr, NULL);
-          return ("failed");
-        } else {
-          fclose(key_fd);
-        }
-      }
-    }
-    free(fullkey);
- 
 /* REMINDER: need to store end_time and keyid too if encrypted session    */
 /* Refer to SAP spec for encrypted announcements with authentication!     */
 
@@ -501,7 +422,6 @@ char *check_authentication(struct auth_header *auth_p,
    Tcl_SetVar(interp, "sess_auth_message",authmessage,TCL_GLOBAL_ONLY);
    free(fullsig);
    free(fulltxt);
-   free(fullkey);
   }
 
 /* the rest of this routine was store_authentication_in_memory() */
@@ -511,41 +431,24 @@ char *check_authentication(struct auth_header *auth_p,
 
    authinfo->auth_type = auth_p->auth_type;
    authinfo->version   = 1;
-   authinfo->siglen    = auth_p->siglen;
-   authinfo->sig_len   = auth_p->siglen * 4;
+   authinfo->siglen    = 0;
+   authinfo->sig_len   = sig_len;
 
 /* signature */
 
    authinfo->signature = (char *)malloc(authinfo->sig_len);
    memcpy(authinfo->signature,(char *)auth_p+AUTH_HEADER_LEN,authinfo->sig_len);
 
-/* authentication type and certificate */
+/* authentication type */
    
    authinfo->auth_type = auth_p->auth_type;
-
-   if (authinfo->auth_type == authPGPC && key_len < 1025) {
-     authinfo->key_len = key_len;
-     authinfo->keycertificate = (char *)malloc(authinfo->key_len);
-     memcpy(authinfo->keycertificate,auth_p+AUTH_HEADER_LEN+sig_len,authinfo->key_len);
-   } else {
-     authinfo->key_len = 0;
-     authinfo->keycertificate = NULL;
-     if (key_len > 1024) {
-      writelog(printf("chk_auth: key_len = %d (too large)\n",key_len);)
-     }
-   }
 
 /* padding - must be aligned to 32-bit boundary and                      */
 /* there is a 2 byte auth_header - 2nd byte is signature length. This is */
 /* not in agreement with the spec as the sig length shouldn't be there   */
 
-   if ( authinfo->auth_type == authPGP ) {
-     authinfo->pad_len = 4-((authinfo->sig_len+2) % 4);
-     authinfo->autlen  = (authinfo->sig_len+2+authinfo->pad_len) / 4 ;
-   } else {
-     authinfo->pad_len = 4-((authinfo->sig_len+authinfo->key_len+2) % 4);
-     authinfo->autlen=(authinfo->sig_len+authinfo->key_len+2+authinfo->pad_len)/4;
-   }
+   authinfo->pad_len = 4-((authinfo->sig_len+AUTH_HEADER_LEN) % 4);
+   authinfo->autlen  = (authinfo->sig_len+AUTH_HEADER_LEN+authinfo->pad_len) / 4 ;
 
 /* padding bit */
 
