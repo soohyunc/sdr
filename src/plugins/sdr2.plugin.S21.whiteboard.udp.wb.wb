@@ -1,6 +1,7 @@
 media:whiteboard
 proto:udp
 tool:wb
+cryptflag:-K
 fmt:wb
 {
   attr:orient
@@ -32,6 +33,7 @@ fmt:wb
     flags:+r
   }
 }
+flags: $(CRYPTKEY)
 flags:-t $(TTL)
 flags:-C $(SESSNAME)
 flags:$(ADDRESS)/$(PORT)

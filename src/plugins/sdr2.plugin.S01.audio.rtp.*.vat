@@ -2,6 +2,7 @@ media:audio
 tool:vat
 proto:RTP/AVP
 protoname:RTP
+cryptflag:-K
 fmt:0
 {
   fmtname:PCM
@@ -75,6 +76,7 @@ attr:recvonly
   attrname:Receive-Only Mode
   flags:-R
 }
+flags: $(CRYPTKEY)
 flags:-r
 flags:-I $(CHAN)
 flags:-t $(TTL)

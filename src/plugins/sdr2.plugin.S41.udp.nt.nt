@@ -1,10 +1,12 @@
 media:text
 proto:udp
 tool:nte
+cryptflag:-k
 fmt:nt
 {
   fmtname:UCL NTE
 }
+flags: $(CRYPTKEY)
 flags:-t $(TTL)
 flags:-C $(SESSNAME)
 flags:$(ADDRESS)/$(PORT)

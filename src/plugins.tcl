@@ -127,6 +127,9 @@ proc parse_plugin {file needtool} {
 	    text {
 		add_media_text $media $value
 	    }
+	    cryptflag {
+		add_tool_cryptflag $tool [string trim $value]
+            }
 	    proto {
 		set proto [string trim $value]
 		set protoname $value
@@ -487,6 +490,11 @@ proc add_to_known_media {media} {
     }
 }
 
+proc add_tool_cryptflag {tool cryptflag} {
+    global tooldata
+    set tooldata(cryptflag:$tool) $cryptflag
+}
+
 proc add_media_icon {media icon} {
     global medialist mediadata
     if {$mediadata(icon:$media)=="unknown"} {
@@ -686,6 +694,7 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     global youremail
     global ldata
     global debug1
+    global tooldata encryptionflag
 
 #    puts apply_startup_rule
 #    puts "media: $media"
@@ -696,7 +705,11 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     log "starting tool for $media at [getreadabletime]"
     set rule [string trim $rule "\{\}"]
     set tool [lindex $rule 0]
-    set rule [lrange $rule 1 end]
+
+# replaced next line as it adds {} around elements of cmd line. New one doesn't
+#   set rule [lrange $rule 1 end]
+    set rule [ string range $rule [string wordend $rule 0] end]
+
     foreach noattr \
 	"$noattrlist($tool.$media.$proto) $noattrlist($tool.$media.$proto.$fmt)" {
 	    set nat($noattr) 1
@@ -755,11 +768,23 @@ proc apply_startup_rule {aid media proto fmt rule attrlist} {
     set layers [set sd_[set media](layers)]
     set port [set sd_[set media](port)]
     set chan [get_channel $sd_sess(sess_id)]
+    set cryptkey \"[set sd_[set media](mediakey)]\"
 
     set rule "$tool $attrs $rule"
     if {$debug1} {
 	puts "fixing rule: $rule"
     }
+
+    if {([info exists tooldata(cryptflag:$tool)] != 1) && $cryptkey != "\"\""} {
+      msgpopup "Encryption Not Supported" "The tool you are using ($tool) does not seem to support encryption. You may be unable to decrypt the $media media stream"
+    }
+
+    if {[info exists tooldata(cryptflag:$tool)] && $cryptkey != "\"\""} {
+      set encryptionflag $tooldata(cryptflag:$tool)
+    } else {
+      set encryptionflag ""
+    }
+
     set rule [fix_up_plugin_rule $rule]
     if {$debug1} {
 	puts "fixing rule: $rule"
@@ -810,6 +835,7 @@ proc remove_wc_vars {str} {
 
 proc fix_up_plugin_rule {rule} {
     global macrovalues
+    global encryptionflag
     set vars [split $rule "\$"]
     set newrule [lindex $vars 0]
     foreach var [lrange $vars 1 end] {
@@ -845,6 +871,13 @@ proc fix_up_plugin_rule {rule} {
 		    }
 		    YOUREMAIL {
 			set newrule "$newrule\$youremail$rest"
+		    }
+		    CRYPTKEY {
+		    	if { $encryptionflag != "" } {
+		    	  set newrule "$newrule $encryptionflag \$cryptkey$rest"
+		    	} else {
+		    	  set newrule "$newrule$rest"
+		    	}
 		    }
 		    default {
 			if {[info exists macrovalues($varname)]} {

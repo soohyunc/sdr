@@ -796,6 +796,7 @@ range of the session.  People outside this area will not be able to receive it."
 proc new_mk_session_media {win aid scope show_details} {
     global ldata zone medialist sd_menu send 
     global media_fmt media_proto media_attr media_layers
+    global mediaenc sessionkey
     #multicast address and ttl
     frame $win -relief groove -borderwidth 2
     frame $win.f0
@@ -841,6 +842,10 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	pack $win.l.4 -side left -anchor w 
     }
 
+    label $win.l.7 -text [tt "Encryption"] -anchor w -width 12
+    pack $win.l.7 -side left -anchor w
+
+
     foreach attr [array names media_attr] {
 	unset media_attr($attr)
     }
@@ -862,6 +867,24 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
     }
     
     foreach media $medialist {
+
+        if {[string compare $aid "new"]!=0} {
+ 
+          for {set mnum 0} {$mnum < $ldata($aid,medianum)} {incr mnum} {
+            if {$ldata($aid,$mnum,media)==$media} {
+              set localmnum $mnum
+              if { $ldata($aid,$mnum,mediakey) != "" } {
+                set mediaenc($media) 1
+              } else {
+                set mediaenc($media) 0
+              }
+            }
+          }
+
+        } else {
+          set mediaenc($media) 1
+        }
+
 	frame $win.$media
 	pack $win.$media -side top -anchor w  -padx 10 -pady 2
 
@@ -892,6 +915,19 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	entry $win.$media.port -width 6 -relief sunken\
 	    -bg [option get . entryBackground Sdr] \
 	     -highlightthickness 0
+
+        checkbutton $win.$media.b1 -variable mediaenc($media) \
+          -highlightthickness 0  \
+         -command "toggleenc $media $win"
+ 
+        tixAddBalloon $win.$media.b1 Button [tt "Click here to toggle the $media encryption on/off."]
+ 
+        entry $win.$media.enc -width 25 -relief sunken \
+            -bg [option get . entryBackground Sdr] \
+             -highlightthickness 0
+ 
+        tixAddBalloon $win.$media.enc Entry [tt "The $media encryption key is shown here. You can replace the random key by typing your own key in this field."]
+
 	set media_fmt($media) \
 	    [lindex [get_media_fmts $media [lindex [get_media_protos $media] 0]] 0]
 	set media_proto($media) [lindex [get_media_protos $media] 0]
@@ -922,6 +958,53 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
 	if {$show_details==1} {
 	    pack $win.$media.port -side left -padx 2
 	}
+
+        if {$show_details==1} {
+          pack $win.$media.b1 -side left
+        } else {
+          pack $win.$media.b1 -side left -padx 10m
+        }
+ 
+        if {$show_details==1} {
+          pack $win.$media.enc -side left -padx 2
+ 
+          if {[string compare $aid "new"]!=0} {
+ 
+            if { $mediaenc($media) == 1} {
+              $win.$media.enc configure -bg [option get . entryBackground Sdr] \
+                -state normal -relief sunken
+              $win.$media.enc  delete 0 end
+              $win.$media.enc  insert 0 $ldata($aid,$localmnum,mediakey)
+            } else {
+              $win.$media.enc  delete 0 end
+              $win.$media.enc configure -bg [option get . background Sdr] \
+                -relief groove -state disabled
+            }
+ 
+          } else {
+ 
+           if { $mediaenc($media) == 1 } {
+             $win.$media.enc configure -bg [option get . entryBackground Sdr] \
+               -state normal -relief sunken
+             $win.$media.enc  delete 0 end
+             $win.$media.enc  insert 0 $sessionkey($media)
+           } else {
+             $win.$media.enc  delete 0 end
+             $win.$media.enc configure -bg [option get . background Sdr] \
+               -relief groove -state disabled
+           }
+ 
+         }
+ 
+        } else {
+          if {[string compare $aid "new"]!=0} {
+            if { $mediaenc($media) == 1} {
+              set sessionkey($media) $ldata($aid,$localmnum,mediakey)
+            }
+          }
+        }
+
+# end of media loop
     }
     
 
@@ -1735,6 +1818,8 @@ proc create {} {
     global timeofday minoffset hroffset media_attr media_fmt media_proto
     global media_layers medialist new_createtime sess_type
     global rtp_payload sdrversion security
+    global mediaenc security
+
     log "creating a session"
     if {$ttl==0} { set ttl [.new.f3.rr.f.e get] }
     if {($ttl < 0)|($ttl > 255)} {
@@ -1803,6 +1888,38 @@ proc create {} {
 		log "user had entered a bad port number"
 		return 0
 	    }
+
+            if { $mediaenc($media) == 1 } {
+
+# check length of media key
+
+              if { [ string length [get_new_media_key $media] ] < 8 } {
+                  errorpopup "$media key too short" \
+                      [tt "Encryption keys must be at least 8 characters"]
+                  log "user had entered short key for $media"
+                  return 0
+              }
+ 
+# the following cause problems inside sdr: \ / "
+# the following cause problems from command line outside sdr: $ `
+# the following (as well as $) are tcl special characters: [ ]
+# disallow all so that people can join sessions using sdr and via command line
+ 
+              if { [string first "\\" "[get_new_media_key $media]" ] != -1 ||
+                   [string first "/"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\"" "[get_new_media_key $media]" ] != -1 ||
+                   [string first "`"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "$"  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\["  "[get_new_media_key $media]" ] != -1 ||
+                   [string first "\]"  "[get_new_media_key $media]" ] != -1 } {
+                   errorpopup "$media key has forbidden characters" \
+                      [tt "Encryption keys should not contain \\, /, \", \`, $, \[ or \] as these may cause problems when starting the tools "]
+                  log "user had entered forbidden characters in key for $media, key was [get_new_media_key $media] ] "
+                  return 0
+ 
+              }
+            }
+
 	    if {$media_proto($media)=="rtp"} {
 		set sess "$sess\nm=$media [get_new_session_port $media] RTP/AVP $rtp_payload(pt:$media_fmt($media))"
 	    } else {
@@ -1812,6 +1929,11 @@ proc create {} {
 	    if {$media_layers($media)>1} {
 		set sess "$sess/$media_layers($media)"
 	    }
+
+            if { $mediaenc($media) == 1 } {
+              set sess "$sess\nk=clear:[get_new_media_key $media]"
+            }
+
 	    foreach attr [array names media_attr] {
 		set m [lindex [split $attr ","] 0]
 		set a [lindex [split $attr ","] 1]
@@ -1851,6 +1973,50 @@ proc togglemedia {win media} {
     }
 }
 
+proc toggleenc { media win } {
+ 
+  global mediaenc sessionkey tempkey ifstyle
+ 
+# win is: SAP(norm)=.new.f3.media; SAP(tech)=.new.f1;SAP QCall=.qc.f.media
+ 
+  if { $mediaenc($media) == 0} {
+
+# switch encryption off for media 
+
+    set sessionkey($media) ""
+    if {$ifstyle(create)=="tech" && [string compare [string range $win 1 2] "qc"] != 0 } {
+      $win.$media.enc  delete 0 end
+      $win.$media.enc configure -bg [option get . background Sdr] \
+        -relief groove -state disabled
+    }
+
+  } else {
+
+# switch encryption on for media
+
+    make_random_key
+    set  sessionkey($media)  $tempkey
+    if {$ifstyle(create)=="tech" && [string compare [string range $win 1 2] "qc"] != 0 } {
+      $win.$media.enc configure -bg [option get . entryBackground Sdr] \
+        -state normal -relief sunken
+      $win.$media.enc  delete 0 end
+      $win.$media.enc  insert 0 $sessionkey($media)
+    }
+
+  }
+}
+ 
+proc get_new_media_key {media} {
+
+  global ifstyle sessionkey
+ 
+  if {$ifstyle(create)=="tech"} {
+    set win .new.f1
+    set sessionkey($media) [$win.$media.enc get]
+  }
+ 
+  return $sessionkey($media)
+}
 
 #############
 #setmediamode is used to set a line of media widgets to active or inactive
@@ -1862,6 +2028,7 @@ proc togglemedia {win media} {
 proc setmediamode {media mediabase state realloc} {
     global send media_fmt media_proto media_attr media_layers
     global zone scope defattrlist
+    global mediaenc sessionkey tempkey
     set base $mediabase.$media
     set send($media) $state
     if {$state==0} {
@@ -1878,6 +2045,13 @@ proc setmediamode {media mediabase state realloc} {
 	$base.addr configure -bg [option get . background Sdr] \
 	    -relief groove -state disabled
 
+        $base.enc delete 0 end
+        $base.enc configure -text "" -bg [option get . background Sdr] \
+            -relief groove -state disabled
+ 
+        $base.b1 configure -state disabled
+        set mediaenc($media) 0
+ 
 	$base.layers configure -text " " -state disabled -relief groove
 
 	$base.port  delete 0 end
@@ -1916,6 +2090,28 @@ proc setmediamode {media mediabase state realloc} {
 
 	$base.port configure -bg [option get . entryBackground Sdr] \
 	    -relief sunken -state normal
+
+# set media encryption up
+
+          make_random_key
+          set sessionkey($media) $tempkey
+
+# only set encryption on if not just changing formats etc
+# need to set to off then on and not just to on - dunno why
+
+          if {$realloc == 1} {
+            set mediaenc($media) 0
+            $base.enc delete 0 end
+            $base.enc configure -text "" -bg [option get . background Sdr] \
+                -relief groove -state disabled
+            $base.b1 configure -state normal
+ 
+            set mediaenc($media) 1
+            $base.enc configure -bg [option get . entryBackground Sdr] \
+              -state normal -relief sunken
+            $base.enc  delete 0 end
+            $base.enc  insert 0 $sessionkey($media)
+          }
 
 	if {$realloc==1} {
 	    $base.addr delete 0 end

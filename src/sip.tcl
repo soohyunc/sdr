@@ -113,6 +113,7 @@ proc qcreate {} {
     global media_layers
     global yourphone youremail medialist send ldata sesstype
     global sdrversion
+    global sessionkey
     set aid priv$qseq
     incr qseq
     if {[get_new_session_name .qc.f]==""} {
@@ -151,6 +152,7 @@ proc qcreate {} {
 	    set ldata($aid,$medianum,layers) $media_layers($media)
 	    set ldata($aid,$medianum,ttl) $zone(ttl,$zone(cur_zone))
 	    set ldata($aid,$medianum,vars) ""
+            set ldata($aid,$medianum,mediakey) $sessionkey($media)
             foreach attr [array names media_attr] {
                 set m [lindex [split $attr ","] 0]
                 set a [lindex [split $attr ","] 1]

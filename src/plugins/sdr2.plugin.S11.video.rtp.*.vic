@@ -2,6 +2,8 @@ media:video
 proto:RTP/AVP
 protoname:RTP
 tool:vic
+cryptflag:-K
+
 fmt:31
 {
   fmtname:H.261
@@ -70,7 +72,8 @@ fmt:*(DYNAMIC)
     }
   }
 }
+flags: $(CRYPTKEY)
 flags:-t $(TTL)
 flags:-I $(CHAN)
 flags:-C $(SESSNAME)
-flags:$(ADDRESS)/$(PORT)$(DOLAYERS)
+flags:$(ADDRESS)/$(PORT)$(DOLAYERS) 

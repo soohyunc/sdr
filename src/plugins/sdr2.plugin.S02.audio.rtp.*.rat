@@ -6,6 +6,7 @@ media:		audio
 proto:		RTP/AVP
 tool:		rat
 protoname: 	RTP
+cryptflag: -K
 
 @define:ptime
 {
@@ -426,5 +427,5 @@ fmt:*(DYNAMIC)
 	}
 }
 
-flags:-C $(SESSNAME) -t $(TTL) -f $(PRIMARY)$(SECONDARY) $(FMTP) $(ADDRESS)/$(PORT)
+flags: $(CRYPTKEY) -C $(SESSNAME) -t $(TTL) -f $(PRIMARY)$(SECONDARY) $(FMTP) $(ADDRESS)/$(PORT)
 

@@ -44,6 +44,12 @@ proc start_media {aid mnum mode} {
   global sd_$media
   set tmp sd_$media\(attributes\)
   set $tmp $ldata($aid,$mnum,vars)
+  set tmp sd_$media\(mediakey\)
+  if {[info exists ldata($aid,$mnum,mediakey)]} {
+    set $tmp $ldata($aid,$mnum,mediakey)
+  } else {
+    set $tmp ""
+  }
   set tmp sd_$media\(port\)
   set $tmp $ldata($aid,$mnum,port)
   set tmp sd_$media\(address\)
