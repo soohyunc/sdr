@@ -153,7 +153,7 @@ proc qcreate {} {
                                   [ntp_to_unix $ldata($aid,endtime)]]]
     set ldata($aid,tto,0) $ldata($aid,tto)
     set ldata($aid,source) $ldata($aid,createaddr)
-    set ldata($aid,heardfrom) "local user"
+    set ldata($aid,heardfrom) [gethostaddr]
     set ldata($aid,theard) [fixtime [gettime [gettimeofday]]]
     return $aid
 }
@@ -255,7 +255,7 @@ proc send_sip {dstuser user aid id win addr} {
     #a new or modified request
 
     global youremail no_of_connections sip_request_status sip_requests
-    global sip_request_count sip_request_user
+    global sip_request_count sip_request_user sdrversion
     set username [string trimleft [lindex [split $dstuser "@"] 0] " "]
     set host [string trimright [lindex [split $dstuser "@"] 1] " "]
     if {($username=="")||($host=="")} {
@@ -481,7 +481,7 @@ proc sip_inform_user {id srcuser dstuser path sname sdp cseq} {
 }
 
 proc sip_ringing_user {id srcuser dstuser path cseq} {
-    set msg "SIP/2.0 150 Ringing"
+    set msg "SIP/2.0 180 Ringing"
     set msg "$msg\r\n$path"
     set msg "$msg\r\nCall-ID:$id"
     set msg "$msg\r\nFrom:$srcuser"

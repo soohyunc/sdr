@@ -38,7 +38,7 @@
 #endif
 #include "dns.h"
 #include "prototypes.h"
-#define DEBUG
+/*#define DEBUG*/
 #define MAXINVITES 20
 
 extern int siprxsock;

@@ -125,62 +125,9 @@ int parse_sip_fail(char *msg)
   return 0;
 }
 
-int parse_sip_progress(char *msg)
-{
-  char *rtype;
-  rtype=msg+8;
-#ifdef DEBUG
-  printf("parse_sip_progress\n");
-#endif
-  if (strncmp(rtype, "150 ", 4)==0)
-    parse_sip_ringing(msg);
-  else if (strncmp(rtype, "100 ", 4)==0)
-    parse_sip_trying(msg);
-  return 0;
-}
-
 int parse_sip_redirect(char *msg)
 {
-  char *rtype;
-  rtype=msg+8;
-#ifdef DEBUG
-  printf("parse_sip_redirect\n");
-#endif
-  if (strncmp(rtype, "30) ", 4)==0)
-    parse_sip_multiple(msg);
-  else if (strncmp(rtype, "301 ", 4)==0)
-    parse_sip_moved(msg);
-  else if (strncmp(rtype, "302 ", 4)==0)
-    parse_sip_moved(msg);
-  else if (strncmp(rtype, "350 ", 4)==0)
-    parse_sip_alternative(msg);
-}
-
-int parse_sip_moved(char *msg)
-{
   if (Tcl_VarEval(interp, "sip_moved \"", msg, "\"", NULL)!=TCL_OK)
-    {
-      Tcl_AddErrorInfo(interp, "\n");
-      fprintf(stderr, "%s\n", interp->result);
-      Tcl_VarEval(interp, "puts $errorInfo", NULL);
-    };
-  return 0;
-}
-
-int parse_sip_multiple(char *msg)
-{
-  if (Tcl_VarEval(interp, "sip_multiple \"", msg, "\"", NULL)!=TCL_OK)
-    {
-      Tcl_AddErrorInfo(interp, "\n");
-      fprintf(stderr, "%s\n", interp->result);
-      Tcl_VarEval(interp, "puts $errorInfo", NULL);
-    };
-  return 0;
-}
-
-int parse_sip_alternative(char *msg)
-{
-  if (Tcl_VarEval(interp, "sip_alternative \"", msg, "\"", NULL)!=TCL_OK)
     {
       Tcl_AddErrorInfo(interp, "\n");
       fprintf(stderr, "%s\n", interp->result);
@@ -194,7 +141,7 @@ int parse_sip_fa(char *msg)
   return 0;
 }
 
-int parse_sip_ringing(char *msg)
+int parse_sip_progress(char *msg)
 {
 #ifdef DEBUG
   printf("parse_sip_ringing\n");
@@ -205,11 +152,6 @@ int parse_sip_ringing(char *msg)
       fprintf(stderr, "%s\n", interp->result);
       Tcl_VarEval(interp, "puts $errorInfo", NULL);
     };
-  return 0;
-}
-
-int parse_sip_trying(char *msg)
-{
   return 0;
 }
 
