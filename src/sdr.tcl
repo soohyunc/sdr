@@ -611,9 +611,9 @@ proc add_to_list {} {
       # randomly after a minute, but for now this is probably OK since
       # the goal is to skip the hundreds of copies from rabid looping
       if {$ldata($aid,lastheard) < [expr $ldata($aid,lastupdated) + 60]} {
-	  debug "aid $aid name $session already have this version"
-	  popup_update $aid heard "Heard from $ldata($aid,heardfrom) at $ldata($aid,theard)"
-	  return
+          debug "aid $aid name $session already have this version"
+          popup_update $aid heard "Heard from $ldata($aid,heardfrom) at $ldata($aid,theard)"
+          return
       }
       debug "aid $aid name $session already have this version but updating anyway"
     } elseif {[sesscmp $ldata($aid,sessvers) $sessvers] > 0} {
@@ -1466,6 +1466,8 @@ proc popup {aid ifstyle msgsrc} {
 
     switch $auth {
 
+      trusted        -
+      TRUSTED        -
       trustworthy    -
       TRUSTWORTHY    -
       authenticated  - 
@@ -1622,8 +1624,8 @@ proc popup {aid ifstyle msgsrc} {
   #label $win.sn.l -text $ldata($aid,session) -anchor n
   #log "displaying details of session called:\n   $ldata($aid,session) \n   at [getreadabletime]"
   #pack  $win.sn.l -side left -fill x -expand true
-  label $win.sn.l -text "Encryption: $enc $enct  $ldata($aid,session)    \
-        Authentication: $auth $autht"  -anchor n -bg $bgcolour 
+  label $win.sn.l -text "Encryption: $enct ($enc)  $ldata($aid,session)    \
+        Authentication: $autht ($auth)"  -anchor n -bg $bgcolour 
 # label $win.sn.l -text "Session: $ldata($aid,session) Encryption: $enc $enct  \
 #       Authentication: $auth $autht"  -anchor n -bg $bgcolour -fg $fgcolour
   pack  $win.sn.l -side left -fill x -expand true
