@@ -64,7 +64,12 @@ t "Session Name:" fr "Nom de Session:"
 catch {source [resource sdrHome]/$lang}
 
 proc gettime {sec} {
-    clock format $sec -format {%Y %m %d %H %M %w %B %a %A %Z}
+    set res [clock format $sec -format {%Y %m %d %H %M %w %B %a %A}]
+    #do TZ separately because of a bug in IRIX which returns TZ with an
+    #unmatched quote preceding it
+    set tz [clock format $sec -format {%Z}]
+    lappend res $tz
+    return $res
 }
 
 proc gettimeofday {} {
@@ -842,7 +847,7 @@ proc display_session {aid code} {
 proc add_to_display_list {aid list} {
     global items ix ldata sessbox showwhich fullnumitems fullix
     debug "new session $ldata($aid,session) in list $list"
-    debug "with endtime [gettime $ldata($aid,endtime)]"
+#    debug "with endtime [gettime $ldata($aid,endtime)]"
 
     #check if it's already displayed
     foreach index [array names ix] {
@@ -3744,16 +3749,16 @@ day."]
              -fill $fg -font $font]
 	if {$i==0} {
 	    set utime [gettimeofday]
-	    set day [fixint [lindex [gettime $utime] 2]]
+	    set day [fixint [clock format $utime -format {%d}]]
 	    set begin [expr $utime - (($day-1)*86400)]
-	    set first($mon) [lindex [gettime $begin] 5]
-	    set mname [lindex [gettime $begin] 6]
+	    set first($mon) [clock format $begin -format {%w}]
+	    set mname [clock format $begin -format {%B}]
 	} else {
 	    set utime [expr $begin+($i*2678400)]
-	    set day [fixint [lindex [gettime $utime] 2]]
+	    set day [fixint [clock format $utime -format {%d}]]
 	    set next [expr $utime - (($day-1)*86400)]
-	    set first($mon) [lindex [gettime $next] 5]
-	    set mname [lindex [gettime $next] 6]
+	    set first($mon) [clock format $next -format {%w}]
+	    set mname [clock format $next -format {%B}]
 	}
 	for {set d 1} {$d <= [lindex $daysinmonth [expr $mon - 1]]} {incr d} {
             highlight_day $d $mon $year $first($mon) $monnow grey $fg "" 0 -1 -1
