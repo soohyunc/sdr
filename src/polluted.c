@@ -240,7 +240,7 @@ int add_privacy_header(char *buf, int auth_len, struct priv_header *sapenc_p, in
   unsigned int padlen;
   int privlen=0;
   char *ap=NULL;
-  int sap_hdr_len;
+  int sap_hdr_len=NULL;
 
   writelog(printf(" -- entered add_privacy_header --\n");)
 

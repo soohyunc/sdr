@@ -515,7 +515,6 @@ int load_cache_entry(
 #endif
     struct in_addr in;
     char tmp_hostaddr[128]="";
-    unsigned long origsrc_v4;
     int addr_fam=IPv4;
     int src_equals_host=0;
     int sap_hdr_len=SAPV4_HDR_LEN;
@@ -651,14 +650,9 @@ int load_cache_entry(
 
 
     if (strstr(origsrc,":") == NULL) {/* Checking for an IPv6 address */
-#ifdef NEVER
-        origsrc_v4 = atol(origsrc);
-        if (origsrc_v4 == hostaddr) {
-#else
         in.s_addr = htonl(hostaddr);
         strcpy(tmp_hostaddr, inet_ntoa(in));
         if (strcmp(origsrc,tmp_hostaddr)==0) {
-#endif
             src_equals_host = 1;
         }
         sap_hdr_len = SAPV4_HDR_LEN;
