@@ -136,7 +136,7 @@ void linksocket(int fd, int mask, Tcl_FileProc* callback)
         }
 	sockproc[fd] = callback;
 #else
-        Tcl_CreateFileHandler(Tcl_GetFile((ClientData)fd, TCL_UNIX_FD),
+        Tcl_CreateFileHandler((ClientData)fd,
                               mask, callback, (ClientData)fd);
 #endif
 }
@@ -149,6 +149,6 @@ void unlinksocket(fd)
 		(void) WSAAsyncSelect(fd, sockwin, 0, 0);
 	}
 #else
-        Tcl_DeleteFileHandler(Tcl_GetFile((ClientData)fd, TCL_UNIX_FD));
+        Tcl_DeleteFileHandler((ClientData)fd);
 #endif
 }
