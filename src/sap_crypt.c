@@ -117,7 +117,9 @@ int decrypt_announcement(char *buf, int *len, char *recvkey)
 
     if (length != -1) {
       if (strncmp(dstbuf, "v=", 2)==0) {
+#ifdef DEBUG
         printf("         ... decryption was successful\n");
+#endif
         *len = length;
         strncpy(recvkey, key, MAXKEYLEN);
         memcpy(buf, dstbuf, *len);
