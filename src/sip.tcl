@@ -433,7 +433,7 @@ proc sip_send_bye {dstuser origuser id} {
     set msg "$msg\r\nFrom:$youremail"
     set msg "$msg\r\nTo:$origuser"
     set msg "$msg\r\nUser-Agent:sdr/$sdrversion\r\n"
-    puts "------\nSending to $addr:\n$msg\n"
+    #puts "------\nSending to $addr:\n$msg\n"
     sip_send_msg $msg $addr
 }
 
@@ -497,7 +497,7 @@ proc sip_session_status {id status} {
 set sip_invites {}
 proc sip_user_alert {msg} {
     global sip_invites sip_invite_status
-    puts $msg
+    #puts $msg
     set lines [split $msg "\n"]
     set cur-to [lindex [lindex $lines 0] 1]
     set request [lindex [lindex $lines 0] 0]
@@ -536,7 +536,7 @@ proc sip_user_alert {msg} {
 	}
     }
     debug "ct=$ct"
-    puts "request: >$request<"
+    #puts "request: >$request<"
     switch $request {
 	"INVITE" {
 	    if {[string compare $ct "application/sdp"]!=0} {
@@ -712,7 +712,7 @@ proc sip_send_accept_invite {id srcuser dstuser path sdp cseq} {
 
     #keep resending the response until we get an ACK, BYE, or timeout
     set sip_invite_responses($id) 1
-    puts "sip_send_accept_invite $sip_invite_status($id)"
+    #puts "sip_send_accept_invite $sip_invite_status($id)"
     if {[lsearch $sip_invites $id]>=0} {
 	if {$sip_invite_status($id)!="accepted"} {
 	    catch {unset sip_invite_responses($id)}
@@ -742,7 +742,7 @@ proc sip_send_accept_invite {id srcuser dstuser path sdp cseq} {
 	set msg "$msg\r\nCseq:$cseq"
     }
     set msg "$msg\r\nLocation: sip://[getusername]@[gethostname]"
-    puts "------\nSending response to [lrange $path end end]\n$msg\n"
+    #puts "------\nSending response to [lrange $path end end]\n$msg\n"
     sip_send_msg $msg [lrange $path end end]
 }
 
@@ -775,7 +775,7 @@ proc sip_send_method_unsupported {id srcuser dstuser path cseq} {
 proc sip_success {msg pktsrc} {
     global sip_requests
     set lines [split $msg "\n"]
-    puts $msg
+    #puts $msg
     set path ""
     set srcuser ""
     set dstuser ""
@@ -1082,7 +1082,7 @@ proc sip_moved {msg pktsrc} {
     }
     if {$id==""} {
 	#got a redirect with no call ID - this is bogus
-	puts "Got a bogus response - no call-ID:\n$msg"
+	#puts "Got a bogus response - no call-ID:\n$msg"
 	return 0
     }
     set aid $sip_request_aid($id) 
@@ -1119,7 +1119,7 @@ proc sip_moved {msg pktsrc} {
 	}
 	302 {
 	    #moved temporarily
-	    puts "got a 302, $origuser->$dstuser"
+	    #puts "got a 302, $origuser->$dstuser"
 	    sip_session_status $id "progressing $location"
 	    sip_cancel_connection $id $pktsrc
 	    send_sip $dstuser $origuser $aid $id $sip_request_win($id) 0
@@ -1170,7 +1170,7 @@ proc sip_connection_succeed {id msg} {
 
 proc sip_cancel_connection {id hostaddr} {
     global sip_request_addrs
-    puts "sip_cancel_connection $id $hostaddr"
+    #puts "sip_cancel_connection $id $hostaddr"
     if {$hostaddr=="all"} {
 	#need to cancel all requests made for this call-ID
 	set list [array names sip_request_addrs]
@@ -1183,7 +1183,7 @@ proc sip_cancel_connection {id hostaddr} {
     } else {
 	set list [array names sip_request_addrs]
 	foreach item $list {
-	    puts "addrs: $item $sip_request_addrs($item)"
+	    #puts "addrs: $item $sip_request_addrs($item)"
 	}
 	set sip_request_addrs($id,$hostaddr) "failed"
     }
@@ -1461,7 +1461,7 @@ proc save_address_book {file} {
     if {[info exists address_book]} {
         foreach user [array names address_book] {
 	    regsub -all " " $user "\\ " tmpuser
-	    puts $file "set address_book($tmpuser) \"$address_book($user)\""
+	    #puts $file "set address_book($tmpuser) \"$address_book($user)\""
 	}
     }
 }

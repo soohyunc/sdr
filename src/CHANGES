@@ -1,5 +1,11 @@
 <H1>Sdr changes log</H1>
 <B><pre>
+2.5a1 C.Perkins 
+
+- Fix SIP for encrypting sdr 
+
+2.5a0 
+
 2.4a8 E.Whelan 4th Feb 98
 
 - changed code to remove the symmetric encryption keyid

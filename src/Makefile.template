@@ -131,21 +131,21 @@ sdr_gw_listen.o:	../src/sdr_gw_listen.c ../src/sdr.h
 sdr_gw_init.o:	../src/sdr_gw_init.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sdr_gw_init.c
 sdr_server.o: ../src/sdr_server.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/sdr_server.c
+	 $(CC) $(CFLAGS) -c ../src/sdr_server.c
 server_http.o: ../src/server_http.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_http.c
+	 $(CC) $(CFLAGS) -c ../src/server_http.c
 server_html.o: ../src/server_html.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_html.c
+	 $(CC) $(CFLAGS) -c ../src/server_html.c
 server_init.o: ../src/server_init.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_init.c
+	 $(CC) $(CFLAGS) -c ../src/server_init.c
 server_parser.o: ../src/server_parser.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_parser.c
+	 $(CC) $(CFLAGS) -c ../src/server_parser.c
 server_form.o: ../src/server_form.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_form.c
+	 $(CC) $(CFLAGS) -c ../src/server_form.c
 server_scope.o: ../src/server_scope.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_scope.c
+	 $(CC) $(CFLAGS) -c ../src/server_scope.c
 server_send.o: ../src/server_send.c  ../src/sdr.h
-	 $(CC) $(CFLAGS) -DDEBUG -c ../src/server_send.c
+	 $(CC) $(CFLAGS) -c ../src/server_send.c
 store_entries.o: ../src/store_entries.c  ../src/sdr.h ../src/store_entries.h
 	 $(CC) $(CFLAGS) -c ../src/store_entries.c
 www_ui_init.o:	../src/www_ui_init.c ../src/sdr.h

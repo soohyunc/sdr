@@ -25,7 +25,7 @@ const char *modvar[MAX_TCL_MODULE]=
  tcl_parsed_plugins, tcl_plugins, tcl_sip, tcl_sdp, tcl_cache,
  tcl_sdr, tcl_sap_crypt};
 
-#define MAX_UI_FN 28
+#define MAX_UI_FN 29
 
 const char *ui_fn_name[MAX_UI_FN]=
 {
@@ -49,6 +49,7 @@ const char *ui_fn_name[MAX_UI_FN]=
   "sip_send_msg",
   "ui_quit",
   "set_sipalias",
+  "getpid",
   "set_passphrase",
   "get_passphrase",
   "add_key",
@@ -81,6 +82,7 @@ void *ui_fn[MAX_UI_FN]=
   ui_sip_send_msg,
   ui_quit,
   ui_set_sipalias,
+  ui_getpid,
   ui_set_passphrase,
   ui_get_passphrase,
   ui_add_key,
