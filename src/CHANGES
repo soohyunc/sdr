@@ -2,7 +2,14 @@
 <B><pre>
 2.5a2 c.perkins@cs.ucl.ac.uk
 
-- 
+  mjh, 26th Mar 98
+- fix address book
+
+- fix SIP code so that when a SIP announcement arrives followed by a
+  SAP announcement for the same session, the right thing happens.
+
+- replace sd_addr with sap_addr and sd_port with sap_port to make it
+  more obvious what these variables do.
 
 2.5a1 c.perkins@cs.ucl.ac.uk
 
