@@ -99,10 +99,15 @@ TCL2C = ./tcl2c
 WWWOBJS=www_fns.o www_ui.o www_ui_init.o www_main_ui.o www_main.o libs.o compat.o tclBasic.o generic_ui.o
 GWOBJS=sdr_gw_listen.o compat.o
 SERVOBJS=sdr_server.o compat.o store_entries.o server_http.o server_form.o server_parser.o server_html.o server_scope.o server_init.o generate_ids.o server_send.o
+SIP_SERVER_OBJS=sip_server.o sip_common.o
 
 sdr: $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) 
+	rm ../src/tcl_modules.h; \
 	$(CC) $(CFLAGS) $(OBJS) $(ENCOBJS) $(QFDES) $(SDR_UI_FILES) \
 	-o sdr $(LIBS)
+
+sip_server: $(SIP_SERVER_OBJS)
+	$(CC) $(CFLAGS) $(SIP_SERVER_OBJS) -o sip_server $(SIP_SERVER_LIBS)
 
 $(SDR_HELP_FILES): tcl2c
 $(SDR_UI_FILES): tcl2c
@@ -125,6 +130,8 @@ sip.o:	../src/sip.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip.c
 sip_common.o:	../src/sip_common.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip_common.c
+sip_server.o:   ../src/sip_server.c ../src/sdr.h
+	$(CC) $(CFLAGS) -c ../src/sip_server.c
 sip_register.o:	../src/sip_register.c ../src/sdr.h
 	$(CC) $(CFLAGS) -c ../src/sip_register.c
 bus.o:	../src/bus.c ../src/sdr.h
@@ -156,9 +163,9 @@ www_ui_init.o:	../src/www_ui_init.c ../src/sdr.h
 ui_init.o:	../src/ui_init.c ../src/sdr.h ../src/tcl_modules.h
 	$(CC) -I. $(CFLAGS) -c ../src/ui_init.c
 ../src/tcl_modules.h:	../src/tcl_crypt_modules.h
-	echo "/*DO NOT MODIFY THIS MODULE*/"                                      > ../src/tcl_modules.h
+	echo "/*DO NOT MODIFY THIS MODULE*/" > ../src/tcl_modules.h
 	echo "/*This module is automatically derived from tcl_crypt_modules.h*/" >> ../src/tcl_modules.h
-	cat ../src/tcl_crypt_modules.h                                           >> ../src/tcl_modules.h
+	cat ../src/tcl_crypt_modules.h >> ../src/tcl_modules.h
 tkUnixInit.o:	../src/tkUnixInit.c
 	$(CC) $(CFLAGS) -c ../src/tkUnixInit.c
 ui_fns.o:	../src/ui_fns.c ../src/sdr.h
@@ -185,6 +192,16 @@ sanitised.o:     ../src/sanitised.c
 	echo "#DO NOT MODIFY THIS MODULE" > ../src/cache.tcl
 	echo "#This module is automatically derived from cache_crypt.tcl" >> ../src/cache.tcl
 	cat ../src/cache_crypt.tcl >> ../src/cache.tcl
+
+../src/html/changes.html: ../src/CHANGES
+	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/changes.html
+	echo "<!-- This file is automatically derived from CHANGES -->" >> ../src/html/changes.html
+	cat ../src/CHANGES >> ../src/html/changes.html
+ 
+../src/html/bugs.html:  ../src/BUGS
+	echo "<!-- DO NOT MODIFY THIS FILE -->" > ../src/html/bugs.html
+	echo "<!-- This file is automatically derived from BUGS -->" >> ../src/html/bugs.html
+	cat ../src/BUGS >> ../src/html/bugs.html
 
 tclBasic.o:	
 	gcc -c -O -ggdb -I/cs/research/mice/speedy/common/src/pub/tcl7.3 -I. -DNO_GETWD=1 -DHAVE_UNISTD_H=1 -DNO_UNION_WAIT=1 -DNEED_MATHERR=1       -DTCL_LIBRARY=\"/cs/research/mice/speedy/common/hpux/lib/tcl\" /cs/research/mice/speedy/common/src/pub/tcl7.3/tclBasic.c
