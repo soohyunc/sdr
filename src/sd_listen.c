@@ -198,7 +198,7 @@ int sd_listen(char *address, int port, int rx_sock[], int *no_of_socks, int fata
     }
     if (s >= sizeof(rfd2sock)) {
 	fprintf(stderr, "socket fd too large (%d)\n", s);
-	exit(1);
+	abort();
     }
     rx_sock[*no_of_socks] = s;
     rfd2sock[s] = *no_of_socks;

@@ -317,6 +317,10 @@ SOURCE=..\src\www_prototypes.h
 # Begin Group "Resource Files"
 
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+# Begin Source File
+
+SOURCE="..\..\tk-8.0\win\tk.res"
+# End Source File
 # End Group
 # Begin Group "HTML files"
 
