@@ -151,8 +151,8 @@ ui_init(argc, argv)
 	 * so redefine the 'puts' command to put up a dialog box (otherwise
 	 * we'll never see any of the intialization errors).
 	 */
-	extern int WinPutsCmd(ClientData, Tcl_Interp*, int, char **);
-	Tcl_CreateCommand(interp, "puts", WinPutsCmd, 0, 0);
+	/*extern int WinPutsCmd(ClientData, Tcl_Interp*, int, char **);
+	Tcl_CreateCommand(interp, "puts", WinPutsCmd, 0, 0);*/
     }
 #endif
 

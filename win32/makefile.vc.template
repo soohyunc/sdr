@@ -30,7 +30,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# @(#) $Header: /home/Public/miscell/CVS_repository/sdr/win32/makefile.vc.template,v 1.1 1998-03-05 16:38:54 ucackha Exp $ (LBL)
+# @(#) $Header: /home/Public/miscell/CVS_repository/sdr/win32/makefile.vc.template,v 1.2 1998-03-12 16:57:56 ucackha Exp $ (LBL)
 #
 
 ZIP = c:\progra~1\winzip\winzip32 
@@ -51,8 +51,8 @@ TARGETOS=WIN95
 ALL = sdr
 all:	$(ALL)
 
-RCDIR=.../tk8.0/win/rc
-GENERICDIR	= .../tk8.0/generic
+RCDIR=../tk8.0/win/rc
+GENERICDIR	= ../tk8.0/generic
 
 tk.res:
 	$(rc32) -fo $@ -r -i $(GENERICDIR) $(RCDIR)/tk.rc
@@ -66,12 +66,12 @@ tk.res:
 BSC32= bscmake
 BSC32_FLAGS=/nologo /n
 
-INCLUDE_TK = -I.../tk8.0/win -I.../tk8.0/generic
-INCLUDE_TCL = -I.../tcl8.0/win -I.../tcl8.0/generic
-INCLUDE_X11 = -I.../tk8.0/xlib
+INCLUDE_TK = -I../tk8.0/win -I../tk8.0/generic
+INCLUDE_TCL = -I../tcl8.0/win -I../tcl8.0/generic
+INCLUDE_X11 = -I../tk8.0/xlib
 
-LIB_TK = .../tk8.0/win/tk80.lib
-LIB_TCL = .../tcl8.0/win/tcl80.lib
+LIB_TK = ../tk8.0/win/tk80.lib
+LIB_TCL = ../tcl8.0/win/tcl80.lib
 
 LIBS = $(LIB_TK) $(LIB_TCL)
 INCLUDES = $(INCLUDE_TK) $(INCLUDE_TCL) $(INCLUDE_X11) $(MD_INC)
@@ -88,6 +88,9 @@ sdr.bsc:  $(SBR)
     $(BSC32) @<<
   $(BSC32_FLAGS) /o$@ $(SBR)
 <<
+
+qfDES.obj: qfDES.c
+	$(CC) $(CFLAGS) -c qfDES.c
 
 clean:
 	-del *.obj

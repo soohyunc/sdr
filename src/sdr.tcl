@@ -121,10 +121,10 @@ proc initialise_resources {} {
 	-*-helvetica-medium-r-normal--12-*-iso8859-1 \
 	widgetDefault
     option add *font \
-	-*-helvetica-bold-r-normal--12*-*-iso8859-1 \
+	-*-helvetica-bold-r-normal--12-*-iso8859-1 \
 	widgetDefault
     option add *italfont \
-	-*-helvetica-bold-o-normal--12*-*-iso8859-1 \
+	-*-helvetica-bold-o-normal--12-*-iso8859-1 \
 	widgetDefault
     set tmp 0
     catch {set tmp [label .test -font [option get . font Sdr]];destroy .test}
