@@ -319,7 +319,7 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
     #user is the SIP name of the user at that location
     #the addr parameter should be zero when send_sip is called with
     #a new or modified request
-    puts "send_sip: dstuser=$dstuser, user=$user, aid=$aid, id=$id, win=$win, addr=$addr, port=$port, ttl=$ttl"
+    putlogfile "send_sip: dstuser=$dstuser, user=$user, aid=$aid, id=$id, win=$win, addr=$addr, port=$port, ttl=$ttl"
 
     global youremail no_of_connections sip_request_status sip_request_addrs
     global sip_requests
@@ -329,7 +329,7 @@ proc send_sip {dstuser user aid id win addr port ttl transport} {
         set addr [lookup_host $addr]
     } else {
 	set res [sip_parse_url $dstuser]
-	puts "$dstuser --> $res"
+	putlogfile "$dstuser --> $res"
 	set addr [lookup_host [lindex $res 2]]
 	if {$addr=="0.0.0.0"} {
 	    msgpopup "Invalid Address" "The hostname $host is not known"
@@ -508,9 +508,9 @@ proc sip_send_ack {fd dstuser origuser id cseq} {
 		sip_send_udp $addr $ttl $port $msg 
 	    } else {
 		sip_send_tcp_request $fd $addr $ttl $port $msg 
-		puts "about to close connection"
+		putlogfile "about to close connection"
 		sip_close_tcp_connection $id
-		puts "connection closed"
+		putlogfile "connection closed"
 	    }
 	} else {
 	    #the call is not in a useful state - either the far end
@@ -542,7 +542,7 @@ proc sip_send_bye {fd dstuser origuser id cseq} {
     set transport [lindex $res 4]
     if {$transport=="NONE"} {set transport "UDP"}
 
-    puts "sip_send_bye: $addr, $port, $ttl, $maddr"
+    putlogfile "sip_send_bye: $addr, $port, $ttl, $maddr"
     set msg "BYE $dstuser SIP/2.0"
     if {$maddr!=""} {
 	if {$ttl==0} {set ttl 16}
@@ -625,7 +625,7 @@ proc sip_session_status {id status} {
 set sip_invites {}
 proc sip_user_alert {fd msg} {
     global sip_invites sip_invite_status sip_invite_tag
-    #puts $msg
+    #puts " $fd  TESTing $msg"
     set lines [split $msg "\n"]
     set cur-to [lindex [lindex $lines 0] 1]
     set request [lindex [lindex $lines 0] 0]
@@ -902,7 +902,7 @@ proc sip_send_accept_invite {fd id srcuser dstuser path sdp cseq} {
 		\"$path\" \"$sdp\" {$cseq}"
     }
     set tag ";tag=$sip_invite_tag($id)"
-    puts "**tag: $tag"
+    putlogfile "**tag: $tag"
     set msg "SIP/2.0 200 OK"
     set msg "$msg\r\n$path"
     set msg "$msg\r\nCall-ID:$id"
@@ -1013,7 +1013,7 @@ proc sip_send_cancelled {fd id srcuser dstuser path cseq} {
 
 proc sip_send_reply {fd callid path msg} {
     set res [sip_parse_path $path]
-    puts "$path ---> $res"
+    putlogfile "$path ---> $res"
     set version [lindex $res 0]
     set transport [lindex $res 1]
     set host [lindex $res 2]
@@ -1478,7 +1478,7 @@ proc sip_connection_succeed {id msg} {
 
 proc sip_cancel_connection {id hostaddr} {
     global sip_request_addrs
-    puts "sip_cancel_connection $id $hostaddr"
+    putlogfile "sip_cancel_connection $id $hostaddr"
     if {$hostaddr=="all"} {
 	#need to cancel all requests made for this call-ID
 	set list [array names sip_request_addrs]
@@ -1679,9 +1679,9 @@ proc enter_new_address {menu entry} {
 
 proc ab_activity args {
     global ab
-    puts "$args"
+    putlogfile "$args"
     set type [lindex $args 1]
-    puts "var: $ab($type), first: $ab(first)"
+    putlogfile "var: $ab($type), first: $ab(first)"
     if {$type=="url"} {
 	if {([string length $ab(url)]>4)&&($ab(first)=="")} {
 	    if {$ab(first)==""} {set ab(first) url}
