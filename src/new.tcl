@@ -533,27 +533,27 @@ proc new_mk_session_accept {win base aid} {
     $win.r5.l4 configure -text $phone
     set no_of_times 0
     set ldata(new,starttime) 0
-    set ldata(new,stoptime) 0
+    set ldata(new,endtime) 0
     foreach i {1 2 3} {
 	#the catch is here because the simple i/f only has one time entry
 	catch {
 	    set tmp [get_expiry_time .new.f.f.f2.act.fb$i $i .new.f.f.f2.act.fd.duration]
 	    if {[lindex $tmp 0]!=0} {
 		set starttime [ntp_to_unix [lindex $tmp 0]]
-		set stoptime [ntp_to_unix [lindex $tmp 1]]
+		set endtime [ntp_to_unix [lindex $tmp 1]]
 		set ldata(new,starttime,$no_of_times) $starttime
 		set ldata(new,tfrom,$no_of_times) \
 			[clock format $starttime -format {%d %b %Y %H:%M %Z}]
-		set ldata(new,stoptime,$no_of_times) $stoptime
+		set ldata(new,endtime,$no_of_times) $endtime
 		set ldata(new,tto,$no_of_times) \
-			[clock format $stoptime -format {%d %b %Y %H:%M %Z}]
+			[clock format $endtime -format {%d %b %Y %H:%M %Z}]
 		if {($starttime < $ldata(new,starttime)) || \
 			($ldata(new,starttime)==0)} {
 		    set ldata(new,starttime) $starttime
 		    set ldata(new,tfrom) test1
 		}
-		if {($stoptime > $ldata(new,stoptime)) } {
-		    set ldata(new,stoptime) $stoptime
+		if {($endtime > $ldata(new,endtime)) } {
+		    set ldata(new,endtime) $endtime
 		    set ldata(new,tto) test2
 		}
 		
@@ -1963,7 +1963,7 @@ proc get_expiry_time {basewin ix durationwin} {
     set rval $rpt_menu_value($ix)
     set durationmod [expr [lindex $needs_lifetime $rval] * [$durationwin.workaround get] * 60]
     set starttime [expr [lindex $has_times $rval]*[unix_to_ntp [expr $timeofday+($dayix*86400)]]]
-    set stoptime [expr [lindex $has_times $rval]*[expr $starttime + $duration + $durationmod]]
+    set endtime [expr [lindex $has_times $rval]*[expr $starttime + $duration + $durationmod]]
     case $rval {
 	0 { set rpt_str "0 0 0" }
 	1 { set rpt_str "0 $duration 0"}
@@ -1973,7 +1973,7 @@ proc get_expiry_time {basewin ix durationwin} {
 	5 { set rpt_str "0 0 0"}
         6 { set rpt_str "604800 $duration 0 86400 172800 259200 345600"}
     }
-    return "$starttime $stoptime $rpt_str"
+    return "$starttime $endtime $rpt_str"
 }
 
 proc create_menu {mname mlist defattrlist media mode} {
