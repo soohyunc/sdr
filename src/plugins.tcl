@@ -644,7 +644,8 @@ proc start_media_tool {aid mnum proto fmt attrlist} {
 	}
 	if {[llength $rulelist]==0} {
 	    # Special case for handling SDP/SAP directory sessions:
-	    if {$media=="directory" && $proto=="SAP" && $fmt=="SDP"} {
+        if {($media=="directory" || $media=="application")
+           && $proto=="SAP" && $fmt=="SDP"} {
 		return [launch_directory $ldata($aid,$mnum,addr) \
 			                 $ldata($aid,$mnum,port) \
                                          $ldata($aid,ttl) \
