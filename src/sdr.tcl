@@ -17,7 +17,10 @@ set keylist ""
 set lang C
 catch {set lang $env(LANG)}
 proc debug {str} {
-#    puts $str
+    global debug1
+    if {$debug1} {
+	puts $str
+    }
 }
 
 #set langtab [open "/tmp/langtab" "w"]
@@ -404,7 +407,7 @@ set medianum 0
 proc reset_media {} {
 #ensure that Tcl's error recovery hasn't left any unwanted state around
   global vars port proto fmt medianum advertid 
-  global session multicast recvttl recvsd_addr recvsd_port desc advertid creator tfrom tto
+  global session multicast recvttl recvsap_addr recvsap_port desc advertid creator tfrom tto
   global source heardfrom timeheard
   global starttime endtime uri email phone
   catch {unset media}
@@ -417,8 +420,8 @@ proc reset_media {} {
   catch {unset session}
   set multicast 0
   catch {unset recvttl}
-  catch {unset recvsd_addr}
-  catch {unset recvsd_port}
+  catch {unset recvsap_addr}
+  catch {unset recvsap_port}
   catch {unset desc}
   catch {unset creator}
 #  set tto 0
@@ -519,12 +522,13 @@ proc set_media {} {
     set ldata($aid,$medianum,pid) 0
     incr medianum
     set ldata($aid,medianum) $medianum
+    debug "medianum=$medianum"
 }
 
 proc add_to_list {} {
-    global session multicast recvttl recvsd_addr recvsd_port desc 
+    global session multicast recvttl recvsap_addr recvsap_port desc 
     global advertid creator tfrom tto
-    global ldata ix fullnumitems fullix medianum source 
+    global ldata fullnumitems fullix medianum source 
     global heardfrom timeheard 
     global starttime endtime showwhich phone email uri rctr repeat 
     global createtime modtime createaddr sessvars trust recvkey
@@ -539,6 +543,17 @@ proc add_to_list {} {
   if {$code==0} { 
       set ldata($aid,trust) $trust 
       set ldata($aid,started) 0
+  } elseif {$ldata($aid,trust)=="sip"} {
+      #we first heard the announcement via SIP and now hear it via SAP
+      #update the trust accordingly
+      set ldata($aid,trust) $trust
+      #probably the session will also need to change listboxes...
+      if {$ldata($aid,list)!=""} {
+	  incr $items($ldata($aid,list)) -1
+	  set ldata($aid,list) ""
+	  resort_sessions
+	  set code 0
+      }
   }
   set ldata($aid,key) $recvkey
   set ldata($aid,createtime) $createtime
@@ -549,8 +564,8 @@ proc add_to_list {} {
   set ldata($aid,session) $session
   set ldata($aid,multicast) $multicast
   set ldata($aid,ttl) $recvttl
-  set ldata($aid,sd_addr) $recvsd_addr
-  set ldata($aid,sd_port) $recvsd_port
+  set ldata($aid,sap_addr) $recvsap_addr
+  set ldata($aid,sap_port) $recvsap_port
 #  regsub -all {\\n} $desc "\n" desc
   set ldata($aid,desc) $desc
   set ldata($aid,creator) $creator
@@ -737,7 +752,7 @@ proc add_to_display_list {aid list} {
     set lsession [string tolower $ldata($aid,session)]
     set lastix 0
     set i 0
-
+    debug a
     while {($i < $fullnumitems) && \
 	    ([compare $aid $fullix($i)]<0)} {
 	if {($lastix < $items($list)) && \
@@ -746,17 +761,17 @@ proc add_to_display_list {aid list} {
 	}
 	incr i
     }
-    
+    debug b
     for {set j $fullnumitems} {$j > $i} {incr j -1} {
 	set fullix($j) $fullix([expr $j - 1])
     }
     incr fullnumitems
     set fullix($i) $aid
-
+    debug c
     for {set j $items($list)} {$j > $lastix} {incr j -1} {
 	set ix($list,$j) $ix($list,[expr $j - 1])
     }
-
+    debug d
     #Display it
     set ix($list,$lastix) $aid
     list_session $aid $lastix $list
@@ -1003,10 +1018,14 @@ proc reshow_sessions {spec} {
     foreach list $sesslists {
 	set lastix($list) 0
     }
+    foreach index [array names ix] {
+	unset ix($index)
+    }
     
     for {set i 0} {$i < $fullnumitems} {incr i} {
 	set aid $fullix($i)
 	set list $ldata($aid,list)
+	if {$list==""} {continue}
 #	if {$lastix < $items($list)} {
 #	    set showing [expr [string compare $ix($list,$lastix) $aid] == 0]
 #	} else {
@@ -2014,11 +2033,11 @@ proc start_recorder {aid fname rname} {
     set source [dotted_decimal_to_decimal $ldata($aid,source)]
     set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
     set lastheard $ldata($aid,lastheard)
-    set sd_addr $ldata($aid,sd_addr)
-    set sd_port $ldata($aid,sd_port)
+    set sap_addr $ldata($aid,sap_addr)
+    set sap_port $ldata($aid,sap_port)
     set trust $ldata($aid,trust)
     # XXX there should be a subroutine which returns an n= line
-    puts $file "n=$source $heardfrom $lastheard $sd_addr $sd_port $trust"
+    puts $file "n=$source $heardfrom $lastheard $sap_addr $sap_port $trust"
     puts $file [make_session $aid $rname]
     close $file
 }
@@ -3056,36 +3075,36 @@ proc ntp_to_unix {ntptime} {
 
 set zone(no_of_zones) 0
 set zone(cur_zone) 0
-proc add_ttl_scope {sd_addr sd_port base_addr netmask} {
+proc add_ttl_scope {sap_addr sap_port base_addr netmask} {
     #
     #note this must be done after all admin scope zones have been added.
     #this must not be called more than once!
     #
     global zone
     set no_of_zones $zone(no_of_zones)
-    set zone(sd_addr,$no_of_zones) $sd_addr
-    set zone(sd_port,$no_of_zones) $sd_port
+    set zone(sap_addr,$no_of_zones) $sap_addr
+    set zone(sap_port,$no_of_zones) $sap_port
     set zone(base_addr,$no_of_zones) $base_addr
     set zone(netmask,$no_of_zones) $netmask
-    sd_listen $sd_addr $sd_port
+    sd_listen $sap_addr $sap_port
     set zone(ttl_scope) $no_of_zones
 }
 
-proc add_admin {name sd_addr sd_port base_addr netmask ttl} {
+proc add_admin {name sap_addr sap_port base_addr netmask ttl} {
     #
     #add a new admin scope zone, modify an existing one or remove
     #an old one.
-    #to remove one, specify its name and set sd_addr to ""
+    #to remove one, specify its name and set sap_addr to ""
     #
     global zone
     set no_of_zones $zone(no_of_zones)
     for {set i 0} {$i < $no_of_zones} {incr i} {
 	if {$zone(name,$i)==$name} {
-	    if {$sd_addr==""} {
+	    if {$sap_addr==""} {
 		for {set j $i} {$j<[expr $no_of_zones-1]} {incr j} {
 		    set zone(name,$j) $zone(name,[expr $j+1])
-		    set zone(sd_addr,$j) $zone(sd_addr,[expr $j+1])
-		    set zone(sd_port,$j) $zone(sd_port,[expr $j+1])
+		    set zone(sap_addr,$j) $zone(sap_addr,[expr $j+1])
+		    set zone(sap_port,$j) $zone(sap_port,[expr $j+1])
 		    set zone(base_addr,$j) $zone(base_addr,[expr $j+1])
 		    set zone(netmask,$j) $zone(netmask,[expr $j+1])
 		    set zone(ttl,$j) $zone(ttl,[expr $j+1])
@@ -3099,9 +3118,9 @@ proc add_admin {name sd_addr sd_port base_addr netmask ttl} {
 	}
     }
     set zone(name,$no_of_zones) $name
-    set zone(sd_addr,$no_of_zones) $sd_addr
-    set zone(sd_port,$no_of_zones) $sd_port
-    sd_listen $sd_addr $sd_port
+    set zone(sap_addr,$no_of_zones) $sap_addr
+    set zone(sap_port,$no_of_zones) $sap_port
+    sd_listen $sap_addr $sap_port
     set zone(base_addr,$no_of_zones) $base_addr
     set zone(netmask,$no_of_zones) $netmask
     set zone(ttl,$no_of_zones) $ttl

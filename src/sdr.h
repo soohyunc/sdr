@@ -118,11 +118,11 @@ time_t time(time_t *);
 char *strerror(int i);
 #endif
 
-#define SD_GROUP        "224.2.127.254"
-#define SD_PORT         9875
+#define SAP_GROUP        "224.2.127.254"
+#define SAP_PORT         9875
 #ifdef LISTEN_FOR_SD
-#define OLD_SD_GROUP	"224.2.127.255"
-#define	OLD_SD_PORT	9876
+#define OLD_SAP_GROUP	"224.2.127.255"
+#define	OLD_SAP_PORT	9876
 #endif
 #define SIP_GROUP        "224.0.1.75"
 #define SIP_PORT        5060

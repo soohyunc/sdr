@@ -23,6 +23,14 @@ proc parse_sdp {msg} {
 		set ldata($aid,uri) 0
 		set ldata($aid,multicast) 0
 		set ldata($aid,key) ""
+		set ldata($aid,trust) "sip"
+		#which SAP address and port did this come from? - none!
+		set ldata($aid,sap_addr) ""
+		set ldata($aid,sap_port) ""
+		#have the media tools been started? - no
+		set ldata($aid,started) 0
+		#which display list is it on - none yet
+		set ldata($aid,list) ""
 		set mn -1
 
 		set tmp 0

@@ -682,9 +682,12 @@ proc sip_ringing_user {id srcuser dstuser path cseq} {
 }
 
 proc sip_accept_invite {aid} {
-    global sessdetails sip_invite_status
+    global sessdetails sip_invite_status ldata
     if {$sip_invite_status($sessdetails($aid,id))!="accepted"} {
-	add_to_display_list $aid priv
+	if {$ldata($aid,list)==""} {
+	    #no need to display it again id it's already displayed
+	    add_to_display_list $aid priv
+	}
     }
     set sip_invite_status($sessdetails($aid,id)) accepted
     sip_send_accept_invite \
@@ -1161,13 +1164,17 @@ proc sip_clear_connection_ui {id} {
 
 proc sip_connection_succeed {id msg} {
     global sip_request_status sip_requests sip_request_win sip_request_aid
+    global ldata
     msgpopup "Connection attempt Successful" $msg
     set lid [join [split $id "."] "-"]
     set f $sip_request_win($id).$lid
     catch {$f.l2 configure -text "connected"}
     catch {pack forget $f.hangup}
     set sip_request_status($id) connected
-    add_to_display_list  $sip_request_aid($id) priv
+    if {$ldata($aid,list)==""} {
+	#no need to add it to the display list if it's already displayed
+	add_to_display_list  $sip_request_aid($id) priv
+    }
 }
 
 proc sip_cancel_connection {id hostaddr} {

@@ -57,19 +57,19 @@ proc write_cache {} {
 proc write_cache_entry {aid filename security} {
     global ldata rtp_payload
 
-    #if there's no sd_addr specified, this was not an announced session
+    #if there's no sap_addr specified, this was not an announced session
     #so don't cache it - probably it was a SIP session.
-    set sd_addr ""
-    catch {set sd_addr $ldata($aid,sd_addr)}
-    if {$sd_addr==""} return
+    set sap_addr ""
+    catch {set sap_addr $ldata($aid,sap_addr)}
+    if {$sap_addr==""} return
 
     set source [dotted_decimal_to_decimal $ldata($aid,source)]
     set heardfrom [dotted_decimal_to_decimal $ldata($aid,heardfrom)]
     set lastheard $ldata($aid,lastheard)
-    set sd_port $ldata($aid,sd_port)
+    set sap_port $ldata($aid,sap_port)
     set trust $ldata($aid,trust)
     set key $ldata($aid,key)
-    set adstr "n=$source $heardfrom $lastheard $sd_addr $sd_port $ldata($aid,ttl) $trust\nk=$key\n[make_session $aid]"
+    set adstr "n=$source $heardfrom $lastheard $sap_addr $sap_port $ldata($aid,ttl) $trust\nk=$key\n[make_session $aid]"
     if {$security=="clear"} {
 	set file [open $filename w+] 
 	puts $file $adstr

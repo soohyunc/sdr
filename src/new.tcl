@@ -65,13 +65,13 @@ proc norm_new {aid} {
     new_mk_session_type .new.type left $aid
 
     if {[string compare $aid "new"]!=0} {
-	set sd_addr $ldata($aid,sd_addr)
+	set sap_addr $ldata($aid,sap_addr)
 	set ttl $ldata($aid,ttl)
 	set scope ttl
 	set zone(cur_zone) $zone(ttl_scope)
 	for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
-#	    puts "$zone(sd_addr,$i)==$sd_addr)&&($zone(ttl,$i)==$ttl)"
-	    if {($zone(sd_addr,$i)==$sd_addr)&&($zone(ttl,$i)==$ttl)} {
+#	    puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
+	    if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
 #		puts "setting zone(cur_zone) $i"
 		set scope admin
 		set zone(cur_zone) $i
@@ -267,13 +267,13 @@ proc tech_new {aid} {
     new_mk_session_url .new $aid
 
     if {[string compare $aid "new"]!=0} {
-	set sd_addr $ldata($aid,sd_addr)
+	set sap_addr $ldata($aid,sap_addr)
 	set ttl $ldata($aid,ttl)
 	set scope ttl
 	set zone(cur_zone) $zone(ttl_scope)
 	for {set i 0} {$i<$zone(no_of_zones)} {incr i} {
-#	    puts "$zone(sd_addr,$i)==$sd_addr)&&($zone(ttl,$i)==$ttl)"
-	    if {($zone(sd_addr,$i)==$sd_addr)&&($zone(ttl,$i)==$ttl)} {
+#	    puts "$zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)"
+	    if {($zone(sap_addr,$i)==$sap_addr)&&($zone(ttl,$i)==$ttl)} {
 #		puts "setting zone(cur_zone) $i"
 		set scope admin
 		set zone(cur_zone) $i
@@ -1826,7 +1826,7 @@ proc create {} {
 	    }
 	} 
     }
-#    puts "$sess send to $zone(sd_addr,$zone(cur_zone)) $zone(sd_port,$zone(cur_zone)) $ttl"
+#    puts "$sess send to $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl"
     if {[info exists security]&&($security == "private")} {
 	set keyname [string trim [get_new_session_key] "\n"]
 	if {$keyname==0} {return 0};
@@ -1835,7 +1835,7 @@ proc create {} {
 	set keyname ""
 	log "new session was not encrypted"
     }
-    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sd_addr,$zone(cur_zone)) $zone(sd_port,$zone(cur_zone)) $ttl $keyname
+    createsession "$sess\n" [ntp_to_unix $stoptime] $zone(sap_addr,$zone(cur_zone)) $zone(sap_port,$zone(cur_zone)) $ttl $keyname
     update
     after 3000 write_cache
     log "new session announced at [getreadabletime]"

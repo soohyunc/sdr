@@ -293,8 +293,8 @@ int load_cache_entry(
 )
 {
     char buf[MAXADSIZE], *p, advert[MAXADSIZE];
-    char sd_addr[20], trust[20];
-    int sd_port, len;
+    char sap_addr[20], trust[20];
+    int sap_port, len;
     unsigned long  origsrc, src, endtime;
     char aid[80];
     char key[MAXKEYLEN], keyname[MAXKEYLEN];
@@ -314,7 +314,7 @@ int load_cache_entry(
     if(strncmp(buf, "n=", 2)==0)
       {
 	sscanf(&buf[2], "%lu %lu %lu %s %u %u %s", &origsrc, 
-	       &src, &t, sd_addr, &sd_port, &ttl, trust);
+	       &src, &t, sap_addr, &sap_port, &ttl, trust);
 	remove_cr(trust);
 	k1=strchr(buf,'\n')+1;
 	k2=strchr(k1, '\n')-1;
@@ -350,7 +350,7 @@ int load_cache_entry(
 	    memcpy(advert, p, strlen(p)+1);
 	  }
 	endtime=parse_entry(aid, p, strlen(p),  origsrc, 
-			    src, sd_addr, sd_port, t, trust, key);
+			    src, sap_addr, sap_port, t, trust, key);
 
 	if ((origsrc==hostaddr)&&(strcmp(trust,"trusted")==0)) {
 
@@ -364,7 +364,7 @@ int load_cache_entry(
             }
           } 
 	  queue_ad_for_sending(aid, advert, INTERVAL, 
-               endtime,sd_addr,sd_port,(unsigned char)ttl, keyname);
+               endtime,sap_addr,sap_port,(unsigned char)ttl, keyname);
 	}
       } else {
 	fprintf(stderr, "sdr:corrupted cache file: %s\n", argv[1]);
@@ -561,21 +561,21 @@ char *argv[];
     bus_send_new_app();
 #endif
 /*Set up Initial Rx Socket*/
-    sd_listen(SD_GROUP, SD_PORT, rxsock, &no_of_rx_socks, 1);
+    sd_listen(SAP_GROUP, SAP_PORT, rxsock, &no_of_rx_socks, 1);
 
 #ifdef LISTEN_FOR_SD
 /*Set up compatibility Rx socket*/
     {
       int old_rx = no_of_rx_socks;
 
-      sd_listen(OLD_SD_GROUP, OLD_SD_PORT, rxsock, &no_of_rx_socks, 0);
+      sd_listen(OLD_SAP_GROUP, OLD_SAP_PORT, rxsock, &no_of_rx_socks, 0);
       if (old_rx == no_of_rx_socks)
 	printf("warning: bind failed for SD address, so no SD compatibility\n");
     }
 #endif
 
 /*Set up Tx Socket*/
-    sd_tx(SD_GROUP, SD_PORT, txsock, &no_of_tx_socks);
+    sd_tx(SAP_GROUP, SAP_PORT, txsock, &no_of_tx_socks);
     init_bitmaps();
     ui_create_interface();
 
@@ -737,7 +737,7 @@ void read_sd_cache()
 	  }
 	if(feof(cache)) entry[strlen(entry)-1]='\0';
 	sd_parse_entry(NULL, buf, strlen(buf), origsrc, src, 
-		       OLD_SD_GROUP, OLD_SD_PORT, t, "untrusted");
+		       OLD_SAP_GROUP, OLD_SAP_PORT, t, "untrusted");
       }
   }
 #endif
@@ -850,7 +850,7 @@ static void set_time(const char* var, int i, time_t t)
 */
 unsigned long parse_entry(char *advertid, char *data, int length, 
 	    unsigned long src, unsigned long hfrom,
-	    char *sd_addr, int sd_port, time_t t, char *trust, char *recvkey)
+	    char *sap_addr, int sap_port, time_t t, char *trust, char *recvkey)
 {
     int i;
     static char namestr[MAXADSIZE];
@@ -908,9 +908,9 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     if(strncmp(data, "v=", 2)!=0)
       {
 #ifdef LISTEN_FOR_SD
-	if (sd_port == OLD_SD_PORT)
-	  return sd_parse_entry(advertid, data, length, src, hfrom, sd_addr,
-					sd_port, t, "untrusted");
+	if (sap_port == OLD_SAP_PORT)
+	  return sd_parse_entry(advertid, data, length, src, hfrom, sap_addr,
+					sap_port, t, "untrusted");
 #endif
 
 	if (length==0) return((unsigned long)-1);
@@ -1524,9 +1524,9 @@ unsigned long parse_entry(char *advertid, char *data, int length,
     sprintf(namestr, "%d", ttl);
     Tcl_SetVar(interp, "recvttl", namestr, TCL_GLOBAL_ONLY);
 
-    Tcl_SetVar(interp, "recvsd_addr", sd_addr, TCL_GLOBAL_ONLY);
-    sprintf(namestr, "%d", sd_port);
-    Tcl_SetVar(interp, "recvsd_port", namestr, TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "recvsap_addr", sap_addr, TCL_GLOBAL_ONLY);
+    sprintf(namestr, "%d", sap_port);
+    Tcl_SetVar(interp, "recvsap_port", namestr, TCL_GLOBAL_ONLY);
 
     code = Tcl_GlobalEval(interp, "add_to_list");
     if (code != TCL_OK) 
@@ -1544,7 +1544,7 @@ errorleap:
 #ifdef LISTEN_FOR_SD
 unsigned long sd_parse_entry(char *advertid, char *data, int length, 
 	    unsigned long src, unsigned long hfrom,
-	    char *sd_addr, int sd_port, time_t t, char *trust)
+	    char *sap_addr, int sap_port, time_t t, char *trust)
 {
     char heardfrom[256], origsrc[256];
     int i;
@@ -1938,9 +1938,9 @@ printf("\nnamestr = %s, aid = %ul\n", namestr, aid);
     sprintf(namestr, "%d", ttl);
     Tcl_SetVar(interp, "recvttl", namestr, TCL_GLOBAL_ONLY);
 
-    Tcl_SetVar(interp, "recvsd_addr", sd_addr, TCL_GLOBAL_ONLY);
-    sprintf(namestr, "%d", sd_port);
-    Tcl_SetVar(interp, "recvsd_port", namestr, TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "recvsap_addr", sap_addr, TCL_GLOBAL_ONLY);
+    sprintf(namestr, "%d", sap_port);
+    Tcl_SetVar(interp, "recvsap_port", namestr, TCL_GLOBAL_ONLY);
 
     code = Tcl_GlobalEval(interp, "add_to_list");
     if (code != TCL_OK) 
