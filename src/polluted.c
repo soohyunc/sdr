@@ -916,7 +916,7 @@ int gen_new_data(char *adstr,
     
     buf = (char *)malloc(newlen);
     bp  = (struct sap_header *)malloc(sap_hdr_len);
-
+    memset(bp, 0, sap_hdr_len);
     bp->version  = 1;
     bp->type     = 0;
     bp->compress = 0;
@@ -1012,7 +1012,7 @@ int gen_new_auth_data(char *buf,
       sap_hdr_len = SAPV4_HDR_LEN;
   }
   bp1 = (struct sap_header *)malloc(sap_hdr_len);
-
+  memset(bp1, 0, sap_hdr_len);
   bp1->version  = bp->version;
   bp1->type     = bp->type;
   bp1->enc      = bp->enc;
