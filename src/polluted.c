@@ -178,7 +178,7 @@ int build_packet(char *buf, char *adstr, int addr_fam, int len, int encrypt,
 
 /* add signature    */
 
-    ap = (char *)buf+sizeof(struct sap_header)+AUTH_HEADER_LEN;
+    ap = (char *)buf+ sap_hdr_len+AUTH_HEADER_LEN;
     memcpy(ap, authinfo->signature, authinfo->sig_len);
     ap += authinfo->sig_len;
 
