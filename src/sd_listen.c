@@ -3672,9 +3672,9 @@ int run_program(char *args) {
     /* stops tools removing them */
     if (*nargv[i]=='"') {
       nargv[i]+=1;
-      nargv[i]=strchr(nargv[i],'"');
-      if (nargv[i]!=NULL) {
-        *nargv[i]++='\0';
+      ptr1=strchr(nargv[i],'"');
+      if (ptr1!=NULL) {
+        *ptr1++='\0';
       }
     } 
     i++;
