@@ -43,6 +43,7 @@ char passphrase[MAXKEYLEN];
 extern Tcl_Interp *interp;
 
 #ifdef WIN32
+/* need to set this so can handle binary files okay */
 extern int _fmode=_O_BINARY;
 #endif
 
@@ -372,7 +373,7 @@ int load_keys(void)
   return 0;
 }
 
-int write_crypted_file(char *filename, char *data, int len, char *key) 
+int write_crypted_file(char *afilename, char *data, int len, char *key) 
 {
   char *buf, *encbuf, *p;
   FILE *file;
@@ -380,6 +381,13 @@ int write_crypted_file(char *filename, char *data, int len, char *key)
   char tmpfilename[MAXFILENAMELEN];
   MD5_CTX context;
   u_char hash[16];
+  char *filename;
+#ifdef WIN32  /* need to sort out the ~ on windows */
+  Tcl_DString buffer;
+  filename = Tcl_TildeSubst(interp, afilename, &buffer);
+#else
+  filename = afilename;
+#endif
 
   /*no passphrase was entered - don't save!*/
   if (strcmp(key, "")==0) return 0;
@@ -450,15 +458,19 @@ int write_crypted_file(char *filename, char *data, int len, char *key)
   /*move install the new keyfile (should be atomic on Unix...)*/
   /*I could check the return from this, but I don't really know
     what recovery I can take if it actually fails!*/
-#ifdef WIN32
-/* need to remove file first on windows or rename fails */
+
+#ifdef WIN32   /* need to remove file first on windows or rename fails */
   remove(filename);
-#endif
   rename(tmpfilename, filename);
+  Tcl_DStringFree(&buffer);
+#else
+  rename(tmpfilename, filename);
+#endif
+
   return 0;
 }
 
-int load_crypted_file(char *filename, char *buf, char *key)
+int load_crypted_file(char *afilename, char *buf, char *key)
 {
   FILE *file;
   struct stat sbuf;
@@ -467,7 +479,14 @@ int load_crypted_file(char *filename, char *buf, char *key)
   u_char *encbuf;
   u_char *clearbuf;
   char *p;
+  char *filename;
   MD5_CTX context;
+#ifdef WIN32  /* need to sort out the ~ on windows */
+  Tcl_DString buffer;
+  filename = Tcl_TildeSubst(interp, afilename, &buffer);
+#else
+  filename = afilename;
+#endif
 
 #ifdef DEBUG
   printf("loading file: %s\n", filename);
@@ -484,6 +503,10 @@ int load_crypted_file(char *filename, char *buf, char *key)
       return -1;
     }
   fclose(file);
+
+#ifdef WIN32
+  Tcl_DStringFree(&buffer);
+#endif
 
   Set_Key(key);
   clearbuf=malloc(sbuf.st_size);
