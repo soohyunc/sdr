@@ -559,7 +559,7 @@ int write_crypted_file(char *afilename, char *data, int len, char *key)
               bp->src=htonl(hostaddr);
 	     }
  
-        AUTHDEB( printf(" write sapauth_p->auth_type %d",sapauth_p->auth_type);)
+        writelog( printf(" write sapauth_p->auth_type %d",sapauth_p->auth_type);)
         buf=malloc(len+24+sizeof(struct sap_header)+auth_len+4+addata->length);
         memcpy(buf+24, data, len);
         memcpy(buf+24+len, bp,sizeof(struct sap_header));
