@@ -47,19 +47,33 @@ proc enc_pgp_get_key_list {win aid} {
     global sig_id
     global ldata
     global env
-    ##putlogfile "enc_pgp_get_key_list"
-
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    #putlogfile "enc_pgp_get_key_list"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     #set testpgp $testdir/pgp
     set tclcmd [ list exec pgp -kv ]
 
     set result [ catch $tclcmd keylist ]
-      ##putlogfile " $env(PGPPATH) $tclcmd $keylist"
+      #putlogfile " $env(PGPPATH) $tclcmd $keylist"
     
     if {$result == 0} {
         putlogfile "Cannot open key-file \n"
+        if { [ enter_pgp_path ] == 0} {
+          return 0
+        } else {
+        enc_pgp_get_key_list $win $aid
+        }
     } else {
- 
         # Extract the user id and key id of each key found in the local
         # PGP public key-ring.
         set keylist [split $keylist "\n"]
@@ -137,20 +151,30 @@ proc pgp_check_authentication {irand} {
     set local_authtxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
     set local_authsig_file "[glob -nocomplain [resource sdrHome]]/$irand.sig"
     set local_key_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
- 
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
 
     set tclcmd [ list exec pgp +batchmode=on $local_authsig_file $local_authtxt_file ]
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [ catch $tclcmd output ]
-    ##putlogfile "PGPPATH $env(PGPPATH)" 
+    #putlogfile "PGPPATH $env(PGPPATH)" 
     putlogfile "output $output" 
  
     # The error information must be conveyed to the user - more work
     # required....Need a mechanism to identify the session announcement to
     # the user.
     pgp_InterpretOutput $output pgpresult 1
-    putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+    #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
     if {$pgpresult(ok) == 1} {
     set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
     set recv_authstatus "trustworthy"
@@ -163,15 +187,15 @@ proc pgp_check_authentication {irand} {
         update
         catch { unset env(PGPPATH)}
         set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]"
-        ##putlogfile "NEWPGPPATH $env(PGPPATH)"
+        #putlogfile "NEWPGPPATH $env(PGPPATH)"
         set localpub  "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
         file copy  $local_key_file $localpub
         set tclcmd [ list exec pgp +batchmode=on $local_authsig_file $local_authtxt_file ]
-         putlogfile "$tclcmd"
+         #putlogfile "$tclcmd"
         set result [ catch $tclcmd output ]
-        putlogfile "inteoutput $output"
+        #putlogfile "inteoutput $output"
      	pgp_InterpretOutput $output pgpresult 1
-        putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+        #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
         file delete "[glob -nocomplain [resource sdrHome]]/pubring.pgp"
      		if {$pgpresult(ok) == 1} {
     set pgpresult(msg) [pgp_ShortenOutput $pgpresult(msg) $pgpresult(summary)  $pgpresult(keyid) $pgpresult(userid) $pgpresult(siglen) $pgpresult(date) $pgpresult(sigdate)]
@@ -231,7 +255,18 @@ proc pgp_get_key_list { win } {
     global env
     set resultkey 0
 
-     set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
      set i 0
      set j 0
       if { [file exists $env(PGPPATH)/secring.enc] } {
@@ -277,7 +312,7 @@ proc pgp_get_key_list { win } {
      	set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC)]
      	while {$i == 0 } {
                         	if { $result == 1} {
-                        	putlogfile "The SMART pse and pin check OK"
+                        	#putlogfile "The SMART pse and pin check OK"
                          	set env(USERPIN) $env(SMARTPIN)
                          	set tclcmd [ list exec secude pkcs7dec -p $env(SMARTLOC) -i $env(PGPPATH)/secring.enc -o $env(PGPPATH)/secring.pgp]
                          	set result [ catch $tclcmd output ]
@@ -358,7 +393,11 @@ t card configration" 10000
     #putlogfile "COMMAND= $tclcmd KEYLIST= $keylist"
     if {$resultkey == 0} {
         putlogfile "Cannot open key-file \n"
-        return 0
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             } else {
+        pgp_get_key_list $win
+        }
     } else {
  
         # Extract the user id and key id of each key found in the local
@@ -460,14 +499,25 @@ proc pgp_create_signature {irand} {
     set local_authtxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
  
  
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     set tclcmd [ list exec pgp -sb -z $asympass +batchmode=on \
         +verbose=0 -u ]
     set tclcmd [ concat $tclcmd 0x$key_id(pgp,auth_cur_key_sel) ]
     set tclcmd [ concat $tclcmd [ list $local_authtxt_file \
         -o $local_authsig_file ] ]
     set result [catch $tclcmd output]
-    putlogfile "result= $result output= $output"
+    #putlogfile "result= $result output= $output"
  
     # Either bad passphrase, we have not set-up the correct files properly
     # in 'generate_authentication_info, or PGP doesn't work properly...
@@ -494,17 +544,17 @@ proc pgp_create_signature {irand} {
     set tclcmd [ concat $tclcmd $local_authkey_file ]
     set result [catch $tclcmd output]
     if { $result == 1 } {
-    putlogfile "result= $result output= $output"
+    #putlogfile "result= $result output= $output"
     pgp_InterpretOutput $output pgpresult 1
     if {$pgpresult(ok) == 0} {
-        putlogfile "Something wrong here...cannot extract key for $user_id(pgp,auth_cur_key_sel) \n"
+        #putlogfile "Something wrong here...cannot extract key for $user_id(pgp,auth_cur_key_sel) \n"
         set recv_result "0"
         return 0
     } else {
-        putlogfile "$user_id(pgp,auth_cur_key_sel) key extracted...\n"
+        #putlogfile "$user_id(pgp,auth_cur_key_sel) key extracted...\n"
     }
  
-    ##putlogfile "Adding authentication to session announcement \n"
+    #putlogfile "Adding authentication to session announcement \n"
 
                     set recv_result "1"
     return 1
@@ -524,14 +574,25 @@ proc pgp_create_encryption {irand} {
     global recv_result
     set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
     set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-    set configfile "[glob -nocomplain [resource sdrHome]]/pgp/config.txt"
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
-    ##putlogfile "env $env(PGPPATH)"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
+    set configfile $env(PGPPATH)/config.txt"
+    #putlogfile "env $env(PGPPATH)"
     if { [file exists $configfile] } {
      set config [open $configfile r]
      set contents [read $config ] 
      	if { [regexp {.*EncryptToSelf = on.*} $contents {} contents] == 1} {
-	     putlogfile " Config File is on"
+	     #putlogfile " Config File is on"
      	} else {
 	    	set config [open $configfile a 0600]
     		puts $config "EncryptToSelf = on"
@@ -548,16 +609,16 @@ proc pgp_create_encryption {irand} {
     set tclcmd [ concat $tclcmd 0x$key_id(pgp,enc_cur_key_sel) ]
     set tclcmd [concat $tclcmd [ list -o $local_sapenc_file  ]]
     set result [catch $tclcmd output]
-    ##putlogfile "env $env(PGPPATH) $tclcmd output= $output"
+    #putlogfile "env $env(PGPPATH) $tclcmd output= $output"
  
    # if {$result == 1} {
         #return 0
     #}
     set mess [concat "The message is encrypted for yourself using the most recent key on your secret key ring and user with keyid" 0x$key_id(pgp,enc_cur_key_sel)]
-    putlogfile " ENCRYPTION =$mess"
+    #putlogfile " ENCRYPTION =$mess"
     set  recv_encmessage $mess
  
-    ##putlogfile "Adding PGP encryption to session announcement \n"
+    #putlogfile "Adding PGP encryption to session announcement \n"
     set recv_result "1"
     return 1
 }
@@ -572,7 +633,18 @@ proc pgp_check_encryption {irand } {
     set resultkey 0
     set local_sapenc_file "[glob -nocomplain [resource sdrHome]]/$irand.pgp"
     set local_enctxt_file "[glob -nocomplain [resource sdrHome]]/$irand.txt"
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
      set i 0
      set j 0
         if { [file exists $env(PGPPATH)/secring.enc] } {
@@ -612,7 +684,7 @@ proc pgp_check_encryption {irand } {
      	set result [Misc_CheckSmart $env(SMARTPIN) $env(SMARTLOC)]
      	while {$i == 0 } {
                         	if { $result == 1} {
-                        	putlogfile "The SMART pse and pin check OK"
+                        	#putlogfile "The SMART pse and pin check OK"
                          	set env(USERPIN) $env(SMARTPIN)
                          	set tclcmd [ list exec secude pkcs7dec -p $env(SMARTLOC) -i $env(PGPPATH)/secring.enc -o $env(PGPPATH)/secring.pgp]
                          	set result [ catch $tclcmd output ]
@@ -698,11 +770,11 @@ t card configration" 10000
     
 if { $resultkey == 1} {
         set tclcmd [ list exec pgp +batchmode=on $local_sapenc_file -o $local_enctxt_file]
-        putlogfile "$tclcmd \n"
+        #putlogfile "$tclcmd \n"
         set result [ catch $tclcmd output ]
-         putlogfile "$output"
+         #putlogfile "$output"
          pgp_InterpretOutput $output pgpresult 1
-         putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+         #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
          	if {$pgpresult(ok) == 1} {
     		set recv_encstatus "success"
                 regsub -all {\"} $pgpresult(msg) {} mess
@@ -733,7 +805,7 @@ if { $resultkey == 1} {
     # required....Need a mechanism to identify the session announcement to
     # the user.
     pgp_InterpretOutput $output pgpresult $key
-    putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
+    #putlogfile "OK=$pgpresult(ok) summary: $pgpresult(summary)"
 
     if {$pgpresult(ok) == 1} {
         set recv_enc_asym_keyid $pgpresult(keyid)
@@ -746,7 +818,7 @@ if { $resultkey == 1} {
                         -o $local_enctxt_file] output  $key $irand 0]
             pgp_InterpretOutput $output pgpresult $key
             if {$pgpresult(ok) == 1} {
-            putlogfile "keyid:$pgpresult(keyid)"
+            #putlogfile "keyid:$pgpresult(keyid)"
     set recv_encmessage [concat ". \n Message Decryption: Success\n User:" $key ". \n key information:\n  Key ID:" $pgpresult(keyid) ".\n Key Length: " $pgpresult(siglen) "Bits \n Key Creation Date:" $pgpresult(date) ]
     #set recv_encmessage [concat "Message were Successfully Decrepted for" $key ]
     
@@ -775,6 +847,7 @@ if { $resultkey == 1} {
 
 
 proc pgp_InterpretOutput { in outvar key} {
+    global env
  
     # This function is supposed to take the output given by the other
     # pgp exec procedures and writes different information to the
@@ -783,22 +856,33 @@ proc pgp_InterpretOutput { in outvar key} {
     # based on 2.6.2
  
     upvar $outvar pgpresult
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
  
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     if {[regexp {(.*)child process exited abnormally} $in {} in] == 1} {
     set in [string trim $in]
     }
    #set pgpresult(long) $in 
     set pgpresult(ok) 1
     if { [ regexp -nocase {key id ([0-9a-f]+)} $in {} pgpresult(keyid)] == 1} {
-	putlogfile " keyid == $pgpresult(keyid)"
+	#putlogfile " keyid == $pgpresult(keyid)"
      } elseif {  [ regexp -nocase {Key ID ([0-9a-f]+)} $in {}  pgpresult(keyid)] == 1} {
-          putlogfile " keyid == $pgpresult(keyid)"
+          #putlogfile " keyid == $pgpresult(keyid)"
      } else {
           set pgpresult(keyid) "none"
      }
      if { [regexp {user ("[^"]*")} $in {} pgpresult(userid)] == 1} {
-	putlogfile " USER = $pgpresult(userid) "
+	#putlogfile " USER = $pgpresult(userid) "
      } else {
             if { $key != 1 } {
 	    set pgpresult(userid) $key
@@ -809,14 +893,14 @@ proc pgp_InterpretOutput { in outvar key} {
     if { $pgpresult(userid) != "none" } {
         set tclcmdkey [ list exec pgp -kv  +batchmode=on]
         set tclcmdkey [concat $tclcmdkey $pgpresult(userid)]
-        putlogfile "$tclcmdkey \n"
+        #putlogfile "$tclcmdkey \n"
         set resultkey [ catch $tclcmdkey output1 ]
         set keyinfo  [split $output1 "\n"]
        set i  0
 	foreach line $keyinfo {
         if { [regexp {^(pub|sec) +([0-9]+)/([0-9A-F]+) +([0-9]+)/([0-9]+)/([0-9]+) +(.*)$} $line pgpresult(line) sigid pgpresult(siglen) pgpresult(keyid) year month day pgpresult(userid)] == 1} {
                 set pgpresult(date) [concat $year $month $day]
-		putlogfile "$pgpresult(date) $pgpresult(siglen) $pgpresult(keyid) $pgpresult(userid)"
+		#putlogfile "$pgpresult(date) $pgpresult(siglen) $pgpresult(keyid) $pgpresult(userid)"
      }
     incr i
     }
@@ -826,7 +910,7 @@ proc pgp_InterpretOutput { in outvar key} {
        set pgpresult(sigdate) "none"
      }
     if { [regexp {.*Signature made (.*) GMT .*} $in {} pgpresult(sigdate)] == 1 }  {
-	putlogfile " $pgpresult(sigdate)"
+	#putlogfile " $pgpresult(sigdate)"
 	}
     if [regexp {This.*do not have the secret key.*file.} $in \
             pgpresult(msg)] {
@@ -965,10 +1049,10 @@ proc pgpExec_Interactive { arglist outvar irand } {
         echo
         echo press Return...;
         read dummy"
-    putlogfile " $shcmd"
+    #putlogfile " $shcmd"
     set logfile "[glob -nocomplain [resource sdrHome]]/x$irand"
     set tclcmd {exec xterm -l -lf $logfile -title PGP -e sh -c $shcmd}
-    putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [catch $tclcmd]
     if [catch {open $logfile r} log] {
         set output ""
@@ -1032,7 +1116,7 @@ proc pgp_ClearPassword {{keyname {}}} {
         catch {unset pgpPass}
         set pgpPass() {}
     } else {
-       ##putlogfile "$keyname"
+       #putlogfile "$keyname"
         catch {unset pgpPass($keyname)}
     }
 }
@@ -1042,11 +1126,22 @@ proc pgpExec_Batch { arglist outvar passw } {
     global env
  
     # pgp 4.0 command doesn't like the +keepbinary=off option
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     set tclcmd [concat \
             [list exec pgp +armorlines=0 +batchmode=on +pager=cat] \
             $arglist]
-    putlogfile "password= $passw"
+    #putlogfile "password= $passw"
  
     if {$passw == {}} {
         catch { unset env(PGPPASSFD) }
@@ -1054,10 +1149,10 @@ proc pgpExec_Batch { arglist outvar passw } {
         lappend tclcmd << $passw
         set env(PGPPASSFD) 0
     }
-    ##putlogfile " $tclcmd "
+    #putlogfile " $tclcmd "
     set result [catch $tclcmd output]
-    putlogfile "result $result "
-    putlogfile "output $output "
+    #putlogfile "result $result "
+    #putlogfile "output $output "
     regsub -all "\x07" $output "" output
     #putlogfile "$output"
  
@@ -1082,17 +1177,17 @@ proc certExec_Interactive { arglist outvar irand } {
         echo
         echo press Return...;
         read dummy"
-    ##putlogfile " $shcmd"
+    #putlogfile " $shcmd"
  
     set logfile "[glob -nocomplain [resource sdrHome]]/x$irand"
     set tclcmd {exec xterm -l -lf $logfile -title PGP -e sh -c $shcmd}
-    ##putlogfile "$tclcmd"
+    #putlogfile "$tclcmd"
     set result [catch $tclcmd]
     if [catch {open $logfile r} log] {
         set output ""
     } else {
         set output [read $log]
-        putlogfile "$output"
+        #putlogfile "$output"
         close $log
     }
  
@@ -1124,7 +1219,7 @@ proc Misc_GetPass { title label } {
        grab release $w
        destroy $w
        if { $getpass(ok) == 1} {
-     putlogfile " PASSWORD from MIS_GetPass "
+     #putlogfile " PASSWORD from MIS_GetPass "
           return $ppass
        } else {
              return {}
@@ -1254,7 +1349,18 @@ proc pgp_Rename { old new } {
 
 proc pgp_AddCert { filename title label } {
     global getans env
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
      catch {destroy $w}
     set w [toplevel .getans -borderwidth 10]
      wm title .getans  $title
@@ -1289,7 +1395,18 @@ proc pgp_AddCert { filename title label } {
 }
 proc pgp_smart { title label but} {
     global getsmartans env
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
      catch {destroy $w}
     set w [toplevel .getsmartans -borderwidth 10]
      wm title .getsmartans  $title
@@ -1420,7 +1537,7 @@ proc Help_Toplevel { path name {class Dialog} {dismiss yes}} {
         if {$state != "normal"} {
             catch {
                 wm geometry $path $exwin(geometry,$path)
-                putlogfile "Help_Toplevel $path $exwin(geometry,$path)"
+                #putlogfile "Help_Toplevel $path $exwin(geometry,$path)"
             }
             wm deiconify $path
         } else {
@@ -1432,7 +1549,7 @@ proc Help_Toplevel { path name {class Dialog} {dismiss yes}} {
 proc Help1_Label { frame {name label} {where {left fill}} args} {
     set cmd [list label $frame.$name ]
     if [catch [concat $cmd $args] t] {
-        putlogfile "Help1_Label (warning) $t"
+        #putlogfile "Help1_Label (warning) $t"
         eval $cmd $args {-font fixed}
     }
     pack append $frame $frame.$name $where
@@ -1529,7 +1646,18 @@ proc Help1_Text {frame help} {
 proc pgp_Setup {  } {
     global pgp env
  
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     set PGPPATH $env(PGPPATH)
     set pgp(pgppath) $env(PGPPATH)
  
@@ -1555,7 +1683,7 @@ proc pgp_Setup {  } {
  
         set pgp(secring) $pgp(pgppath)/secring.pgp
         set pgp(privatekeys) [pgpExec_KeyList "" $pgp(secring)]
-        putlogfile "$pgp(privatekeys)"
+        #putlogfile "$pgp(privatekeys)"
  
     # send the key to the keyservers
     set pgpfile [pgpExec_GetKeys [lindex [lindex $pgp(privatekeys) 0] 0] ]
@@ -1602,7 +1730,18 @@ proc pgpExec_KeyList { pattern keyring } {
 proc pgpExec_GetKeys { key } {
     global  env
     set pgpfile  "[glob -nocomplain [resource sdrHome]]/pgpkeyfile"
-    set env(PGPPATH) "[glob -nocomplain [resource sdrHome]]/pgp"
+    set pgpdir "[glob -nocomplain ~]/.pgp"
+    if [info exists env(PGPPATH)] {
+      set env(PGPPATH) $env(PGPPATH)
+    } else { 
+          if { [file isdirectory $pgpdir ] == 0} {
+            if { [ enter_pgp_path] == 0 } {
+                return 0
+             }
+           } else {
+            set env(PGPPATH) $pgpdir
+           }
+    }
     set tmpfile  "[glob -nocomplain [resource sdrHome]]/tmpfile"
             set p [pgp_GetPass $key]
             if {[string length $p] == 0} {
@@ -1642,7 +1781,7 @@ return $pgpfile
 proc Des_Setup {  } {
     global  env deskey
     set result [creat_des_key]
-    putlogfile "$result"
+    #putlogfile "$result"
     if { $result == 1 } {
     set desfile  "[glob -nocomplain [resource sdrHome]]/deskeyfile"
     set i 0
@@ -1741,4 +1880,50 @@ proc creat_des_key {} {
 }
 
  
+proc enter_pgp_path {} {
+    global  env .pgpinfo
+    global pgpinfo
+    global yourkey yourpin
+    catch {destroy $w}
+    set w [toplevel .pgpinfo -borderwidth 2] 
+    wm title .pgpinfo "Sdr: PGP  Configure Information"
+    frame $w.f -borderwidth 5 -relief groove
+    pack $w.f -side top
+    message $w.f.l -aspect 500  -text "Please configure sdr with your PGP PATH "
+    pack $w.f.l -side top
+    frame $w.f.f0 
+    pack $w.f.f0 -side top -fill x -expand true
+    label $w.f.f0.l -text "PGP Key Ring Location"
+    pack $w.f.f0.l -side left -anchor e -fill x -expand true
+    entry $w.f.f0.e -width 30 -relief sunken -borderwidth 1 \
+	-bg [option get . entryBackground Sdr] \
+	 -highlightthickness 0   -textvariable yourkey
+    pack $w.f.f0.e -side left
 
+    #frame $w.f.f1 
+    #pack $w.f.f1 -side top -fill x -expand true
+    #label $w.f.f1.l -text "PIN for X509"
+    #pack $w.f.f1.l -side left -anchor e -fill x -expand true
+    #password $w.f.f1.e -width 30 -relief sunken -borderwidth 1 \
+        #-variable yourpin -background [option get . entryBackground Sdr]
+    #pack $w.f.f1.e -side left
+
+    frame $w.f.f3 
+    pack $w.f.f3 -side top -fill x -expand true
+
+    button $w.f.f3.ok -text OK -command {set pgpinfo(ok) 1 }
+    pack $w.f.f3.ok -side left -fill x -expand true
+    button $w.f.f3.cancel -text Cancel \
+	    -command {set pgpinfo(ok) 0 }
+    pack $w.f.f3.cancel -side left -fill x -expand true
+    grab $w
+       tkwait variable pgpinfo(ok)
+       #grab release $w
+       destroy .pgpinfo
+       if { $pgpinfo(ok) == 1} {
+	set env(PGPPATH) $yourkey
+          return 1
+       } else {
+	return 0
+       }
+}
