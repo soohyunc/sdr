@@ -45,7 +45,7 @@
 #endif
 #include "dns.h"
 #include "prototypes.h"
-#define DEBUG
+//#define DEBUG
 #define MAXINVITES 20
 
 extern int sip_udp_rx_sock;
@@ -101,8 +101,8 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
       myhost.s_addr=hostaddr;
       sprintf(u_at_a, "%s@%s", username, inet_ntoa(myhost));
       if (dstname!=NULL)
-	printf("dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
-	       dstname, u_at_h, u_at_a, sipalias);
+/*	printf("dstname:>%s<\nu_at_h:>%s<\nu_at_a:>%s<\nsipalias:>%s<\n",
+	       dstname, u_at_h, u_at_a, sipalias); */
       if (((dstname!=NULL)&&(strcmp(u_at_h, dstname)==0)) || 
 	  ((dstname!=NULL)&&(strcmp(u_at_a, dstname)==0)) || 
 	  ((dstname!=NULL)&&(strcmp(sipalias, dstname)==0))) {
@@ -112,10 +112,10 @@ int sip_parse_recvd_data(char *buf, int length, int sipfd, char *srcaddr)
 	  Tcl_SetVar(interp, "sip_advert", buf, TCL_GLOBAL_ONLY);
 	  sprintf(sipfdstr, "%d", sipfd);
 	  Tcl_SetVar(interp, "sip_fd", sipfdstr, TCL_GLOBAL_ONLY);
-	  if (Tcl_VarEval(interp, "sip_user_alert $sip_fd $sip_advert", NULL)!=TCL_OK) {
+	  if (Tcl_VarEval(interp, "sip_user_alert  $sip_fd  $sip_advert ", NULL)!=TCL_OK) {
 	    Tcl_AddErrorInfo(interp, "\n");
-	    fprintf(stderr, "%s\n", interp->result);
-	    Tcl_VarEval(interp, "puts $errorInfo", NULL);
+/*	    fprintf(stderr, "%s\n", interp->result);       */
+/*	    Tcl_VarEval(interp, "puts $errorInfo", NULL);  */
 	  };
       } else {
 #ifdef DEBUG
