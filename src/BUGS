@@ -26,4 +26,128 @@ There are many little things on the to-do list.  The main big things are:
 - Doesn't do proper IPRA multicast address allocation
    + awaiting simulation results
 - Doesn't cope properly with DNS names for multicast groups
+</I>
+
+
+<H2>Things which need looking at in SDR 2.5.6</H2>
+
+<H3>A) General</H3>
+
+1) Windows problem - sdr crashes when it receives a session and the scrollbar 
+   is being moved.
+
+2) Create session - the final window doesn't show any session details and 
+   doesn't disappear when you click Accept.
+
+3) Modify session doesn't work
+
+4) Roy had problem:
+
+  >  when changing the scope from admin to ttl:
+  >    invalid command name ".new.f3.rr.f.r4"
+  >     while executing
+  > ".new.f3.rr.f.r4 invoke"
+  >   ("default" arm line 3)
+
+ Then when changing the ttl from 15 to world:
+
+  >  can't read "win": no such variable
+  >   while executing
+  >  "$win.f3.rr.f.e configure -state normal"
+  >  (procedure "disable_scope_entry" line 2)
+
+ And when went back to admin scope - choose and configure media gave:
+
+  >  can't read "fmtlayers(html..)": no such element in array
+  >   while executing
+  > "return $fmtlayers($media.$proto.$fmt)"
+
+5) PC version of sdr didn't need Tcl environment but now it does ? Shrimp 
+   version doesn't need tcl ?
+
+6) Quitting on Windows 95 gives a very ugly "this program crashed" message.
+
+7) conflict with random and srandom prototypes
+
+8) SIP always listens on 5060 so if sdr dies on windows you have to log off - 
+   is it supposed to just listen on port 5060 meaning you can only have one 
+   person running sdr on each machine ?
+
+
+<H3>B) Encryption etc</H3>
+
+1) Even if you don't want to use PGP you still get asked where your keyring is.
+
+2) On Solaris the authentication sometimes gets lost (we think this is due to 
+   a new session arriving whilst the previous one hasn't completed the 
+   authentication/encryption routines).
+
+3) On PC - window asking where keyrings are pops up quite often - should be 
+   just once.
+
+4) Louise got the message, after a window appeared asking for her PGPPATH (she 
+   doesn't use PGP):
+
+ > pygmalion.ucaclxc.9:16%The Decryption didnot produce any message 0
+ > [1]    Segmentation fault     sdr (core dumped)
+
+5) Andreas got message:
+
+  > "the decryption did not produce any message 
+  > window name "pgpinfo" already exists in parent
+
+6) Some key generation problems on windows - Alberto said:
+
+   From the key generation panel, trying to generate pgp keys, an error is
+   generated since sdr call 'xterm' obviously not available on window platform.
+   Trying to generate an x509 key, the file generated contain an error since
+   'uuencode' is called and not present on the windows platform.
+
+7) Bill fenner gets a core dump on SunOS when trying to create an 
+   authenticated session - problem seems to be in check_authentication:
+
+  > #1 0x41b94 in check_authentication (auth_p=0x1e61e8, authinfo=0x1e61ea "0", 
+  >    data=0xefffb7b8 " '", data_len=325, auth_len=156, 
+  >    asym_keyid=0xefffb780 "", irand=51221, 
+  >    authmessage=0xefffb580 "The message is signed using keyid 0x7F01BC09")
+  >    at ../src/pgp_crypt.c:253
+  > 253        memcpy(authmessage,auth_message,messagelen);
+  >
+  > I bet the problem is:
+  >
+  > (gdb) p messagelen
+  > $6 = 65280
+  > 
+  > I dunno how memory for auth_message is supposed to be allocated, and I
+  > can't think of why auth_message would always be a well-terminated
+  > string, but I think the calculation of messagelen combined with the
+  > (lack of?) allocation of memory for auth_message is causing this dump.
+  >
+  > Shouldn't this be Tcl_SetVar() instead of depending on tcl returning
+  > a pointer to the actual data storage and overwriting it with memcpy?
+
+8) putlogfile in the tcl files seems to cause problems (Peter Koch)
+    (Goli made this change - "puts -> putlogfile" to solve some problems 
+    on windows)
+
+9) I think there are a number of memory problems as sdr will be fine for a 
+    while then the bounds checking will stop it. Not sure where these problems
+    are yet but I think some are in the PGP code - I haven't even tried the 
+    PKCS#7 code yet.
+
+10) Alberto Casu: 
+
+  - Choose PGP encryption, prompted for pgppath, no keys displayed
+  - If select PGP encryption then change to DES -> error when select a
+    group key as it is still trying to read the pgp keyfile (he thinks)
+       error: 
+         can't read "user_id(pgp,0)": no such element in array
+             while executing
+         "set user_id(pgp,enc_cur_key_sel) $user_id(pgp,$pgpkey)"
+             (command bound to event)
+  - also if specify pgp enc/auth and don't select key (it doesn't display
+    any anyway) get the error "Cannot open c:\mbone\sdr\63920.sig". The file
+    "c:\mbone\sdr\63920.txt" is present 
+
+
 </pre>
