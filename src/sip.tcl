@@ -109,6 +109,7 @@ proc qcreate {} {
     #create a session that we don't publically announce to anyone
     #so we can do a private invitation
     global qseq qpur qdur zone ttl media_attr media_fmt media_proto
+    global media_layers
     global yourphone youremail medialist send ldata sesstype
     global sdrversion
     set aid priv$qseq
@@ -141,6 +142,7 @@ proc qcreate {} {
 	    set ldata($aid,$medianum,addr) [generate_address $zone(base_addr,$zone(cur_zone)) $zone(netmask,$zone(cur_zone))]
 	    set ldata($aid,$medianum,fmt) $media_fmt($media)
 	    set ldata($aid,$medianum,proto) $media_proto($media)
+	    set ldata($aid,$medianum,layers) $media_layers($media)
 	    set ldata($aid,$medianum,ttl) $zone(ttl,$zone(cur_zone))
 	    set ldata($aid,$medianum,vars) ""
             foreach attr [array names media_attr] {
