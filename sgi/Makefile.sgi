@@ -1,5 +1,5 @@
 CC          = gcc
-LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/libtcl8.0.a ../../common/libcommon.a -lX11 -lm
+LIBS        = ../../tk-8.0/unix/libtk8.0.a ../../tcl-8.0/unix/libtcl8.0.a ../../common/libuclmmbase.a -lX11 -lm
 CFLAGS      = -g -O -I../../tk-8.0/generic -I../../tcl-8.0/generic -I../../common $(INCLUDES) -DSYSV -DSGI -DCANT_MCAST_BIND -DNORANDPROTO -DAUTH
 
 all:sdr
