@@ -19,6 +19,7 @@ int ui_get_passphrase(ClientData dummy, Tcl_Interp *interp, int argc, char **arg
 int ui_add_key(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_delete_key(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_find_key_by_name(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
+int ui_find_keyname_by_key(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_write_crypted_file(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_load_keys(ClientData dummy, Tcl_Interp *interp, int argc, char **argv);
 int ui_save_keys();
