@@ -55,7 +55,7 @@ int store_x509_encryption_in_memory(struct advert_data *addata, char *enc_type,
 /* polluted.c */
 
 int gen_new_data(char *adstr,char *new_data, char *keyname,struct advert_data *addata );
-int gen_new_auth_data(char *buf,char *newbuf,struct sap_header *bp,int auth_len,int len);
+int gen_new_auth_data(char *buf,char *newbuf,struct sapv4_header *bp,int auth_len,int len);
 int write_authentication(char *filename, char *data, int len, char *advertid);
 int write_encryption(char *filename,  char *data, int len, char *auth_type, char *enc_type, char *advertid);
 

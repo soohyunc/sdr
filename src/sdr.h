@@ -216,8 +216,8 @@ struct sap_header {
 #endif
   u_int authlen:8;
   u_int msgid:16;
-/* make protocol independent, see new sap_header def's below */
-/*  u_int src; /* MM */
+/* MM -make protocol independent, see new sap_header def's below */
+/*  u_int src; */
 };
 
 /* These repitious sap headers are UGLY... */

@@ -124,7 +124,7 @@ void initnames();
 
 /*generate_ids*/
 int generate_port(char *s);
-int delete_address(struct addr_list *test, int addr_type);
+int delete_address(struct addr_list *test);
 int store_address(struct in_addr *addr, int addr_type, unsigned long endtime);
 struct in_addr generate_address();
 int check_address(struct in_addr *addr, int addr_type);

@@ -143,10 +143,12 @@ int build_packet(char *buf, char *adstr, int addr_fam, int len, int encrypt,
 /* Write the v6 or v4 source address in buf */
   /* bp->src = (unsigned long)htonl(hostaddr); */
   if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
       memcpy(buf+sizeof(struct sap_header), (char *) &hostaddr_v6, 16);
       len_add = SAPV6_HDR_LEN;
       sap_hdr_len = SAPV6_HDR_LEN;
       bp->addr     = 1;
+#endif
   } else {
       host = (unsigned long)htonl(hostaddr);
       memcpy(buf+sizeof(struct sap_header), (char *) &host, 4);
@@ -160,8 +162,6 @@ int build_packet(char *buf, char *adstr, int addr_fam, int len, int encrypt,
   } else {
     bp->enc = 1;
   }
-
-  /* len_add += sizeof(struct sap_header); /* MM */
 
 /* the sap_header has been filled out now so do the auth_header */
 
@@ -365,15 +365,18 @@ int ui_createsession(dummy, interp, argc, argv)
   int rc;
   int addr_fam = IPv4;
   struct in_addr in;
-  char *source;
+  char *source=NULL;
 
 /* 
  * Determine protocol family of session, IPv4 or IPv6, by looking at the
  * SAP address contained in argv[3].
  */
   if (strncmp("ff", argv[3], 2) == 0){
+#ifdef HAVE_IPv6
       source = inet6_ntoa(&hostaddr_v6);
+#endif
       addr_fam = IPv6;
+
   } else {
       in.s_addr=htonl(hostaddr);
       source = inet_ntoa(in);
@@ -637,7 +640,7 @@ int ui_createsession(dummy, interp, argc, argv)
  
 /* queue the ad for sending */
     /* printf("ui_createsession calling queue_ad_4_sending: addr/port %s/%d\n",
-           argv[3], port); /* MM */
+           argv[3], port); */
     queue_ad_for_sending(aid, argv[1], interval, endtime, argv[3], addr_fam,
                          port, ttl, argv[6], argv[7], authstatus ,argv[8], 
                          encstatus, addata);
@@ -1085,11 +1088,11 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
 
 /* write the sap header into the buffer                            */
 
-  sap_hdr = addata->sap_hdr;
+  sap_hdr = (struct sapv4_header *)addata->sap_hdr;
 
   if( sap_hdr == NULL) {
 
-    sap_hdr = (struct sap_header *)malloc(sap_hdr_len);
+    sap_hdr = (struct sapv4_header *)malloc(sap_hdr_len);
     sap_hdr->version  = 1;
     sap_hdr->authlen  = auth_len /4;	
     sap_hdr->enc      = 0;
@@ -1176,7 +1179,7 @@ int write_authentication(char *afilename,char *data, int len, char *advertid)
   rename(tmpfilename, filename);
 #endif
 
-/* MM #endif /* ifndef HAVE_IPv6 */
+/* endif - MM ifndef HAVE_IPv6 */
   return 0;
 }
 
@@ -1259,7 +1262,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
 
 /* set up sap header */
 
-  bp = addata->sap_hdr;
+  bp = (struct sapv4_header *)addata->sap_hdr;
 
   if (bp == NULL) {
     bp=malloc(sap_hdr_len);
@@ -1359,7 +1362,7 @@ int write_encryption(char *afilename, char *data, int len , char *auth_type, cha
   rename(tmpfilename, filename);
 #endif
 
-/* MM #endif /* ifndef HAVE_IPv6 */
+/* #endif - MM ifndef HAVE_IPv6 */
   return 0;
 
 }

@@ -64,14 +64,6 @@ int generate_port(char *media)
 static struct addr_list *first_addr=NULL;
 static struct addr_list *last_addr=NULL;
 
-int IPv6AddrEqual(struct in6_addr *a1, struct in6_addr *a2)
-{
-    if (strncmp(a1, a2, 16) == 0)
-        return 1;
-    else
-        return 0;
-}
-
 int store_address(struct in_addr *addr, int addr_fam, unsigned long endtime)
 //int store_address(char *addr, int addr_fam, unsigned long endtime)
 {
@@ -82,16 +74,15 @@ int store_address(struct in_addr *addr, int addr_fam, unsigned long endtime)
       if (addr_fam == IPv6){
 #ifdef HAVE_IPv6
           if (IPV6_ADDR_EQUAL((struct in6_addr *)addr, &(test->addr6))) {
-//          if (IN6_ADDR_EQUAL(*((struct in6_addr *)addr), test->addr6)) {
               if (endtime == test->endtime) return 0;
-              delete_address(test, IPv6);
+              delete_address(test);
               break;
           } 
 #endif
       } else {
           if (addr->s_addr == test->addr.s_addr) {
               if (endtime == test->endtime) return 0;
-              delete_address(test, IPv4);
+              delete_address(test);
               break;
           }
       }
@@ -152,7 +143,7 @@ int check_address(struct in_addr *addr, int addr_fam)
   while(test!=NULL) {
       if((test->endtime!=0)&&(test->endtime<tv.tv_sec)) {
           tmp=test->next;
-          delete_address(test, addr_fam);
+          delete_address(test);
           test=tmp;
       } else {
           if (addr_fam == IPv6) {
@@ -216,7 +207,7 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
     } else {
         memcpy(newaddr, baseaddr, IPV6_ADDR_LEN);
     }
-    /* printf("generate_v6_addr: orig addr:%s\n", inet6_ntoa(newaddr)); /* */
+    /* printf("generate_v6_addr: orig addr:%s\n", inet6_ntoa(newaddr)); */
     while(1) {
         i=lbl_random();
 
@@ -228,7 +219,7 @@ struct in6_addr *generate_v6_address(struct in6_addr *baseaddr, int netmask,
         newaddr->s6_words[7] |= (i);
         if (check_address(newaddr, IPv6)==TRUE) {
             /* printf("generate_v6_addr: newaddr: %s\n", 
-               inet6_ntoa(newaddr)); /**/
+               inet6_ntoa(newaddr)); */
             return(newaddr);
         }
     }

@@ -475,8 +475,9 @@ int sd_tx_ipv6(char *address, int port, int *txsock, int *no_of_socks)
 
     (*no_of_socks)++;
 
-    return(*no_of_socks);
 #endif /* HAVE_IPv6 */
+    return(*no_of_socks);
+
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1593,6 +1594,9 @@ char *argv[];
 	linksocket(rxsock[i], TK_READABLE, (Tcl_FileProc*)recv_packets);
       }
 /*Set up SIP socket*/
+// MM
+//#if 0
+/* comment out the sip listen so if crash can restart okay while debugging */
 
     sip_udp_rx_sock=sip_udp_listen(SIP_GROUP, SIP_PORT);
     sip_tcp_rx_sock=sip_tcp_listen(SIP_PORT);
@@ -1615,8 +1619,8 @@ char *argv[];
       linksocket(sip_tcp_rx_sock, TK_READABLE, (Tcl_FileProc*)sip_recv_tcp);
     }
 /* end of sip listen */
-
-/* load the cached sessions */
+//#endif 
+//#if 0
 
     Tcl_CreateCommand(interp, "load_cache_entry", load_cache_entry, 0, 0);
 
@@ -1839,7 +1843,7 @@ void recv_packets(ClientData fd)
 
 /* if debugging have a look at the header */
 
-/*    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, ntohl(bp->src));) /* */
+/*    writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d src=%lu\n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid, ntohl(bp->src));) */
     writelog(printf("recv_packets: bp: version=%d type=%d enc=%d compress=%d authlen=%d msgid=%d \n",bp->version, bp->type, bp->enc, bp->compress, bp->authlen, bp->msgid));
 
 
@@ -3588,7 +3592,9 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
     datalength = len;
     
     if (addr_fam == IPv6) {
+#ifdef HAVE_IPv6
         addr_len = IPV6_ADDR_LEN;
+#endif
     }
     
 /* calculate packetlength - asymm,symm (+4(2[generic enc_hdr]+2[pad]),clear  */
@@ -3690,8 +3696,7 @@ int send_advert(char *adstr, int tx_sock, int addr_fam, unsigned char ttl,
 /* send the data out - len should be the full length after build_packet */
 
         /* printf("\nsend_adver: socket %d sending %s len: %d, plen: %d\n", 
-            tx_sock, adstr, len, packetlength); /* MM */
-        /* printf("\nsend_adver:  %s \n", adstr); /* MM */
+            tx_sock, adstr, len, packetlength);  */
 
     code = send(tx_sock, buf, len, 0);
           
@@ -3855,7 +3860,7 @@ int queue_ad_for_sending(char *aid, char *adstr, int interval,
   writelog(printf("queue_ad_for_sending calling send_advert\n");)
 
   /*printf("queue_ad_for_sending calling send_advert \n%s\n", 
-    addata->data); /* MM */
+    addata->data); */
       
   addata->addr_fam = addr_fam;
 
