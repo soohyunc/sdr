@@ -51,6 +51,7 @@
 #include <locale.h>
 #include <signal.h>
 #ifndef WIN32
+#include <unistd.h>
 #include <fcntl.h>
 #endif
 #include <sys/types.h>
@@ -426,9 +427,10 @@ if (strcmp(argv[2], "crypt")==0) {
 	remove_cr(trust);
 	k1=strchr(buf,'\n')+1;
 	k2=strchr(k1, '\n')-1;
-	/*not sure why we would have a cache file with a CRLF, but cope with 
-	  it anyway*/
-	if (strchr(k1, '\r')-1<k2) k2=strchr(k1, '\r')-1;
+	/*not sure why we would have a cache file with a CRLF, but cope with it anyway*/
+	if (strchr(k1, '\r') != NULL) {
+		if (strchr(k1, '\r')-1<k2) k2=strchr(k1, '\r')-1;
+	}
 
 	if (strncmp(k1, "k=", 2)==0)
 	  {
@@ -1787,11 +1789,11 @@ unsigned long parse_entry(char *advertid, char *data, int length,
  
 #endif
 
-     for (i=0; i<=MAXKEY; i++) {
+     for (i=0; i<MAXKEY; i++) {
       key[i]=NULL;
     }
 
-    for (i=0; i<=MAXMEDIA; i++) {
+    for (i=0; i<MAXMEDIA; i++) {
       mediakey[i]=NULL;
     }
  
