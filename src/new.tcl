@@ -884,7 +884,8 @@ where a is in the range 224 to 239 and b, c and d are in the range 0 to 255."]
           }
 
         } else {
-          set mediaenc($media) 1
+# default to unencrypted media streams
+          set mediaenc($media) 0
         }
 
 	frame $win.$media
@@ -2163,27 +2164,17 @@ proc setmediamode {media mediabase state realloc} {
 	$base.port configure -bg [option get . entryBackground Sdr] \
 	    -relief sunken -state normal
 
-# set media encryption up
+# set encryption to off state if not just changing formats etc
+# but enable the encryption button to be used
 
-          make_random_key
-          set sessionkey($media) $tempkey
+         if {$realloc == 1} {
+           $base.enc delete 0 end
+           $base.enc configure -text "" -bg [option get . background Sdr] \
+               -relief groove -state disabled
 
-# only set encryption on if not just changing formats etc
-# need to set to off then on and not just to on - dunno why
-
-          if {$realloc == 1} {
-            set mediaenc($media) 0
-            $base.enc delete 0 end
-            $base.enc configure -text "" -bg [option get . background Sdr] \
-                -relief groove -state disabled
-            $base.b1 configure -state normal
- 
-            set mediaenc($media) 1
-            $base.enc configure -bg [option get . entryBackground Sdr] \
-              -state normal -relief sunken
-            $base.enc  delete 0 end
-            $base.enc  insert 0 $sessionkey($media)
-          }
+           $base.b1 configure -state normal
+           set mediaenc($media) 0
+         }
 
 	if {$realloc==1} {
 	    $base.addr delete 0 end
