@@ -35,7 +35,7 @@
  */
 #ifndef lint
 static char rcsid[] =
-    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.6 1998-03-02 17:04:29 ucackha Exp $ (LBL)";
+    "@(#) $Header: /home/Public/miscell/CVS_repository/sdr/src/win32.c,v 1.7 1998-04-21 16:00:55 ucackha Exp $ (LBL)";
 #endif
 
 #include <assert.h>
@@ -524,4 +524,24 @@ sendmsg(int s, struct msghdr* mh, int flags)
 		cp += plen;
 	}
 	return (sendto(s, (char*)wrkbuf, cp - wrkbuf, flags, (struct sockaddr *)mh->msg_name, mh->msg_namelen));
+}
+
+int
+Debug(clientData, interp, argc, argv)
+    ClientData clientData;
+    Tcl_Interp *interp;			/* Current interpreter. */
+    int argc;				/* Number of arguments. */
+    char **argv;			/* Argument strings. */
+{
+    char *message;
+	char szTemp[512]; 
+	va_list ap;	
+	
+	message = argv[1];
+    va_start (ap, message);
+    wvsprintf(szTemp, message, ap);
+    OutputDebugString(szTemp);
+    va_end (ap);
+
+	return (TCL_OK);
 }
