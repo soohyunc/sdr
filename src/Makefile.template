@@ -1,3 +1,11 @@
+clean:
+	rm -f *.o
+	rm -f *.ehtml
+	rm -f *.c
+	rm -f *.tcl
+	rm -f sdr tcl2c
+	rm -f Makefile
+
 TK_LIBRARY_FILES = \
                 $(LIBRARY_TCL)/init.tcl \
                 $(LIBRARY_TK)/tk.tcl \
